@@ -35,6 +35,91 @@
     <link rel="stylesheet" href="{{ asset('assets/main/css/spacing.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/main/css/main.css') }}">
 
+
+    <style>
+        .comment-item {
+            border-bottom: 1px solid #eef2f6;
+            padding: 20px 0;
+            margin-left: 0;
+        }
+
+        .comment-item:first-child {
+            padding-top: 0;
+        }
+
+        .comment-item:last-child {
+            border-bottom: none;
+        }
+
+        .comment-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+
+        .comment-avatar-initials {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: #6366f1;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+            border: 2px solid #e2e8f0;
+        }
+
+        .comment-body {
+            flex: 1;
+            padding-left: 0;
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #0a0a0a;
+            margin-right: 10px;
+        }
+
+        .comment-date {
+            font-size: 0.8rem;
+            color: #94a3b8;
+        }
+
+        .comment-text {
+            margin: 6px 0 10px;
+            line-height: 1.7;
+            color: #334155;
+        }
+
+        .comment-actions a {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            text-decoration: none;
+            margin-right: 15px;
+            transition: color 0.2s;
+        }
+
+        .comment-actions a:hover {
+            color: #3b82f6;
+        }
+
+        .reply-form-inline {
+            margin-top: 10px;
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        /* ─── Indent only replies (top-level comments stay flush) ─── */
+        .comment-item.is-reply {
+            margin-left: 90px;
+        }
+    </style>
     @livewireStyles
 </head>
 

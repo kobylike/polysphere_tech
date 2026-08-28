@@ -45,19 +45,7 @@
 
     @livewireStyles
 
-    {{--
-    =====================================================================
-    VENDOR SCRIPTS MOVED HERE FROM THE BOTTOM OF THE PAGE BODY
-    =====================================================================
-    wire:navigate only tracks and dedupes assets placed in the document
-    head. Any script tag left down in the body gets re-injected and
-    re-executed on EVERY navigation, which is what was causing:
-    - "Identifier 'dataSet' has already been declared" (datatables.init.js)
-    - "ckeditor-duplicated-modules"
-    - repeated ApexCharts / jqvmap crashes
-    and ultimately a blank page after navigation. Loading them here in
-    the head makes them load once and persist across all navigations.
-    --}}
+
     <script src="{{ asset('assets/users/vendor/global/global.min.js') }}" defer></script>
     <script src="{{ asset('assets/users/vendor/chart.js/Chart.bundle.min.js') }}" defer></script>
     <script src="{{ asset('assets/users/vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}" defer></script>
@@ -83,14 +71,7 @@
     <!-- Vectormap -->
     <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.min.js') }}" defer></script>
 
-    {{--
-    FIXED: original line concatenated two paths into one broken URL:
-    ".../jqvmap/js/jquery.vmap.usvendor/jqvmap/js/jquery.vmap.world.js"
-    which 404'd and left jQuery Vector Map without its world map data,
-    causing: Uncaught Error: Invalid "world_en" map parameter.
-    Split back into the two real files, in the correct order
-    (world map data must load before jquery.vmap.usa.js needs it).
-    --}}
+
     <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.world.js') }}" defer></script>
     <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.usa.js') }}" defer></script>
 
@@ -449,60 +430,10 @@
 
         @livewireScripts
 
-        {{--
-        =====================================================================
-        INLINE INIT SCRIPTS — wrapped with the Livewire script directive
-        =====================================================================
-        The directive guarantees this code runs exactly once per element
-        per navigation, instead of relying on document-ready, which only
-        fires on the very first hard page load and never again during
-        subsequent navigations. This is what was throwing:
-        "$(...).datepicker is not a function"
-        on second+ page loads, plus generally not re-initializing on
-        subsequent navigations even when it didn't error.
+        {{-- FIX: this stack was missing entirely, so any @push('scripts') block --}}
+        {{-- from child views (e.g. the CKEditor init script) was never rendered. --}}
+        @stack('scripts')
 
-        NOTE: the original code called $("#datepicker").datepicker(...),
-        but only bootstrap-datetimepicker is loaded above, not
-        bootstrap-datepicker — those are different plugins with different
-        APIs. If you actually want a plain calendar datepicker, load
-        bootstrap-datepicker's JS/CSS; if you meant the datetimepicker,
-        use its own init call (e.g. .datetimepicker({...})) instead of
-        .datepicker({...}). Left as-is below with a guard so it fails
-        silently instead of throwing, until you decide which plugin you want.
-        --}}
-        {{--
-        NOTE: the Livewire script directive was removed here on purpose.
-        That directive compiles to code that binds to the current Livewire
-        component instance, which only exists inside a Livewire component's
-        own render view — this file is a plain layout, so there is no
-        component instance to bind to, and it throws a fatal error at
-        runtime ("Using $this when not in object context").
-
-        Instead: the datepicker init is re-run on every navigation via the
-        livewire:navigated browser event, and the imageUpload / remove-img
-        handlers use jQuery event delegation ($(document).on(...)) bound to
-        document, so they keep working even after wire:navigate swaps the
-        elements inside the body without needing to be re-attached at all.
-        --}}
-        {{--
-        FIX: this theme fades #main-wrapper in from opacity:0 to opacity:1
-        via JS bound to the browser's one-time "load" event (part of the
-        page-transition effect in deznav-init.js / demo.js). wire:navigate
-        never fires that event again on later navigations, so the wrapper
-        was staying stuck at opacity:0 — fully rendered underneath, but
-        invisible.
-
-        FIRST ATTEMPT: forcing opacity back to 1 via a livewire:navigated
-        JS listener worked, but caused a visible flash of the unstyled
-        (black) navbar — because the JS reveal could fire before the
-        theme's own class-setup script (demo.js / styleSwitcher.js) had
-        finished applying the correct navbar colors, creating a race.
-
-        ACTUAL FIX: neutralize the opacity:0 rule at the CSS level instead,
-        so #main-wrapper is never hidden in the first place. This removes
-        the timing dependency entirely — no JS reveal needed, no race,
-        no flash. The fade-in transition effect is simply disabled.
-        --}}
         <style>
             #main-wrapper {
                 opacity: 1 !important;
@@ -549,6 +480,7 @@
                 });
             });
         </script>
+
     </body>
 
 </html>

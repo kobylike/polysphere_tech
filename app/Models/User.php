@@ -73,10 +73,29 @@ class User extends Authenticatable
         return $this->status === 'suspended';
     }
 
+    /**
+     * Get the user's avatar URL with UI Avatars fallback.
+     */
     public function getAvatarUrlAttribute(): string
     {
         return $this->avatar
             ? asset('storage/' . $this->avatar)
             : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=3b82f6&color=fff&size=100';
+    }
+
+    /**
+     * Get the user's initials (e.g. "SO" for Samuel Ofosu).
+     */
+    public function getInitialsAttribute(): string
+    {
+        $name = $this->name ?? '';
+        $parts = explode(' ', trim($name));
+        $initials = '';
+        foreach ($parts as $part) {
+            if (!empty($part)) {
+                $initials .= strtoupper(mb_substr($part, 0, 1));
+            }
+        }
+        return $initials ?: '?';
     }
 }

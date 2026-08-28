@@ -4,7 +4,8 @@
             <li class="breadcrumb-item"><a href="javascript:void(0)">CMS</a></li>
             <li class="breadcrumb-item active">
                 <a href="javascript:void(0)">
-                    {{ $postSlug ? 'Edit' : 'Add' }} Blog Post</a>
+                    {{ $postSlug ? 'Edit' : 'Add' }} Blog Post
+                </a>
             </li>
         </ol>
     </div>
@@ -55,8 +56,10 @@
                 @endif
                 @if($errors->any())
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <ul class="mb-0">@foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>@endforeach
+                        <ul class="mb-0">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
                         </ul>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     </div>
@@ -371,7 +374,8 @@
                                                         @else
                                                             <div
                                                                 style="width:150px; height:150px; background-color:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px;">
-                                                                <span class="text-muted">No image</span></div>
+                                                                <span class="text-muted">No image</span>
+                                                            </div>
                                                         @endif
                                                     </div>
                                                     <div class="change-btn d-flex align-items-center flex-wrap mt-2">
@@ -405,19 +409,98 @@
             const el = document.getElementById('screenOptions');
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
-        document.addEventListener('livewire:initialized', function () {
-            if (typeof ClassicEditor !== 'undefined') {
-                ClassicEditor
-                    .create(document.querySelector('#ckeditor'), {
-                        toolbar: ['heading', '|', 'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|', 'undo', 'redo']
-                    })
-                    .then(editor => {
-                        editor.model.document.on('change:data', () => {
-                            @this.set('content', editor.getData());
-                        });
-                        if (@this.content) editor.setData(@this.content);
-                    })
-                    .catch(error => console.error(error));
+
+        // ──────────────────────────────────────────────────────────────
+        // CKEditor – Single instance, safe re‑init
+        // ──────────────────────────────────────────────────────────────
+
+        function initCKEditor() {
+            const editorElement = document.querySelector('#ckeditor');
+            if (!editorElement) {
+                // No editor element yet – skip
+                return;
+            }
+
+            // If there's already an instance attached to this element, destroy it first
+            if (editorElement.ckeditorInstance) {
+                editorElement.ckeditorInstance.destroy().then(() => {
+                    editorElement.ckeditorInstance = null;
+                    // Now create a fresh one
+                    createCKEditor(editorElement);
+                }).catch(() => {
+                    // If destroy fails, just create anew
+                    createCKEditor(editorElement);
+                });
+            } else {
+                createCKEditor(editorElement);
+            }
+        }
+
+        function createCKEditor(element) {
+            if (typeof ClassicEditor === 'undefined') return;
+
+            ClassicEditor
+                .create(element, {
+                    toolbar: [
+                        'heading', '|',
+                        'bold', 'italic', 'link', '|',
+                        'bulletedList', 'numberedList', 'blockQuote', '|',
+                        'imageUpload', '|',
+                        'undo', 'redo'
+                    ],
+                    image: {
+                        toolbar: [
+                            'imageTextAlternative',
+                            'imageStyle:alignLeft',
+                            'imageStyle:alignCenter',
+                            'imageStyle:alignRight'
+                        ],
+                        styles: [
+                            'alignLeft', 'alignCenter', 'alignRight'
+                        ]
+                    },
+                    simpleUpload: {
+                        uploadUrl: '{{ route('ckeditor.upload') }}',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        }
+                    }
+                })
+                .then(editor => {
+                    // Store instance on the element
+                    element.ckeditorInstance = editor;
+
+                    // Sync content with Livewire
+                    editor.model.document.on('change:data', () => {
+                        @this.set('content', editor.getData());
+                    });
+                    if (@this.content) {
+                        editor.setData(@this.content);
+                    }
+                })
+                .catch(error => console.error('CKEditor error:', error));
+        }
+
+        // ─── Listen to Livewire events ──────────────────────────────
+
+        document.addEventListener('livewire:initialized', initCKEditor);
+
+        document.addEventListener('livewire:navigating', function () {
+            const element = document.querySelector('#ckeditor');
+            if (element && element.ckeditorInstance) {
+                element.ckeditorInstance.destroy().then(() => {
+                    element.ckeditorInstance = null;
+                }).catch(() => {
+                    element.ckeditorInstance = null;
+                });
+            }
+        });
+
+        document.addEventListener('livewire:navigated', function () {
+            // Re-init only if the element exists and has no instance
+            const element = document.querySelector('#ckeditor');
+            if (element && !element.ckeditorInstance) {
+                initCKEditor();
             }
         });
     </script>

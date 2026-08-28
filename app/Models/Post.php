@@ -48,8 +48,18 @@ class Post extends Model
         return $this->belongsToMany(Tag::class);
     }
 
-    // Helper: get status badge class
-    // app/Models/Post.php
+
+
+    public function comments()
+    {
+        return $this->hasMany(Comment::class, 'post_id')->orderBy('created_at', 'desc');
+    }
+
+
+    public function approvedComments()
+    {
+        return $this->comments()->where('approved', true);
+    }
     public function getStatusBadgeAttribute()
     {
         return match ($this->status) {
