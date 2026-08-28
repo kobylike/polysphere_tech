@@ -21,8 +21,8 @@
     <meta property="og:url" content="{{ url('/') }}">
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/png" href="{{ asset('assets/users/images/favicon.png') }}">
 
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/main/imgs/favicon.svg') }}">
     <!-- Vendor CSS -->
     <link href="{{ asset('assets/users/vendor/bootstrap-select/dist/css/bootstrap-select.min.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/users/vendor/swiper/css/swiper-bundle.min.css') }}" rel="stylesheet">

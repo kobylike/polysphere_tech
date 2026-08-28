@@ -20,7 +20,8 @@ class Register extends Component
     public $invitation;
 
     // ─── Form fields ──────────────────────────────────────────────
-    public $name = '';
+    public $first_name = '';
+    public $last_name = '';
     public $email = '';
     public $password = '';
     public $password_confirmation = '';
@@ -274,9 +275,10 @@ class Register extends Component
 
     // ─── Username generator ────────────────────────────────────
 
-    private function generateUsername(string $name): string
+    private function generateUsername(string $firstName, string $lastName): string
     {
-        $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', str_replace(' ', '', $name)));
+        // Combine first and last name, remove spaces, lowercase
+        $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $firstName . $lastName));
         $username = $base;
         $counter  = 1;
 
@@ -304,9 +306,10 @@ class Register extends Component
         $pattern = $this->countryInfo['pattern'] ?? '^[0-9]{' . $min . ',' . $max . '}$';
 
         return [
-            'name'     => 'required|min:2|max:100',
-            'email'    => ['required', 'email:rfc,dns', 'max:255', 'unique:users,email'],
-            'password' => [
+            'first_name' => 'required|string|min:2|max:100',
+            'last_name'  => 'required|string|min:2|max:100',
+            'email'      => ['required', 'email:rfc,dns', 'max:255', 'unique:users,email'],
+            'password'   => [
                 'required',
                 'string',
                 'min:8',
@@ -318,8 +321,8 @@ class Register extends Component
                     ->symbols()
             ],
             'password_confirmation' => 'required|same:password',
-            'terms' => 'accepted',
-            'phone' => [
+            'terms'     => 'accepted',
+            'phone'     => [
                 'required',
                 'string',
                 'regex:/' . $pattern . '/',
@@ -341,17 +344,18 @@ class Register extends Component
         $example = !empty($this->phoneExample) ? " Example: {$this->phoneExample}" : '';
 
         return [
-            'name.required' => 'Full name is required.',
-            'email.required' => 'Email address is required.',
-            'email.email' => 'Please enter a valid email address.',
-            'email.unique' => 'This email is already registered.',
-            'password.required' => 'Password is required.',
-            'password.confirmed' => 'Passwords do not match.',
-            'password.min' => 'Password must be at least 8 characters.',
-            'phone.required' => 'Phone number is required.',
-            'phone.regex'    => "Enter a valid {$country} number ({$min}–{$max} digits).{$example}",
-            'phone.unique'   => 'This phone number is already registered.',
-            'terms.accepted' => 'You must accept the terms and conditions.',
+            'first_name.required' => 'First name is required.',
+            'last_name.required'  => 'Last name is required.',
+            'email.required'      => 'Email address is required.',
+            'email.email'         => 'Please enter a valid email address.',
+            'email.unique'        => 'This email is already registered.',
+            'password.required'   => 'Password is required.',
+            'password.confirmed'  => 'Passwords do not match.',
+            'password.min'        => 'Password must be at least 8 characters.',
+            'phone.required'      => 'Phone number is required.',
+            'phone.regex'         => "Enter a valid {$country} number ({$min}–{$max} digits).{$example}",
+            'phone.unique'        => 'This phone number is already registered.',
+            'terms.accepted'      => 'You must accept the terms and conditions.',
         ];
     }
 
@@ -377,7 +381,7 @@ class Register extends Component
             return;
         }
 
-        if (in_array($property, ['name', 'password_confirmation', 'terms', 'phone'])) {
+        if (in_array($property, ['first_name', 'last_name', 'password_confirmation', 'terms', 'phone'])) {
             $this->validateOnly($property);
         }
     }
@@ -414,9 +418,12 @@ class Register extends Component
             return;
         }
 
+        // Concatenate first and last name
+        $fullName = trim($this->first_name . ' ' . $this->last_name);
+
         $user = User::create([
-            'name'     => $this->name,
-            'username' => $this->generateUsername($this->name),
+            'name'     => $fullName,
+            'username' => $this->generateUsername($this->first_name, $this->last_name),
             'email'    => $this->email,
             'password' => Hash::make($this->password),
             'phone'    => $fullPhone,
@@ -434,7 +441,6 @@ class Register extends Component
 
         // Log
         try {
-            // If you have these methods, otherwise remove
             if (method_exists($user, 'updateLastLogin')) {
                 $user->updateLastLogin();
             }

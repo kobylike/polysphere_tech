@@ -15,7 +15,9 @@ use App\Livewire\Admin\Users\RoleManagement;
 use App\Livewire\Admin\Users\UserManagement;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
+use App\Livewire\Auth\PrivacyComponent;
 use App\Livewire\Auth\Register;
+use App\Livewire\Auth\TermsComponent;
 use App\Livewire\Main\AboutComponent;
 use App\Livewire\Main\Blog\Posts\CommentComponent;
 use App\Livewire\Main\Blog\Posts\PostComponent;
@@ -54,12 +56,17 @@ Route::get('/comment/verify/{token}', function ($token) {
     return redirect()->route('blog.details', $comment->post->slug)
         ->with('success', '✅ Your comment has been verified and is now visible!');
 })->name('comment.verify');
+
+
 // Auth
 Route::get('/login', Login::class)->name('login');
-Route::get('/register', Register::class)->name('register');
+Route::get('/register/{token?}', Register::class)->name('register');
 Route::get('/forgot-password', ForgotPassword::class)
     ->middleware('guest')
     ->name('password.request');
+
+Route::get('/terms', TermsComponent::class)->name('terms');
+Route::get('/privacy', PrivacyComponent::class)->name('privacy');
 
 // Main Public
 Route::get('/', IndexComponent::class)->name('index');

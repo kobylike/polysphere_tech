@@ -1,343 +1,251 @@
-<div class="animate-fade-in">
-    <!-- Back Button -->
-    <div class="mb-8">
-        <a href="{{ url('/') }}"
-            class="inline-flex items-center text-sm text-gray-600 hover:text-indigo-600 transition-colors">
+<div>
+    {{-- Back to home --}}
+    <div class="mb-6">
+        <a href="{{ url('/') }}" wire:navigate.hover
+            class="inline-flex items-center text-sm text-gray-500 hover:text-polysphere-600 transition-colors">
             <i class="fas fa-arrow-left mr-2"></i>
             Back to home
         </a>
     </div>
 
-    <!-- Header -->
-    <div class="text-center mb-10">
+    {{-- Header --}}
+    <div class="text-center mb-8">
         <h2 class="text-3xl font-bold text-gray-900">Create Your Account</h2>
-        <p class="mt-2 text-gray-600">You've been invited to join Polysphere Tech</p>
+        <p class="mt-2 text-gray-500">You've been invited to join Polysphere Tech</p>
     </div>
 
-    <!-- Social Sign Up (disabled for invitation-only) -->
-    <div class="mb-8">
-        <div class="grid grid-cols-2 gap-3">
-            <button type="button" disabled
-                class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed opacity-60">
-                <i class="fab fa-google text-red-500 mr-2"></i>
-                <span class="text-sm font-medium">Google</span>
-            </button>
-            <button type="button" disabled
-                class="flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed opacity-60">
-                <i class="fab fa-microsoft text-blue-500 mr-2"></i>
-                <span class="text-sm font-medium">Microsoft</span>
-            </button>
-        </div>
+    {{-- Form --}}
+    <form wire:submit.prevent="register" class="space-y-5" novalidate>
 
-        <div class="flex items-center my-6">
-            <div class="flex-1 border-t border-gray-200"></div>
-            <span class="px-4 text-sm text-gray-500">Complete your profile</span>
-            <div class="flex-1 border-t border-gray-200"></div>
-        </div>
-    </div>
-
-    <!-- Registration Form -->
-    <form wire:submit.prevent="register" class="space-y-5">
-
-        <!-- Email (read-only, prefilled from invitation) -->
+        {{-- Email (read-only) --}}
         <div>
-            <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                Email Address <span class="text-red-500">*</span>
-            </label>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email Address <span
+                    class="text-red-500">*</span></label>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <i class="fas fa-envelope text-gray-400"></i>
                 </div>
-                <input id="email" type="email" wire:model="email" readonly
-                    class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed
-                           focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                <input type="email" wire:model="email" readonly
+                    class="form-input w-full pl-10 pr-3 py-3 bg-gray-50 border border-gray-200 rounded-lg cursor-not-allowed text-gray-500">
             </div>
-            <p class="mt-1 text-sm text-gray-500">This email is locked – it comes from your invitation.</p>
+            <p class="mt-1 text-xs text-gray-400">This email is locked – it comes from your invitation.</p>
         </div>
 
-        <!-- Full Name -->
-        <div>
-            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">
-                Full Name <span class="text-red-500">*</span>
-            </label>
-            <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <i class="fas fa-user text-gray-400"></i>
-                </div>
-                <input id="name" type="text" wire:model.blur="name" autocomplete="name"
-                    class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all @error('name') border-red-300 @enderror"
-                    placeholder="John Doe">
-            </div>
-            @error('name')
-                <p class="mt-1 text-sm text-red-600 flex items-center">
-                    <i class="fas fa-exclamation-circle mr-1"></i> {{ $message }}
-                </p>
-            @enderror
-        </div>
-
-        <!-- Phone Number -->
-        <div wire:key="phone-field" class="relative">
-            <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">
-                Phone Number <span class="text-red-500">*</span>
-            </label>
-
-            <div class="flex">
-                {{-- Country-code button --}}
-                <button type="button" wire:click="toggleCountryDropdown" class="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-3
-                           bg-gray-50 border border-gray-300 border-r-0
-                           rounded-l-lg hover:bg-gray-100 focus:outline-none
-                           focus:ring-2 focus:ring-inset focus:ring-indigo-500
-                           whitespace-nowrap">
-                    <img src="{{ asset('flags/' . $selectedFlag) }}" class="w-5 h-4 rounded-sm object-cover" />
-                    <span class="text-sm font-medium text-gray-700">{{ $countryCode }}</span>
-                    <i class="fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200
-                              {{ $showCountryDropdown ? 'rotate-180' : '' }}"></i>
-                </button>
-
-                {{-- Phone input --}}
-                <div class="relative flex-1">
-                    <input id="phone" type="tel" inputmode="numeric" autocomplete="tel-national" value="{{ $phone }}"
-                        placeholder="{{ $phoneExample ? 'e.g. ' . $phoneExample : 'Phone number' }}"
-                        maxlength="{{ $countryInfo['maxLength'] ?? 15 }}" x-data x-on:input="
-                            let v = $el.value.replace(/[^0-9]/g, '');
-                            let max = {{ $countryInfo['maxLength'] ?? 15 }};
-                            if (v.length > max) v = v.substring(0, max);
-                            if ($el.value !== v) {
-                                let pos = $el.selectionStart - ($el.value.length - v.length);
-                                $el.value = v;
-                                $el.setSelectionRange(pos, pos);
-                            }
-                            $wire.setPhone(v);
-                        " class="w-full px-4 py-3 border border-gray-300 rounded-r-lg
-                               focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500
-                               transition-all
-                               @error('phone') border-red-300 @enderror">
-
-                    @if($phone)
-                        <button type="button" wire:click="$set('phone', '')"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            <i class="fas fa-times text-xs"></i>
-                        </button>
-                    @endif
-                </div>
-            </div>
-
-            @if($phoneExample && !$phone)
-                <p class="mt-1 text-xs text-gray-500">
-                    {{ $countryInfo['name'] ?? '' }} numbers:
-                    {{ $countryInfo['minLength'] ?? 5 }}–{{ $countryInfo['maxLength'] ?? 15 }} digits
-                </p>
-            @endif
-
-            @if($phone)
-                <p class="mt-1 text-xs text-indigo-600 font-medium">
-                    Will be saved as: {{ $countryCode }}{{ $phone }}
-                </p>
-            @endif
-
-            {{-- Country dropdown --}}
-            @if($showCountryDropdown)
-                <div class="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden"
-                    x-data x-on:click.outside="$wire.closeCountryDropdown()">
-                    <div class="p-2 border-b border-gray-100">
-                        <input type="text" wire:model.live.debounce.200ms="search"
-                            placeholder="Search country or dial code…" autofocus
-                            class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md
-                                                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+        {{-- First Name & Last Name --}}
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label for="first_name" class="block text-sm font-medium text-gray-700 mb-1">First Name <span
+                        class="text-red-500">*</span></label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-gray-400"></i>
                     </div>
-                    <ul class="max-h-60 overflow-y-auto divide-y divide-gray-50">
-                        @forelse($filteredCountries as $country)
-                            <li>
-                                <button type="button"
-                                    wire:click="selectCountry('{{ $country['code'] }}', '{{ $country['flag'] }}')"
-                                    class="w-full flex items-center gap-3 px-4 py-2.5 text-sm
-                                                                                                           hover:bg-indigo-50 transition-colors
-                                                                                                           {{ $countryCode === $country['code'] ? 'bg-indigo-50 font-medium' : '' }}">
-                                    <img src="{{ asset('flags/' . $country['flag']) }}"
-                                        class="w-5 h-4 rounded-sm object-cover flex-shrink-0" />
-                                    <span class="flex-1 text-left text-gray-800">{{ $country['name'] }}</span>
-                                    <span class="text-gray-500 tabular-nums">{{ $country['code'] }}</span>
-                                </button>
-                            </li>
-                        @empty
-                            <li class="px-4 py-4 text-sm text-gray-500 text-center">No countries found</li>
-                        @endforelse
-                    </ul>
+                    <input id="first_name" type="text" wire:model.blur="first_name" autocomplete="given-name"
+                        class="form-input w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-polysphere-500 focus:border-polysphere-500 transition-colors @error('first_name') border-red-300 @enderror"
+                        placeholder="John">
                 </div>
-            @endif
+                @error('first_name')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+            <div>
+                <label for="last_name" class="block text-sm font-medium text-gray-700 mb-1">Last Name <span
+                        class="text-red-500">*</span></label>
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-user text-gray-400"></i>
+                    </div>
+                    <input id="last_name" type="text" wire:model.blur="last_name" autocomplete="family-name"
+                        class="form-input w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-polysphere-500 focus:border-polysphere-500 transition-colors @error('last_name') border-red-300 @enderror"
+                        placeholder="Doe">
+                </div>
+                @error('last_name')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+        </div>
+
+        {{-- Phone Number --}}
+        <div wire:key="phone-field">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number <span
+                    class="text-red-500">*</span></label>
+
+            {{-- Positioned wrapper: this (not the whole field block) is what
+            the country dropdown anchors to, so it always renders directly
+            under the input row regardless of what's above/below it. --}}
+            <div class="relative">
+                <div class="flex">
+                    <button type="button" wire:click="toggleCountryDropdown"
+                        class="flex-shrink-0 inline-flex items-center gap-1 px-3 py-3 bg-gray-50 border border-gray-300 border-r-0 rounded-l-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-polysphere-500">
+                        <img src="{{ asset('flags/' . $selectedFlag) }}" class="w-5 h-4 rounded-sm object-cover">
+                        <span class="text-sm font-medium text-gray-700">{{ $countryCode }}</span>
+                        <i
+                            class="fas fa-chevron-down text-xs text-gray-400 transition-transform duration-200 {{ $showCountryDropdown ? 'rotate-180' : '' }}"></i>
+                    </button>
+                    <div class="relative flex-1">
+                        <input type="tel" inputmode="numeric" wire:model.defer="phone"
+                            placeholder="{{ $phoneExample ? 'e.g. ' . $phoneExample : 'Phone number' }}"
+                            maxlength="{{ $countryInfo['maxLength'] ?? 15 }}"
+                            class="form-input w-full px-3 py-3 border border-gray-300 rounded-r-lg focus:ring-2 focus:ring-polysphere-500 focus:border-polysphere-500 transition-colors @error('phone') border-red-300 @enderror"
+                            x-data x-on:input="
+                                let v = $el.value.replace(/[^0-9]/g, '');
+                                let max = {{ $countryInfo['maxLength'] ?? 15 }};
+                                if (v.length > max) v = v.substring(0, max);
+                                $el.value = v;
+                                $wire.setPhone(v);
+                            ">
+                    </div>
+                </div>
+
+                {{-- Country dropdown: anchored to the .relative wrapper above
+                via top-full, so it always appears right below the
+                button/input row instead of falling to its static
+                position further down the page. --}}
+                @if($showCountryDropdown)
+                    <div class="absolute z-50 top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 overflow-y-auto"
+                        x-data x-on:click.outside="$wire.closeCountryDropdown()">
+                        <div class="sticky top-0 bg-white p-2 border-b border-gray-100">
+                            <input type="text" wire:model.live.debounce.200ms="search" placeholder="Search country…"
+                                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-polysphere-500 focus:border-polysphere-500">
+                        </div>
+                        @forelse($filteredCountries as $country)
+                            <button type="button" wire:click="selectCountry('{{ $country['code'] }}', '{{ $country['flag'] }}')"
+                                class="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-polysphere-50 transition-colors {{ $countryCode === $country['code'] ? 'bg-polysphere-50 font-medium' : '' }}">
+                                <img src="{{ asset('flags/' . $country['flag']) }}" class="w-5 h-4 rounded-sm object-cover">
+                                <span class="flex-1 text-left">{{ $country['name'] }}</span>
+                                <span class="text-gray-500 tabular-nums">{{ $country['code'] }}</span>
+                            </button>
+                        @empty
+                            <div class="px-4 py-2 text-sm text-gray-500">No countries found</div>
+                        @endforelse
+                    </div>
+                @endif
+            </div>
 
             @error('phone')
-                <p class="mt-1 text-sm text-red-600 flex items-center">
-                    <i class="fas fa-exclamation-circle mr-1"></i> {{ $message }}
-                </p>
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
             @enderror
+            @if($phone)
+                <p class="mt-1 text-xs text-polysphere-600">Will be saved as: {{ $countryCode }}{{ $phone }}</p>
+            @endif
         </div>
 
-        <!-- Password -->
-        <div>
-            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">
-                Password <span class="text-red-500">*</span>
-            </label>
+        {{-- Password --}}
+        <div x-data="{ showPassword: false }">
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password <span
+                    class="text-red-500">*</span></label>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <i class="fas fa-lock text-gray-400"></i>
                 </div>
-                <input id="password" type="{{ $show_password ? 'text' : 'password' }}" wire:model.live="password"
+                <input id="password" :type="showPassword ? 'text' : 'password'" wire:model.live="password"
                     autocomplete="new-password"
-                    class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all @error('password') border-red-300 @enderror"
+                    class="form-input w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-polysphere-500 focus:border-polysphere-500 transition-colors @error('password') border-red-300 @enderror"
                     placeholder="Create a strong password">
-                <button type="button" wire:click="togglePasswordVisibility"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
-                    <i class="fas {{ $show_password ? 'fa-eye-slash' : 'fa-eye' }}"></i>
+                <button type="button" @click="showPassword = !showPassword"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                    tabindex="-1">
+                    <i class="fas" :class="showPassword ? 'fa-eye-slash' : 'fa-eye'"></i>
                 </button>
             </div>
+            @error('password')
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+            @enderror
 
+            {{-- Strength indicator --}}
             @if($password)
-                <div class="mt-3 space-y-2">
-                    <!-- Strength bar -->
-                    <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div class="h-full transition-all duration-500"
+                <div class="mt-2">
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-500">Strength:</span>
+                        <span style="color: {{ $passwordStrength['color'] }}">{{ $passwordStrength['label'] }}</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden mt-1">
+                        <div class="h-full transition-all duration-300"
                             style="width: {{ $passwordStrength['percentage'] }}%; background-color: {{ $passwordStrength['color'] }}">
                         </div>
                     </div>
-                    <div class="flex justify-between text-sm">
-                        <span>Password strength:</span>
-                        <span class="font-medium" style="color: {{ $passwordStrength['color'] }}">
-                            {{ $passwordStrength['label'] }}
-                        </span>
-                    </div>
-
-                    <!-- Requirements checklist -->
-                    <div class="grid grid-cols-2 gap-2 text-sm">
+                    <div class="grid grid-cols-2 gap-1 mt-1 text-xs">
                         @foreach($passwordRequirements as $key => $req)
-                            <div wire:key="pwreq-{{ $key }}" class="flex items-center">
-                                <i
-                                    class="fas {{ $req['met'] ? 'fa-check-circle text-green-500' : 'fa-circle text-gray-300' }} mr-2"></i>
-                                <span class="{{ $req['met'] ? 'text-green-600' : 'text-gray-500' }}">
-                                    {{ $req['label'] }}
-                                </span>
-                            </div>
+                            <span class="{{ $req['met'] ? 'text-green-600' : 'text-gray-400' }}">
+                                <i class="fas {{ $req['met'] ? 'fa-check-circle' : 'fa-circle' }} mr-1"></i>
+                                {{ $req['label'] }}
+                            </span>
                         @endforeach
                     </div>
                 </div>
             @endif
-
-            @error('password')
-                <p class="mt-1 text-sm text-red-600 flex items-center">
-                    <i class="fas fa-exclamation-circle mr-1"></i> {{ $message }}
-                </p>
-            @enderror
         </div>
 
-        <!-- Confirm Password -->
+        {{-- Confirm Password --}}
         <div>
-            <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">
-                Confirm Password <span class="text-red-500">*</span>
-            </label>
+            <label for="password_confirmation" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password
+                <span class="text-red-500">*</span></label>
             <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <i class="fas fa-lock text-gray-400"></i>
                 </div>
                 <input id="password_confirmation" type="{{ $show_password ? 'text' : 'password' }}"
                     wire:model.blur="password_confirmation" autocomplete="new-password"
-                    class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all @error('password_confirmation') border-red-300 @enderror"
+                    class="form-input w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-polysphere-500 focus:border-polysphere-500 transition-colors @error('password_confirmation') border-red-300 @enderror"
                     placeholder="Re-enter your password">
             </div>
             @error('password_confirmation')
-                <p class="mt-1 text-sm text-red-600 flex items-center">
-                    <i class="fas fa-exclamation-circle mr-1"></i> {{ $message }}
-                </p>
+                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
             @enderror
         </div>
 
-        <!-- Terms -->
-        <div>
-            <div class="flex items-start">
-                <input id="terms" wire:model="terms" type="checkbox"
-                    class="mt-1 h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
-                <label for="terms" class="ml-3 text-sm text-gray-700">
-                    I agree to the
-                    <a href="{{ route('terms')}}" class="text-indigo-600 hover:text-indigo-500">Terms of
-                        Service</a>
-                    and
-                    <a href="{{ route('privacy')}}" class="text-indigo-600 hover:text-indigo-500">Privacy
-                        Policy</a>
-                    <span class="text-red-500">*</span>
-                </label>
-            </div>
-            @error('terms')
-                <p class="mt-1 text-sm text-red-600 flex items-center">
-                    <i class="fas fa-exclamation-circle mr-1"></i> {{ $message }}
-                </p>
-            @enderror
+        {{-- Terms --}}
+        <div class="flex items-start">
+            <input id="terms" type="checkbox" wire:model="terms"
+                class="mt-1 h-4 w-4 text-polysphere-600 focus:ring-polysphere-500 border-gray-300 rounded">
+            <label for="terms" class="ml-2 text-sm text-gray-700">
+                I agree to the <a href="#" class="text-polysphere-600 hover:underline">Terms of Service</a> and
+                <a href="#" class="text-polysphere-600 hover:underline">Privacy Policy</a>
+                <span class="text-red-500">*</span>
+            </label>
         </div>
+        @error('terms')
+            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+        @enderror
 
-        <!-- Submit -->
-        <div class="sticky bottom-0 bg-white pt-4 pb-2 -mb-2">
-            <button type="submit" wire:loading.attr="disabled" wire:target="register"
-                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all transform hover:-translate-y-0.5">
-                <span wire:loading.remove wire:target="register">
-                    <i class="fas fa-user-plus mr-2"></i> Create Account
-                </span>
-                <span wire:loading wire:target="register">
-                    <i class="fas fa-spinner fa-spin mr-2"></i> Creating…
-                </span>
-            </button>
-        </div>
+        {{-- Submit --}}
+        <button type="submit" wire:loading.attr="disabled" wire:target="register"
+            class="btn-lift w-full flex justify-center py-3 px-4 bg-gradient-to-r from-polysphere-600 to-polysphere-800 text-white font-semibold rounded-lg shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-polysphere-500 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all">
+            <span wire:loading.remove wire:target="register">
+                <i class="fas fa-user-plus mr-2"></i> Create Account
+            </span>
+            <span wire:loading wire:target="register">
+                <i class="fas fa-spinner fa-spin mr-2"></i> Creating…
+            </span>
+        </button>
     </form>
 
-    <!-- Footer -->
+    {{-- Footer --}}
     <div class="mt-6 text-center">
         <p class="text-sm text-gray-600">
             Already have an account?
-            <a wire:navigate.hover href="{{ route('login') }}"
-                class="font-medium text-indigo-600 hover:text-indigo-500 transition-colors">
+            <a href="{{ route('login') }}" wire:navigate.hover
+                class="font-medium text-polysphere-600 hover:text-polysphere-800 transition-colors">
                 Sign in
             </a>
         </p>
     </div>
 
-    <!-- Security Badges -->
+    {{-- Security badges --}}
     <div class="mt-8 pt-6 border-t border-gray-200">
         <div class="grid grid-cols-3 gap-4 text-center">
-            <div class="p-3">
-                <i class="fas fa-shield-alt text-green-500 text-xl mb-2"></i>
-                <p class="text-xs text-gray-600">SSL Secure</p>
+            <div>
+                <i class="fas fa-shield-alt text-green-500 text-xl"></i>
+                <p class="text-xs text-gray-500 mt-1">SSL Secure</p>
             </div>
-            <div class="p-3">
-                <i class="fas fa-bolt text-blue-500 text-xl mb-2"></i>
-                <p class="text-xs text-gray-600">Instant Top-Up</p>
+            <div>
+                <i class="fas fa-lock text-blue-500 text-xl"></i>
+                <p class="text-xs text-gray-500 mt-1">Encrypted</p>
             </div>
-            <div class="p-3">
-                <i class="fas fa-headset text-indigo-500 text-xl mb-2"></i>
-                <p class="text-xs text-gray-600">24/7 Support</p>
+            <div>
+                <i class="fas fa-headset text-purple-500 text-xl"></i>
+                <p class="text-xs text-gray-500 mt-1">24/7 Support</p>
             </div>
         </div>
     </div>
 </div>
-
-@push('scripts')
-    <script>
-        document.addEventListener('livewire:init', function () {
-            Livewire.on('show-toast', function (data) {
-                var type = data.type || 'info';
-                var message = data.message || '';
-                var duration = data.duration || 3000;
-                var colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500', info: 'bg-blue-500' };
-                var icons = { success: 'fas fa-check-circle', error: 'fas fa-exclamation-circle', warning: 'fas fa-exclamation-triangle', info: 'fas fa-info-circle' };
-
-                var toast = document.createElement('div');
-                toast.className = 'fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 translate-x-full ' + (colors[type] || 'bg-gray-800');
-                toast.innerHTML = '<div class="flex items-center"><i class="' + (icons[type] || 'fas fa-info-circle') + ' mr-2"></i><span>' + message + '</span><button class="ml-4" onclick="this.parentElement.parentElement.remove()"><i class="fas fa-times"></i></button></div>';
-                document.body.appendChild(toast);
-                setTimeout(() => toast.classList.replace('translate-x-full', 'translate-x-0'), 10);
-                setTimeout(() => {
-                    if (toast.parentElement) {
-                        toast.classList.add('opacity-0');
-                        setTimeout(() => toast.remove(), 300);
-                    }
-                }, duration);
-            });
-        });
-    </script>
-@endpush
