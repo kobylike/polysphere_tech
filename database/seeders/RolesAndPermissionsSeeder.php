@@ -5,7 +5,6 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
-use App\Models\User;
 
 class RolesAndPermissionsSeeder extends Seeder
 {
@@ -29,8 +28,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         // ─── Roles ──────────────────────────────────────────────────────
         $superAdmin = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web']);
-        // Super Admin gets all permissions (optional, but we rely on Gate::before)
-        $superAdmin->syncPermissions(Permission::all());
+        $superAdmin->syncPermissions(Permission::all()); // Super Admin gets everything
 
         $admin = Role::firstOrCreate(['name' => 'Admin', 'guard_name' => 'web']);
         $admin->syncPermissions([
@@ -42,13 +40,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'Assign Role',
         ]);
 
-        $userRole = Role::firstOrCreate(['name' => 'User', 'guard_name' => 'web']);
-        $userRole->syncPermissions([]); // No special permissions by default
+        $agent = Role::firstOrCreate(['name' => 'Agent', 'guard_name' => 'web']);
+        $agent->syncPermissions([
+            'View Users',
+        ]);
 
-        // ─── Assign roles to users (example) ───────────────────────────
-        // Optionally assign Super Admin to first user
-        if ($firstUser = User::first()) {
-            $firstUser->assignRole('Super Admin');
-        }
+        $userRole = Role::firstOrCreate(['name' => 'User', 'guard_name' => 'web']);
+        $userRole->syncPermissions([]); // No special permissions
     }
 }

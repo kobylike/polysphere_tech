@@ -1,4 +1,25 @@
-<div>
+<div x-data="userHandler()" @notify.window="showToast($event.detail)" class="position-relative">
+
+    {{-- ─── Toast ────────────────────────────────────────────────────────── --}}
+    <div x-show="toastVisible" x-cloak x-transition:enter.duration.300ms.opacity.scale
+        x-transition:leave.duration.200ms.opacity.scale class="position-fixed top-0 end-0 p-3"
+        style="z-index: 9999; max-width: 420px; width: 100%;">
+        <div class="d-flex align-items-center p-3 rounded-4 shadow-lg border-0 text-white gap-3"
+            :class="toastType === 'success' ? 'bg-gradient-success' : 'bg-gradient-danger'"
+            style="backdrop-filter: blur(8px); background: linear-gradient(135deg, #10b981, #059669);">
+            <div class="flex-shrink-0">
+                <i class="fas fa-2x" :class="toastType === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h6 class="mb-0 fw-bold" style="color: #ffffff;" x-text="toastTitle"></h6>
+                <p class="mb-0 small" style="color: #ffffff; opacity: 0.9;" x-html="toastMessage"></p>
+            </div>
+            <button @click="dismissToast()" class="btn btn-sm btn-link text-white p-0 opacity-75">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
     {{-- ─── PAGE TITLES ─────────────────────────────────────────────────────── --}}
     <div class="page-titles">
         <ol class="breadcrumb">
@@ -176,6 +197,18 @@
                                             </span>
                                         </th>
                                         <th>Role</th>
+                                        <th wire:click="sort('position')" style="cursor:pointer;">
+                                            Position
+                                            <span class="ms-1">
+                                                @if($sortBy === 'position' && $sortDir === 'asc')
+                                                    <i class="fa-regular fa-sort-up"></i>
+                                                @elseif($sortBy === 'position' && $sortDir === 'desc')
+                                                    <i class="fa-regular fa-sort-down"></i>
+                                                @else
+                                                    <i class="fa-regular fa-sort"></i>
+                                                @endif
+                                            </span>
+                                        </th>
                                         <th wire:click="sort('status')" style="cursor:pointer;">
                                             Status
                                             <span class="ms-1">
@@ -247,6 +280,9 @@
                                                             <i class="fa-regular fa-circle-check text-success ms-1"
                                                                 title="Verified"></i>
                                                         @endif
+                                                        @if($user->is_featured_team)
+                                                            <span class="badge bg-primary light border-0 ms-1">Featured</span>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </td>
@@ -260,7 +296,7 @@
                                                     <span class="text-muted">No roles</span>
                                                 @endif
                                             </td>
-                                            {{-- ── Status column (clickable) ── --}}
+                                            <td>{{ $user->position ?? '—' }}</td>
                                             <td>
                                                 <button
                                                     class="badge {{ $user->status === 'active' ? 'badge-success' : 'badge-danger' }} light border-0"
@@ -270,7 +306,6 @@
                                                     {{ ucfirst($user->status ?? 'active') }}
                                                 </button>
                                             </td>
-                                            {{-- ── Verified column (clickable) ── --}}
                                             <td>
                                                 <div class="d-flex align-items-center gap-1">
                                                     <button
@@ -324,7 +359,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="7" class="text-center py-5">
+                                            <td colspan="8" class="text-center py-5">
                                                 <i class="fa-regular fa-users-slash fs-2 d-block mb-2 text-muted"></i>
                                                 <h5>No users found</h5>
                                                 <p class="text-muted">Try adjusting your search filters, or add a new user.
@@ -380,6 +415,9 @@
                             <div>
                                 <h5 class="mb-0">{{ $viewingUser->name }}</h5>
                                 <span class="text-muted">{{ $viewingUser->email }}</span>
+                                @if($viewingUser->is_featured_team)
+                                    <span class="badge bg-primary light border-0 ms-1">Featured</span>
+                                @endif
                             </div>
                         </div>
                         <div class="row g-3">
@@ -394,6 +432,10 @@
                                         <span class="text-muted">No roles</span>
                                     @endif
                                 </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="fw-bold text-muted small">Position</div>
+                                <div>{{ $viewingUser->position ?? '—' }}</div>
                             </div>
                             <div class="col-md-6">
                                 <div class="fw-bold text-muted small">Status</div>
@@ -451,7 +493,6 @@
         </div>
     @endif
 
-    {{-- ── CREATE / EDIT USER MODAL ──────────────────────────────────────── --}}
     @if($showUserModal)
         <div class="modal fade show d-block" id="userModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -462,71 +503,122 @@
                         <button type="button" class="btn-close" wire:click="$set('showUserModal', false)"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Full Name</label>
-                            <input type="text" class="form-control @error('name') is-invalid @enderror" wire:model="name"
-                                placeholder="e.g. Kwame Mensah">
-                            @error('name')
-                            <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">
-                                Email Address
-                                @if($isEditing)
-                                    <span class="text-muted small fw-normal">— changing this resets verification</span>
-                                @endif
-                            </label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror" wire:model="email"
-                                placeholder="e.g. kwame@email.com">
-                            @error('email')
-                            <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">Roles</label>
-                            <div class="d-flex flex-wrap gap-2">
-                                @foreach($availableRoles as $roleOption)
-                                    @php
-                                        $isProtected = $roleOption === $protectedRole;
-                                    @endphp
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" value="{{ $roleOption }}"
-                                            wire:model="selectedRoles" @if($isProtected) disabled @endif
-                                            id="role_{{ $roleOption }}">
-                                        <label class="form-check-label" for="role_{{ $roleOption }}">
-                                            <span class="badge badge-secondary light border-0">
-                                                <i
-                                                    class="fa-regular {{ $roleOption === 'admin' ? 'fa-shield-alt' : ($roleOption === 'agent' ? 'fa-headset' : ($roleOption === 'Super Admin' ? 'fa-crown' : 'fa-user')) }}"></i>
-                                                {{ ucfirst($roleOption) }}
-                                                @if($isProtected)
-                                                    <span class="text-muted small ms-1">(protected)</span>
-                                                @endif
-                                            </span>
-                                        </label>
-                                    </div>
-                                @endforeach
+                        {{-- We'll use a div with wire:key to force re-render --}}
+                        <div wire:key="user-form-{{ $isEditing ? 'edit' : 'create' }}">
+                            {{-- First Name --}}
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small">First Name</label>
+                                    <input type="text" class="form-control @error('first_name') is-invalid @enderror"
+                                        wire:model="first_name" placeholder="e.g. Kwame">
+                                    @error('first_name')
+                                    <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold small">Last Name</label>
+                                    <input type="text" class="form-control @error('last_name') is-invalid @enderror"
+                                        wire:model="last_name" placeholder="e.g. Mensah">
+                                    @error('last_name')
+                                    <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
                             </div>
-                            @error('selectedRoles')
-                            <div class="text-danger small">{{ $message }}</div> @enderror
-                            <small class="text-muted d-block mt-1">The <strong>{{ $protectedRole }}</strong> role cannot be
-                                assigned.</small>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small">
-                                Password
-                                @if($isEditing)
-                                    <span class="text-muted small fw-normal">— leave blank to keep current</span>
-                                @endif
-                            </label>
-                            <input type="password" class="form-control @error('password') is-invalid @enderror"
-                                wire:model="password"
-                                placeholder="{{ $isEditing ? 'Leave blank to keep current' : 'Min. 8 characters' }}">
-                            @error('password')
-                            <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+                            {{-- Email --}}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Email Address</label>
+                                <input type="email" class="form-control @error('email') is-invalid @enderror"
+                                    wire:model="email" placeholder="e.g. kwame@email.com">
+                                @error('email')
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Roles --}}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Roles</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach($assignableRoles as $roleOption)
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" value="{{ $roleOption }}"
+                                                wire:model="selectedRoles" id="role_{{ $roleOption }}">
+                                            <label class="form-check-label" for="role_{{ $roleOption }}">
+                                                <span class="badge badge-secondary light border-0">
+                                                    <i
+                                                        class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : (strtolower($roleOption) === 'agent' ? 'fa-headset' : 'fa-user') }}"></i>
+                                                    {{ $roleOption }}
+                                                </span>
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                @error('selectedRoles')
+                                <div class="text-danger small">{{ $message }}</div> @enderror
+                                <small class="text-muted d-block mt-1">Every user gets the <strong>User</strong> role
+                                    automatically; the <strong>{{ $protectedRole }}</strong> role can't be assigned
+                                    here.</small>
+                            </div>
+
+                            {{-- Position --}}
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small">Job Title</label>
+                                <input type="text" class="form-control @error('position') is-invalid @enderror"
+                                    wire:model="position" list="positionList" placeholder="e.g. Lead Developer">
+                                <datalist id="positionList">
+                                    <option value="CEO / Founder">
+                                    <option value="CTO / Head of Technology">
+                                    <option value="Lead Developer">
+                                    <option value="Senior Developer">
+                                    <option value="Junior Developer">
+                                    <option value="Product Manager">
+                                    <option value="Marketing Manager">
+                                    <option value="Sales Director">
+                                    <option value="UX/UI Designer">
+                                    <option value="DevOps Engineer">
+                                    <option value="Data Scientist">
+                                    <option value="Project Manager">
+                                    <option value="Content Creator">
+                                </datalist>
+                                @error('position')
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Featured Team --}}
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="is_featured_team"
+                                        wire:model="is_featured_team">
+                                    <label class="form-check-label fw-bold small" for="is_featured_team">Featured Team
+                                        Member</label>
+                                    <div class="text-muted small">Display on the public team page.</div>
+                                </div>
+                            </div>
+
+                            @if($isEditing)
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Password <span class="text-muted small fw-normal">—
+                                            leave blank to keep current</span></label>
+                                    <input type="password" class="form-control @error('password') is-invalid @enderror"
+                                        wire:model="password" placeholder="Leave blank to keep current">
+                                    @error('password')
+                                    <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+                            @endif
+
+                            {{-- Validation errors summary --}}
+                            @if($errors->any())
+                                <div class="alert alert-danger">
+                                    <ul class="mb-0">
+                                        @foreach($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button class="btn btn-secondary" wire:click="$set('showUserModal', false)">Cancel</button>
-                        <button class="btn btn-primary" wire:click="saveUser" wire:loading.attr="disabled">
+                        <button type="button" class="btn btn-secondary"
+                            wire:click="$set('showUserModal', false)">Cancel</button>
+                        <button type="button" class="btn btn-primary" wire:click="saveUser" wire:loading.attr="disabled">
                             <span wire:loading.remove><i
                                     class="fa-regular {{ $isEditing ? 'fa-save' : 'fa-user-plus' }}"></i>
                                 {{ $isEditing ? 'Save Changes' : 'Create User' }}</span>
@@ -537,7 +629,6 @@
             </div>
         </div>
     @endif
-
     {{-- ── DELETE USER MODAL ────────────────────────────────────────────── --}}
     @if($showDeleteModal)
         <div class="modal fade show d-block" id="deleteModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
@@ -711,16 +802,37 @@
                             <label class="form-label fw-bold small">Role</label>
                             <select class="default-select style-1 form-control" wire:model="inviteRoleId">
                                 <option value="">— Default (User) —</option>
-                                @foreach($availableRoles as $role)
-                                    @if($role !== $protectedRole)
-                                        <option value="{{ \Spatie\Permission\Models\Role::where('name', $role)->first()->id }}">
-                                            {{ ucfirst($role) }}
-                                        </option>
-                                    @endif
+                                @foreach($assignableRoles as $role)
+                                    <option value="{{ \Spatie\Permission\Models\Role::where('name', $role)->first()->id }}">
+                                        {{ $role }}
+                                    </option>
                                 @endforeach
                             </select>
                             @error('inviteRoleId')
                             <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Job Title</label>
+                            <input type="text" class="form-control @error('invitePosition') is-invalid @enderror"
+                                wire:model="invitePosition" list="invitePositionList" placeholder="e.g. Lead Developer">
+                            <datalist id="invitePositionList">
+                                <option value="CEO / Founder">
+                                <option value="CTO / Head of Technology">
+                                <option value="Lead Developer">
+                                <option value="Senior Developer">
+                                <option value="Junior Developer">
+                                <option value="Product Manager">
+                                <option value="Marketing Manager">
+                                <option value="Sales Director">
+                                <option value="UX/UI Designer">
+                                <option value="DevOps Engineer">
+                                <option value="Data Scientist">
+                                <option value="Project Manager">
+                                <option value="Content Creator">
+                            </datalist>
+                            @error('invitePosition')
+                            <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <small class="text-muted">Optional — pre-fills their job title once they accept.</small>
                         </div>
                         <div class="mb-3">
                             <label class="form-label fw-bold small">Expiry (days)</label>
@@ -745,9 +857,12 @@
 
 </div>
 
-{{-- ─── STYLES – keeps the avatar-text class present ─────────────────────── --}}
+{{-- ─── STYLES ─────────────────────────────────────────────────────────────── --}}
 <style>
-    /* Ensure avatar-text looks like the template */
+    [x-cloak] {
+        display: none !important;
+    }
+
     .avatar-text {
         display: flex;
         align-items: center;
@@ -811,10 +926,56 @@
         opacity: 0.6;
     }
 
-    /* Make status and verify badges look clickable */
     .badge[style*="cursor:pointer"]:hover {
         opacity: 0.8;
         transform: scale(0.97);
         transition: all 0.1s ease;
     }
 </style>
+
+{{-- ─── Alpine Handler ────────────────────────────────────────────────────── --}}
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('userHandler', () => ({
+            toastVisible: false,
+            toastType: 'success',
+            toastTitle: '',
+            toastMessage: '',
+            toastTimeout: null,
+
+            init() {
+                window.addEventListener('livewire:navigate', () => {
+                    this.toastVisible = false;
+                    clearTimeout(this.toastTimeout);
+                });
+            },
+
+            showToast(detail) {
+                this.toastType = detail.type || 'success';
+                this.toastTitle = detail.title || (this.toastType === 'success' ? 'Success!' : 'Error!');
+                this.toastMessage = detail.message || '';
+                this.toastVisible = true;
+                clearTimeout(this.toastTimeout);
+                this.toastTimeout = setTimeout(() => {
+                    this.dismissToast();
+                }, 4000);
+            },
+
+            dismissToast() {
+                this.toastVisible = false;
+                clearTimeout(this.toastTimeout);
+            }
+        }));
+    });
+
+    window.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+            document.querySelectorAll('[x-data]').forEach((el) => {
+                if (el.__x && 'toastVisible' in el.__x.$data) {
+                    el.__x.$data.toastVisible = false;
+                    clearTimeout(el.__x.$data.toastTimeout);
+                }
+            });
+        }
+    });
+</script>

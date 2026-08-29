@@ -397,13 +397,21 @@ class Register extends Component
             return;
         }
 
-        $this->validate();
-
-        // Extra: ensure the invitation hasn’t been used in the meantime
+        // Extra: ensure the invitation hasn't been used or expired in the meantime
         if (!$this->invitation || $this->invitation->accepted_at) {
             $this->addError('email', 'This invitation has already been used.');
             return;
         }
+
+        if ($this->invitation->isExpired()) {
+            $this->addError('email', 'This invitation has expired. Please request a new one.');
+            return;
+        }
+
+        // Force the email to match the invitation, regardless of what was submitted
+        $this->email = $this->invitation->email;
+
+        $this->validate();
 
         // Extra email check
         if (User::where('email', $this->email)->exists()) {
@@ -436,6 +444,11 @@ class Register extends Component
         } else {
             $user->assignRole('User');
         }
+
+        // Carry the position from the invitation onto the new profile
+        $user->profile()->create([
+            'position' => $this->invitation->position,
+        ]);
 
         // Mark invitation as accepted
         $this->invitation->update(['accepted_at' => now()]);

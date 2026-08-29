@@ -89,7 +89,10 @@ Route::get('/forgot-password', ForgotPassword::class)
     ->middleware('guest')
     ->name('password.request');
 
-Route::get('/terms', TermsComponent::class)->name('terms');
+
+
+Route::get('/team', TeamComponent::class)->name('team');
+Route::get('/team/{slug}', TeamDetails::class)->name('team.details');
 Route::get('/privacy', PrivacyComponent::class)->name('privacy');
 
 // Main Public

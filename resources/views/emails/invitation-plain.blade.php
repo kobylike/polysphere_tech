@@ -5,11 +5,14 @@ YOU'RE INVITED TO JOIN {{ $companyName }}
 Hello,
 
 {{ $invitedByName }} has invited you to join {{ $companyName }}.
-You will be assigned the role: {{ $roleName }}.
+You will be assigned the role: {{ $roleName }}@if($positionName), as {{ $positionName }}@endif.
 
 Your invitation details:
 -------------------------------------------
 Email : {{ $invitation->email }}
+@if($positionName)
+    Position : {{ $positionName }}
+@endif
 Expiry: {{ $expiryDate }}
 -------------------------------------------
 

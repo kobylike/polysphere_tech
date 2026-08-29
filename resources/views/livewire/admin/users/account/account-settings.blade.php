@@ -21,10 +21,22 @@
 
     {{-- ─── PROFILE OVERVIEW CARD ─────────────────────────────────────────── --}}
     @php
-        $user = auth()->user();
-        $roles = $user->roles->pluck('name')->map(fn($r) => ucfirst($r))->implode(', ');
-        $statusClass = $user->status === 'active' ? 'success' : 'danger';
-    @endphp
+    $user = auth()->user();
+    $roles = $user->roles->pluck('name')->map(fn($r) => ucfirst($r))->implode(', ');
+    $statusClass = $user->status === 'active' ? 'success' : 'danger';
+    $position = $user->position ?? '—';
+    $isFeatured = $user->is_featured_team ?? false;
+    $isVerified = $user->hasVerifiedEmail();
+
+    // ─── Determine which tick to show based on role ───────────────────
+    $tickFile = 'silver-tick.png' ; // default
+    if ($user->hasRole('Super Admin')) {
+        $tickFile = 'gold-tick.png';
+    } elseif ($user->hasRole('Admin')) {
+        $tickFile = 'blue-tick.png';
+    }
+    $tickUrl = asset('assets/users/images/' . $tickFile);
+@endphp
 
     <div class="container-fluid">
         <div class="card profile-overview">
@@ -41,9 +53,11 @@
                 <div class="clearfix d-xl-flex flex-grow-1">
                     <div class="clearfix pe-md-5">
                         <h3 class="fw-semibold mb-1">{{ $user->name }}
-                            @if($user->hasVerifiedEmail())
-                                <img src="{{ asset('assets/users/images/blue-tick.png') }}" alt="Verified" style="width: 20px;">
-                            @endif
+                            <img src="{{ $tickUrl }}" alt="Role badge" style="width: 20px; height: 20px; display: inline-block; margin-left: 2px;" >
+                            {{-- Email verified indicator (small green check) --}}
+                            {{-- @if($isVerified)
+                                <i class="fa-regular fa-circle-check text-success ms-1" style="font-size: 0.9rem;" title="Email verified"></i>
+                            @endif --}}
                         </h3>
                         <ul class="d-flex flex-wrap fs-6 align-items-center">
                             <li class="me-3 d-inline-flex align-items-center">
@@ -51,6 +65,9 @@
                             </li>
                             <li class="me-3 d-inline-flex align-items-center">
                                 <i class="las la-user-tag me-1 fs-18"></i> {{ $roles ?: 'No role assigned' }}
+                            </li>
+                            <li class="me-3 d-inline-flex align-items-center">
+                                <i class="las la-briefcase me-1 fs-18"></i> {{ $position }}
                             </li>
                             <li class="me-3 d-inline-flex align-items-center">
                                 <i class="las la-calendar me-1 fs-18"></i> Joined {{ $user->created_at->format('M d, Y') }}

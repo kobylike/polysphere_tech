@@ -13,6 +13,7 @@ class Invitation extends Model
         'email',
         'token',
         'role_id',
+        'position',
         'expires_at',
         'accepted_at',
         'invited_by'

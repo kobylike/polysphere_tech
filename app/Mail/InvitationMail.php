@@ -20,18 +20,12 @@ class InvitationMail extends Mailable implements ShouldQueue
     public Invitation $invitation;
     public string $registrationUrl;
 
-    /**
-     * Create a new message instance.
-     */
     public function __construct(Invitation $invitation)
     {
         $this->invitation = $invitation;
         $this->registrationUrl = route('register', ['token' => $invitation->token]);
     }
 
-    /**
-     * Get the message envelope.
-     */
     public function envelope(): Envelope
     {
         return new Envelope(
@@ -39,9 +33,6 @@ class InvitationMail extends Mailable implements ShouldQueue
         );
     }
 
-    /**
-     * Get the message content definition.
-     */
     public function content(): Content
     {
         return new Content(
@@ -52,17 +43,13 @@ class InvitationMail extends Mailable implements ShouldQueue
                 'registrationUrl'   => $this->registrationUrl,
                 'invitedByName'     => $this->invitation->invitedBy->name,
                 'roleName'          => $this->invitation->role?->name ?? 'User',
+                'positionName'      => $this->invitation->position,
                 'expiryDate'        => $this->invitation->expires_at?->format('F j, Y g:i A') ?? 'Never expires',
                 'companyName'       => config('app.name', 'Polysphere Tech'),
             ],
         );
     }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
     public function attachments(): array
     {
         return [];

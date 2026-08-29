@@ -24,6 +24,7 @@ return new class extends Migration
             $table->string('status')->default('active');
             $table->string('phone')->nullable()->unique();
             $table->string('avatar')->nullable();
+            $table->boolean('two_factor_enabled')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

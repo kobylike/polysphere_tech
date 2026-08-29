@@ -17,10 +17,9 @@ return new class extends Migration
 
             // Core profile fields
             $table->text('about_me')->nullable();
-            $table->json('skills')->nullable();          // [{"name":"Laravel","level":8}, ...]
-            $table->json('education')->nullable();       // [{"institution":"MIT","degree":"BS","year":"2020"}, ...]
-            $table->json('social_links')->nullable();    // {"facebook":"...","linkedin":"..."}
-
+            $table->json('skills')->nullable();
+            $table->json('education')->nullable();
+            $table->json('social_links')->nullable();
             // Team display fields (admin managed)
             $table->string('position')->nullable();
             $table->boolean('is_featured_team')->default(false);
