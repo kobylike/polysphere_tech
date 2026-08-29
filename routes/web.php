@@ -21,9 +21,11 @@ use App\Livewire\Admin\Users\UserManagement;
 use App\Livewire\Auth\EmailVerification;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
+use App\Livewire\Auth\PasswordReset;
 use App\Livewire\Auth\PrivacyComponent;
 use App\Livewire\Auth\Register;
 use App\Livewire\Auth\TermsComponent;
+use App\Livewire\Auth\TwoFactorVerification;
 use App\Livewire\Main\AboutComponent;
 use App\Livewire\Main\Blog\Posts\CommentComponent;
 use App\Livewire\Main\Blog\Posts\PostComponent;
@@ -43,6 +45,11 @@ use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+
+
+Route::get('/two-factor-verification', TwoFactorVerification::class)
+    ->middleware('guest')
+    ->name('two-factor.verification');
 
 
 Route::get('/email/verify', EmailVerification::class)
@@ -88,7 +95,9 @@ Route::get('/register/{token?}', Register::class)->name('register');
 Route::get('/forgot-password', ForgotPassword::class)
     ->middleware('guest')
     ->name('password.request');
-
+Route::get('/reset-password/{token}', PasswordReset::class)
+    ->middleware('guest')
+    ->name('password.reset');
 
 
 Route::get('/team', TeamComponent::class)->name('team');

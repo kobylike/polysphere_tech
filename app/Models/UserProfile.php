@@ -19,6 +19,7 @@ class UserProfile extends Model
         'position',
         'is_featured_team',
         'display_order',
+
     ];
 
     protected $casts = [
@@ -26,6 +27,7 @@ class UserProfile extends Model
         'education' => 'array',
         'social_links' => 'array',
         'is_featured_team' => 'boolean',
+
     ];
 
     // ─── Relationships ───────────────────────────────────────────────

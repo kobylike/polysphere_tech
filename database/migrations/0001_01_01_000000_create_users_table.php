@@ -25,6 +25,14 @@ return new class extends Migration
             $table->string('phone')->nullable()->unique();
             $table->string('avatar')->nullable();
             $table->boolean('two_factor_enabled')->default(false);
+            $table->unsignedInteger('failed_login_attempts')->default(0);
+            $table->timestamp('locked_until')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->string('last_login_ip')->nullable();
+            $table->integer('totp_time_offset')->default(0);
+            $table->text('two_factor_secret')->nullable();
+            $table->text('two_factor_recovery_codes')->nullable();
+            $table->timestamp('two_factor_confirmed_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

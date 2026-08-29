@@ -42,22 +42,25 @@ class Login extends Component
     {
         $this->validate();
 
-        if (!Auth::attempt([
+        $user = User::where('email', $this->email)->first();
+
+        if ($user && $user->isLocked()) {
+            $this->addError('email', 'Too many failed attempts. Please try again later.');
+            return;
+        }
+
+        // Validate credentials without logging the user in yet — needed
+        // because 2FA users shouldn't get an authenticated session until
+        // they've passed the verification step.
+        if (!Auth::validate([
             'email'    => $this->email,
             'password' => $this->password,
-        ], $this->remember)) {
+        ])) {
             $this->addError('email', 'Invalid email or password.');
             return;
         }
 
-        /** @var \App\Models\User $user */
-        $user = Auth::user();
-
         if ($user->status === 'suspended') {
-            Auth::logout();
-            session()->invalidate();
-            session()->regenerateToken();
-
             $this->reset(['password']);
             $this->resetErrorBag();
 
@@ -70,9 +73,22 @@ class Login extends Component
             return;
         }
 
+        if ($user->hasTwoFactorEnabled()) {
+            session()->put('login.id', $user->id);
+            session()->put('login.remember', $this->remember);
+            session()->put('login.time', now());
+            session()->put('2fa_attempts', 5);
+
+            return $this->redirect(route('two-factor.verification'));
+        }
+
+        Auth::login($user, $this->remember);
         session()->regenerate();
-        return $this->redirect('dashboard');
-        // return $this->redirectRoute('dashboard', navigate: true);
+
+        $user->updateLastLogin();
+        $user->resetFailedLoginAttempts();
+
+        return $this->redirect(route('dashboard'));
     }
 
     public function render()
