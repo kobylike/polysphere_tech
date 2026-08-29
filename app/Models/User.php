@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -25,7 +25,7 @@ use Spatie\Permission\Traits\HasRoles;
     'email_verification_sent_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasFactory, Notifiable, HasRoles;
 
@@ -35,6 +35,14 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        \Illuminate\Support\Facades\Notification::send(
+            $this,
+            new \App\Notifications\VerifyEmailNotification()
+        );
     }
 
     // ─── Relationships ───────────────────────────────────────────────
@@ -47,6 +55,76 @@ class User extends Authenticatable
     public function publishedPosts()
     {
         return $this->hasMany(Post::class, 'author_id')->where('status', 'published');
+    }
+
+    /**
+     * Get the user's profile.
+     */
+    public function profile()
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
+    // ─── Profile Field Accessors ────────────────────────────────────
+
+    /**
+     * Get the user's "About Me" from their profile.
+     */
+    public function getAboutMeAttribute(): ?string
+    {
+        return $this->profile?->about_me;
+    }
+
+    /**
+     * Get the user's skills from their profile.
+     */
+    public function getSkillsAttribute(): ?array
+    {
+        return $this->profile?->skills;
+    }
+
+    /**
+     * Get the user's education from their profile.
+     */
+    public function getEducationAttribute(): ?array
+    {
+        return $this->profile?->education;
+    }
+
+    /**
+     * Get the user's social links from their profile.
+     */
+    public function getSocialLinksAttribute(): ?array
+    {
+        return $this->profile?->social_links;
+    }
+
+    /**
+     * Get the user's position/title from their profile.
+     */
+    public function getPositionAttribute(): ?string
+    {
+        return $this->profile?->position;
+    }
+
+    /**
+     * Check if the user is a featured team member.
+     */
+    public function getIsFeaturedTeamAttribute(): bool
+    {
+        return $this->profile?->is_featured_team ?? false;
+    }
+
+    /**
+     * Get or create a profile for the user.
+     */
+    public function getOrCreateProfile(): UserProfile
+    {
+        if ($this->profile) {
+            return $this->profile;
+        }
+
+        return $this->profile()->create([]);
     }
 
     // ─── Scopes ──────────────────────────────────────────────────────

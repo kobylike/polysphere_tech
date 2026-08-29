@@ -10,9 +10,15 @@ use App\Livewire\Admin\Projects\ProjectFormComponent;
 use App\Livewire\Admin\Projects\ProjectManagement;
 use App\Livewire\Admin\Services\ServiceFormComponent;
 use App\Livewire\Admin\Services\ServiceManagement;
+use App\Livewire\Admin\Users\Account\AccountSettings;
+use App\Livewire\Admin\Users\Account\ActivityComponent;
+use App\Livewire\Admin\Users\Account\Overview;
+use App\Livewire\Admin\Users\Account\ProfileComponent;
+use App\Livewire\Admin\Users\Account\SecurityComponent;
 use App\Livewire\Admin\Users\PermissionManagement;
 use App\Livewire\Admin\Users\RoleManagement;
 use App\Livewire\Admin\Users\UserManagement;
+use App\Livewire\Auth\EmailVerification;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\PrivacyComponent;
@@ -31,9 +37,27 @@ use App\Livewire\Main\Projects\ProjectDetails;
 use App\Livewire\Main\Services\ServiceComponent;
 use App\Livewire\Main\Services\ServiceDetails;
 use App\Livewire\Main\Team\TeamComponent;
+use App\Livewire\Main\Team\TeamDetails;
 use App\Models\Comment;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+
+
+Route::get('/email/verify', EmailVerification::class)
+    ->middleware('auth')
+    ->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    return redirect()->route('dashboard')->with('success', 'Email verified successfully!');
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function (Request $request) {
+    $request->user()->sendEmailVerificationNotification();
+    return back()->with('success', 'Verification link sent!');
+})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
 Route::get('/comment/verify/{token}', function ($token) {
     $comment = App\Models\Comment::where('verification_token', $token)->firstOrFail();
@@ -76,6 +100,7 @@ Route::get('/faq', FaqComponent::class)->name('faq');
 Route::get('/blog', PostComponent::class)->name('posts');
 Route::get('/blog/{slug}', PostDetails::class)->name('blog.details');
 Route::get('/team', TeamComponent::class)->name('team');
+Route::get('/team-details', TeamDetails::class)->name('team.details');
 Route::get('/projects', ProjectComponent::class)->name('projects');
 Route::get('/projects/{slug}', ProjectDetails::class)->name('project.details');
 Route::get('/services', ServiceComponent::class)->name('services');
@@ -83,7 +108,14 @@ Route::get('/services/{slug}', ServiceDetails::class)->name('service.details');
 
 
 // Admin – protected
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'verified', 'not.suspended'])->group(function () {
+    // Route::get('/activity', ActivityComponent::class)->name('activity');
+    // Route::get('/overview', Overview::class)->name('overview');
+    // Route::get('/profile', ProfileComponent::class)->name('profile');
+    // Route::get('/security', SecurityComponent::class)->name('security');
+    Route::get('/account/{tab?}', AccountSettings::class)
+        ->where('tab', 'overview|profile|security|activity')
+        ->name('account');
     Route::get('/dashboard', DashboardComponent::class)->name('dashboard');
     //User Management
     Route::get('/user-management', UserManagement::class)->name('users');

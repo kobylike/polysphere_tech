@@ -427,6 +427,7 @@ class Register extends Component
             'email'    => $this->email,
             'password' => Hash::make($this->password),
             'phone'    => $fullPhone,
+            'email_verified_at' => now(),
         ]);
 
         // Assign role from invitation

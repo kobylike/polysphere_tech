@@ -358,7 +358,10 @@
         {{-- Right Panel --}}
         <div class="lg:w-1/2 lg:h-full bg-white flex flex-col p-6 lg:p-12 auth-form-panel">
             <div class="w-full max-w-md mx-auto animate-fade-in auth-form-panel-inner">
-                {{ $slot }}
+                @if(isset($slot))
+                    {{ $slot }}
+                @endif
+                @yield('content')
             </div>
         </div>
     </div>
