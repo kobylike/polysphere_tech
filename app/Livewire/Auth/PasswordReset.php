@@ -138,7 +138,7 @@ class PasswordReset extends Component
             ]);
 
             session()->flash('status', 'Your password has been reset successfully.');
-            return $this->redirect(route('dashboard'));
+            $this->redirectRoute('dashboard', navigate: true);
             return;
         }
 

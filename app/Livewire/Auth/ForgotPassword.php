@@ -155,7 +155,7 @@ class ForgotPassword extends Component
 
     public function redirectToLogin()
     {
-        $this->redirectRoute('login', navigate: true);
+        return $this->redirect(route('dashboard'));
     }
 
     public function clearRateLimits()

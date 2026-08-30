@@ -2,7 +2,7 @@
     <div class="animate-fade-in">
         <!-- Back Button -->
         <div class="mb-6">
-            <a href="{{ route('login') }}" wire:navigate
+            <a href="{{ route('login') }}" wire:navigate.hover
                 class="inline-flex items-center text-sm text-gray-600 hover:text-indigo-600 transition-colors">
                 <i class="fas fa-arrow-left mr-2"></i>
                 Back to login
