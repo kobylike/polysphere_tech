@@ -181,6 +181,8 @@
                                                 data-bs-target="#deleteModal{{ $post->id }}">
                                                 <i class="fa-solid fa-trash"></i>
                                             </button>
+                                            <a href="{{ route('posts') }}#post-{{ $post->slug }}" target="_blank"
+                                                class="btn btn-primary btn-sm content-icon"> <i class="fas fa-eye"></i></a>
 
                                             <!-- Delete Confirmation Modal -->
                                             <div class="modal fade" id="deleteModal{{ $post->id }}" tabindex="-1"
@@ -204,12 +206,16 @@
                                                             <button type="button" class="btn btn-danger"
                                                                 wire:click="deleteSingle({{ $post->id }})"
                                                                 data-bs-dismiss="modal">Delete</button>
+
+
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </td>
                                     </tr>
+
+
                                 @empty
                                     <tr>
                                         <td colspan="8" class="text-center py-4">

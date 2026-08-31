@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\CallController;
 use App\Http\Controllers\CKEditorController;
 use App\Livewire\Admin\Blog\Category\CategoryComponent;
 use App\Livewire\Admin\Blog\Category\CategoryFormComponent;
 use App\Livewire\Admin\Blog\Post\PostFormComponent;
 use App\Livewire\Admin\Blog\Post\PostManagement;
 use App\Livewire\Admin\Dashboard\DashboardComponent;
+use App\Livewire\Admin\Messenger\ChatMessengerComponent;
+use App\Livewire\Admin\Messenger\ChatMessengerMain;
 use App\Livewire\Admin\Projects\ProjectFormComponent;
 use App\Livewire\Admin\Projects\ProjectManagement;
 use App\Livewire\Admin\Services\ServiceFormComponent;
@@ -46,6 +49,13 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 
+
+
+Route::middleware(['auth'])->prefix('call')->name('call.')->group(function () {
+    Route::post('initiate', [CallController::class, 'initiate'])->name('initiate');
+    Route::post('signal',   [CallController::class, 'signal'])->name('signal');
+    Route::post('end',      [CallController::class, 'end'])->name('end');
+});
 
 Route::get('/two-factor-verification', TwoFactorVerification::class)
     ->middleware('guest')
@@ -121,10 +131,7 @@ Route::get('/services/{slug}', ServiceDetails::class)->name('service.details');
 
 // Admin – protected
 Route::middleware(['auth', 'verified', 'not.suspended'])->group(function () {
-    // Route::get('/activity', ActivityComponent::class)->name('activity');
-    // Route::get('/overview', Overview::class)->name('overview');
-    // Route::get('/profile', ProfileComponent::class)->name('profile');
-    // Route::get('/security', SecurityComponent::class)->name('security');
+
     Route::get('/account/{tab?}', AccountSettings::class)
         ->where('tab', 'overview|profile|security|activity')
         ->name('account');
@@ -134,7 +141,7 @@ Route::middleware(['auth', 'verified', 'not.suspended'])->group(function () {
     Route::get('/user-managemment/roles', RoleManagement::class)->name('roles');
     Route::get('/user-managemment/permissions', PermissionManagement::class)->name('permissions');
 
-
+    Route::get('/chat-messenger', ChatMessengerMain::class)->name('messenger');
     // Blog Management – using slug for edit
     Route::get('/blog-management', PostManagement::class)->name('manage.posts');
     Route::get('/blog-management/create', PostFormComponent::class)->name('create.post');

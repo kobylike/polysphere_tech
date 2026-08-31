@@ -216,7 +216,8 @@ class PostFormComponent extends Component
             session()->flash('success', 'Post created successfully!');
         }
 
-        return redirect()->route('manage.posts');
+        // return redirect()->route('manage.posts');
+        $this->redirectRoute('manage.posts', navigate: true);
     }
 
     // ─── Computed properties ──────────────────────────────────────

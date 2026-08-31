@@ -21,6 +21,7 @@ class TeamComponent extends Component
             ->select('users.*')
             ->get();
 
+
         return view('livewire.main.team.team-component', [
             'teamMembers' => $teamMembers,
         ]);

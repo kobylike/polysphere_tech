@@ -40,6 +40,7 @@ use PragmaRX\Google2FA\Google2FA;
     'last_login_at',
     'last_login_ip',
     'totp_time_offset',
+    'last_seen_at',
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
@@ -55,6 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'two_factor_enabled' => 'boolean',
             'locked_until' => 'datetime',
             'last_login_at' => 'datetime',
+            'last_seen_at' => 'datetime',
         ];
     }
 
@@ -469,19 +471,29 @@ class User extends Authenticatable implements MustVerifyEmail
         return $initials ?: '?';
     }
     public function sendPasswordResetNotification($token)
-{
-    $resetUrl = url(route('password.reset', [
-        'token' => $token,
-        'email' => $this->email,
-    ], false));
+    {
+        $resetUrl = url(route('password.reset', [
+            'token' => $token,
+            'email' => $this->email,
+        ], false));
 
-    \Illuminate\Support\Facades\Mail::to($this->email)->send(
-        new \App\Mail\ResetPasswordMail(
-            name: $this->name ?? $this->email,
-            email: $this->email,
-            resetUrl: $resetUrl,
-            expiresInMinutes: config('auth.passwords.users.expire', 60),
-        )
-    );
-}
+        \Illuminate\Support\Facades\Mail::to($this->email)->send(
+            new \App\Mail\ResetPasswordMail(
+                name: $this->name ?? $this->email,
+                email: $this->email,
+                resetUrl: $resetUrl,
+                expiresInMinutes: config('auth.passwords.users.expire', 60),
+            )
+        );
+    }
+
+    public function isOnline(): bool
+    {
+        return $this->last_seen_at && $this->last_seen_at->gt(now()->subMinutes(2));
+    }
+
+    public function lastSeenForHumans(): string
+    {
+        return $this->last_seen_at ? $this->last_seen_at->diffForHumans() : 'Unknown';
+    }
 }

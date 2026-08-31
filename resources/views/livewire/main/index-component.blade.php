@@ -478,8 +478,9 @@
                 <h3 class="section-title mt-10">Meet the Team</h3>
             </div>
             <div class="row g-4">
+
                 <!-- Team 1 -->
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
+                {{-- <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
                     <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
                         <figure class="image w-img p-relative">
                             <img src="{{ asset('assets/main/imgs/team/team-1.jpg') }}" alt="CEO">
@@ -498,49 +499,60 @@
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- Team 2 -->
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
-                    <div class="team-area-box p-relative mb-60 wow fadeInDown" data-wow-delay=".9s">
-                        <figure class="image w-img p-relative">
-                            <img src="{{ asset('assets/main/imgs/team/team-2.jpg') }}" alt="CTO">
-                        </figure>
-                        <div class="content">
-                            <div class="author-info">
-                                <h5 class="mb-5"><a href="team-details.html">Sophia Chen</a></h5>
-                                <span>CTO & Co‑Founder</span>
-                            </div>
-                            <div class="social-links p-relative">
-                                <span><i class="icon-share"></i></span>
-                                <ul>
-                                    <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-github"></i></a></li>
-                                </ul>
+                </div> --}}
+                <div class="row g-4">
+                    @forelse($teamMembers as $member)
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-15">
+                            <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
+
+                                <figure class="image w-img p-relative">
+                                    {{-- Image container with fixed aspect ratio 370x451 --}}
+                                    <div class="team-image-wrapper">
+                                        <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}"
+                                            class="team-member-img">
+                                    </div>
+                                </figure>
+                                <div class="content">
+                                    <div class="author-info">
+                                        <h5 class="mb-5">
+                                            <a wire:navigate
+                                                href="{{ route('team.details', ['slug' => $member->username]) }}">
+                                                {{ $member->name }}
+                                            </a>
+                                        </h5>
+                                        <span>{{ $member->position ?? 'Team Member' }}</span>
+                                    </div>
+                                    <div class="social-links p-relative">
+                                        <span><i class="icon-share"></i></span>
+                                        <ul>
+                                            @if($member->social_links['linkedin'] ?? false)
+                                                <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"><i
+                                                            class="fab fa-linkedin-in"></i></a></li>
+                                            @endif
+                                            @if($member->social_links['github'] ?? false)
+                                                <li><a href="{{ $member->social_links['github'] }}" target="_blank"><i
+                                                            class="fab fa-github"></i></a></li>
+                                            @endif
+                                            @if($member->social_links['twitter'] ?? false)
+                                                <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"><i
+                                                            class="fab fa-twitter"></i></a></li>
+                                            @endif
+                                            @if($member->social_links['youtube'] ?? false)
+                                                <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"><i
+                                                            class="fab fa-youtube"></i></a></li>
+                                            @endif
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-                <!-- Team 3 -->
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
-                    <div class="team-area-box p-relative mb-60 wow fadeInRight" data-wow-delay="1s">
-                        <figure class="image w-img p-relative">
-                            <img src="{{ asset('assets/main/imgs/team/team-3.jpg') }}" alt="Head of Delivery">
-                        </figure>
-                        <div class="content">
-                            <div class="author-info">
-                                <h5 class="mb-5"><a href="team-details.html">Marcus Johnson</a></h5>
-                                <span>Head of Delivery</span>
-                            </div>
-                            <div class="social-links p-relative">
-                                <span><i class="icon-share"></i></span>
-                                <ul>
-                                    <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-instagram"></i></a></li>
-                                </ul>
-                            </div>
+                    @empty
+                        <div class="col-12 text-center py-5">
+                            <h4>No team members found.</h4>
                         </div>
-                    </div>
+                    @endforelse
                 </div>
+
             </div>
         </div>
     </section>
@@ -664,80 +676,58 @@
             </div>
             <div class="row g-4">
                 <!-- Blog 1 -->
-                <div class="col-xxl-4 col-xl-4 col-lg-6">
-                    <div class="blog-style-one">
-                        <a class="blog-image w-img" href="news-details.html">
-                            <img src="{{ asset('assets/main/imgs/blog/blog-1.jpg') }}" alt="SaaS trends">
-                        </a>
-                        <div class="blog-content">
-                            <div class="post-meta">
-                                <span class="p-relative"><a href="news-details.html"><i class="fal fa-user"></i> By
-                                        Admin</a></span>
-                                <span class="p-relative"><a href="news-details.html"><i class="fal fa-calendar-alt"></i>
-                                        15 Jan, 2026</a></span>
-                            </div>
-                            <hr>
-                            <h5 class="blog-title mb-30"><a href="news-details.html">Top 5 SaaS Trends Shaping 2026</a>
-                            </h5>
-                            <div class="blog-link">
-                                <a class="primary-btn-5 btn-hover" href="news-details.html">
-                                    Read More &nbsp; | <i class="icon-right-arrow"></i>
-                                    <span style="top: 147.172px; left: 108.5px;"></span>
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Blog 2 -->
-                <div class="col-xxl-4 col-xl-4 col-lg-6">
-                    <div class="blog-style-one">
-                        <a class="blog-image w-img" href="news-details.html">
-                            <img src="{{ asset('assets/main/imgs/blog/blog-2.jpg') }}" alt="Digital transformation">
-                        </a>
-                        <div class="blog-content">
-                            <div class="post-meta">
-                                <span class="p-relative"><a href="news-details.html"><i class="fal fa-user"></i> By
-                                        Admin</a></span>
-                                <span class="p-relative"><a href="news-details.html"><i class="fal fa-calendar-alt"></i>
-                                        10 Jan, 2026</a></span>
-                            </div>
-                            <hr>
-                            <h5 class="blog-title mb-30"><a href="news-details.html">A Practical Guide to Digital
-                                    Transformation</a></h5>
-                            <div class="blog-link">
-                                <a class="primary-btn-5 btn-hover" href="news-details.html">
-                                    Read More &nbsp; | <i class="icon-right-arrow"></i>
-                                    <span style="top: 147.172px; left: 108.5px;"></span>
-                                </a>
+
+
+                @forelse($posts as $index => $post)
+
+
+                    <div class="col-xxl-4 col-xl-4 col-lg-6">
+                        <div class="blog-style-one">
+                            <a class="blog-image w-img" href="news-details.html">
+                                @if($post->featured_image)
+                                    <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}">
+                                @else
+                                    <img src="{{ asset('assets/main/imgs/blog/blog-1.jpg') }}" alt="{{ $post->title }}">
+                                @endif
+
+
+                            </a>
+                            <div class="blog-content">
+                                <div class="post-meta">
+
+                                    <span class="p-relative">
+                                        <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
+                                            <i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }}
+                                        </a></span>
+
+                                    <span class="p-relative">
+                                        <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
+                                            <i class="fal fa-calendar-alt"></i> {{ $post->published_at->format('d M, Y') }}
+                                        </a></span>
+                                </div>
+                                <hr>
+                                <h5 class="blog-title mb-30">
+                                    <a wire:navigate.hover
+                                        href="{{ route('blog.details', $post->slug) }}">{{ $post->title }}</a>
+                                </h5>
+                                <div class="blog-link">
+                                    <a class="primary-btn-5 btn-hover" href="{{ route('blog.details', $post->slug) }}">
+                                        Read More &nbsp; | <i class="icon-right-arrow"></i>
+                                        <span style="top: 147.172px; left: 108.5px;"></span>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- Blog 3 -->
-                <div class="col-xxl-4 col-xl-4 col-lg-6">
-                    <div class="blog-style-one">
-                        <a class="blog-image w-img" href="news-details.html">
-                            <img src="{{ asset('assets/main/imgs/blog/blog-3.jpg') }}" alt="Serverless">
-                        </a>
-                        <div class="blog-content">
-                            <div class="post-meta">
-                                <span class="p-relative"><a href="news-details.html"><i class="fal fa-user"></i> By
-                                        Admin</a></span>
-                                <span class="p-relative"><a href="news-details.html"><i class="fal fa-calendar-alt"></i>
-                                        5 Jan, 2026</a></span>
-                            </div>
-                            <hr>
-                            <h5 class="blog-title mb-30"><a href="news-details.html">Why Serverless is the Future of
-                                    SaaS</a></h5>
-                            <div class="blog-link">
-                                <a class="primary-btn-5 btn-hover" href="news-details.html">
-                                    Read More &nbsp; | <i class="icon-right-arrow"></i>
-                                    <span style="top: 147.172px; left: 108.5px;"></span>
-                                </a>
-                            </div>
-                        </div>
+
+                @empty
+                    <div class="text-center py-5">
+                        <h4>No blog posts found.</h4>
+                        <p>Check back later for new content.</p>
                     </div>
-                </div>
+                @endforelse
+
+
             </div>
         </div>
     </section>

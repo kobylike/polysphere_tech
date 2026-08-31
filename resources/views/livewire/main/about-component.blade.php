@@ -301,70 +301,54 @@
                 <h3 class="section-title mt-10">Meet the Team</h3>
             </div>
             <div class="row g-4">
-                <!-- Team 1: CEO -->
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
-                    <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
-                        <figure class="image w-img p-relative">
-                            <img src="{{ asset('assets/main/imgs/team/team-1.jpg') }}" alt="Alexander Reed - CEO">
-                        </figure>
-                        <div class="content">
-                            <div class="author-info">
-                                <h5 class="mb-5"><a href="team-details.html">Alexander Reed</a></h5>
-                                <span>CEO & Co‑Founder</span>
-                            </div>
-                            <div class="social-links p-relative">
-                                <span><i class="icon-share"></i></span>
-                                <ul>
-                                    <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-twitter"></i></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Team 2: CTO -->
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
-                    <div class="team-area-box p-relative mb-60 wow fadeInDown" data-wow-delay=".9s">
-                        <figure class="image w-img p-relative">
-                            <img src="{{ asset('assets/main/imgs/team/team-2.jpg') }}" alt="Sophia Chen - CTO">
-                        </figure>
-                        <div class="content">
-                            <div class="author-info">
-                                <h5 class="mb-5"><a href="team-details.html">Sophia Chen</a></h5>
-                                <span>CTO & Co‑Founder</span>
-                            </div>
-                            <div class="social-links p-relative">
-                                <span><i class="icon-share"></i></span>
-                                <ul>
-                                    <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-github"></i></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Team 3: Head of Delivery -->
-                <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
-                    <div class="team-area-box p-relative mb-60 wow fadeInRight" data-wow-delay="1s">
-                        <figure class="image w-img p-relative">
-                            <img src="{{ asset('assets/main/imgs/team/team-3.jpg') }}"
-                                alt="Marcus Johnson - Head of Delivery">
-                        </figure>
-                        <div class="content">
-                            <div class="author-info">
-                                <h5 class="mb-5"><a href="team-details.html">Marcus Johnson</a></h5>
-                                <span>Head of Delivery</span>
-                            </div>
-                            <div class="social-links p-relative">
-                                <span><i class="icon-share"></i></span>
-                                <ul>
-                                    <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-instagram"></i></a></li>
-                                </ul>
+                @forelse($teamMembers as $member)
+                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-15">
+                        <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
+
+                            <figure class="image w-img p-relative">
+                                {{-- Image container with fixed aspect ratio 370x451 --}}
+                                <div class="team-image-wrapper">
+                                    <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}" class="team-member-img">
+                                </div>
+                            </figure>
+                            <div class="content">
+                                <div class="author-info">
+                                    <h5 class="mb-5">
+                                        <a wire:navigate href="{{ route('team.details', ['slug' => $member->username]) }}">
+                                            {{ $member->name }}
+                                        </a>
+                                    </h5>
+                                    <span>{{ $member->position ?? 'Team Member' }}</span>
+                                </div>
+                                <div class="social-links p-relative">
+                                    <span><i class="icon-share"></i></span>
+                                    <ul>
+                                        @if($member->social_links['linkedin'] ?? false)
+                                            <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"><i
+                                                        class="fab fa-linkedin-in"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['github'] ?? false)
+                                            <li><a href="{{ $member->social_links['github'] }}" target="_blank"><i
+                                                        class="fab fa-github"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['twitter'] ?? false)
+                                            <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"><i
+                                                        class="fab fa-twitter"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['youtube'] ?? false)
+                                            <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"><i
+                                                        class="fab fa-youtube"></i></a></li>
+                                        @endif
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                @empty
+                    <div class="col-12 text-center py-5">
+                        <h4>No team members found.</h4>
+                    </div>
+                @endforelse
             </div>
         </div>
     </section>

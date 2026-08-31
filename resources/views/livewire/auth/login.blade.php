@@ -1,10 +1,10 @@
 <div>
     {{-- Back to home --}}
     <div class="mb-6">
-        <a href="{{ url('/') }}" wire:navigate.hover
+        <a href="{{ route('index') }}"
             class="inline-flex items-center text-sm text-gray-500 hover:text-polysphere-600 transition-colors">
             <i class="fas fa-arrow-left mr-2"></i>
-            Back to home
+            Back to Main Website
         </a>
     </div>
 

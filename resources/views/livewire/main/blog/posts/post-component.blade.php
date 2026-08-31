@@ -31,7 +31,7 @@
                 <div class="col-xxl-8 col-xl-8 col-lg-8">
 
                     @forelse($posts as $post)
-                        <div class="blog-style-one mb-30">
+                        <div id="post-{{ $post->slug }}" class="blog-style-one mb-30">
                             <a class="blog-image w-img" wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
                                 @if($post->featured_image)
                                     <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}">
