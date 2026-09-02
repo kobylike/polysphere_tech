@@ -463,9 +463,17 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getAvatarUrlAttribute(): string
     {
-        return $this->avatar
-            ? asset('storage/' . $this->avatar)
-            : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=3b82f6&color=fff&size=100';
+        if ($this->avatar) {
+            // Use the updated_at timestamp to bust cache when avatar changes
+            $version = $this->updated_at ? $this->updated_at->timestamp : time();
+            return asset('storage/' . $this->avatar) . '?v=' . $version;
+        }
+
+        // Fallback to UI‑avatars – also bust cache when name changes
+        $name = urlencode($this->name);
+        // Use a hash of the name and updated_at to force refresh when name changes
+        $hash = md5($this->name . ($this->updated_at ? $this->updated_at->timestamp : time()));
+        return 'https://ui-avatars.com/api/?name=' . $name . '&background=3b82f6&color=fff&size=100&v=' . $hash;
     }
 
     public function getInitialsAttribute(): string

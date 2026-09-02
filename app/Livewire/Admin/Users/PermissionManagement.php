@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Admin\Users;
 
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -46,6 +48,21 @@ class PermissionManagement extends Component
     public mixed $viewingPermission = null;
 
     // ──────────────────────────────────────────────────────────────────────
+    // Authorization
+    // ──────────────────────────────────────────────────────────────────────
+
+    public function mount(): void
+    {
+        /** @var \App\Models\User */
+        $user = Auth::user();
+
+        // Only Super Admin can manage permissions
+        if (!$user->can('manage-permissions')) {
+            abort(403, 'You do not have permission to manage permissions.');
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Lifecycle
     // ──────────────────────────────────────────────────────────────────────
 
@@ -82,6 +99,7 @@ class PermissionManagement extends Component
 
     public function openCreate(): void
     {
+        $this->authorize('manage-permissions');
         $this->resetForm();
         $this->isEditing = false;
         $this->showPermissionModal = true;
@@ -89,6 +107,7 @@ class PermissionManagement extends Component
 
     public function openEdit(int $id): void
     {
+        $this->authorize('manage-permissions');
         $permission = Permission::findOrFail($id);
         $this->editingId = $id;
         $this->name = $permission->name;
@@ -99,12 +118,14 @@ class PermissionManagement extends Component
 
     public function viewPermission(int $id): void
     {
+        $this->authorize('manage-permissions');
         $this->viewingPermission = Permission::with('roles')->findOrFail($id);
         $this->showViewModal = true;
     }
 
     public function confirmDelete(int $id): void
     {
+        $this->authorize('manage-permissions');
         $permission = Permission::findOrFail($id);
         // Prevent deletion if the permission is in use
         if ($permission->roles()->count() > 0) {
@@ -117,6 +138,7 @@ class PermissionManagement extends Component
 
     public function confirmBulkDelete(): void
     {
+        $this->authorize('manage-permissions');
         if (empty($this->selectedPermissions)) return;
         // Filter out permissions that are in use
         $this->selectedPermissions = array_filter($this->selectedPermissions, function ($id) {
@@ -148,6 +170,7 @@ class PermissionManagement extends Component
 
     public function savePermission(): void
     {
+        $this->authorize('manage-permissions');
         $this->validate();
 
         $data = [
@@ -178,6 +201,7 @@ class PermissionManagement extends Component
 
     public function deletePermission(): void
     {
+        $this->authorize('manage-permissions');
         $permission = Permission::findOrFail($this->deletingId);
         // Extra safety check
         if ($permission->roles()->count() > 0) {
@@ -197,6 +221,7 @@ class PermissionManagement extends Component
 
     public function bulkDelete(): void
     {
+        $this->authorize('manage-permissions');
         // Sanitize: only delete permissions not in use
         $ids = array_filter($this->selectedPermissions, function ($id) {
             $perm = Permission::find($id);

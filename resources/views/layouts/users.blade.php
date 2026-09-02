@@ -419,7 +419,9 @@
 
     @vite('resources/js/app.js')
 
-    {{-- ── Real-time bridge (Echo → Livewire) ──────────────────────────── --}}
+
+
+
     <script>
         (function () {
             const userId = {{ Auth::id() ?? 'null' }};
@@ -441,28 +443,10 @@
                         });
                     })
 
-                    // ── 👤 Profile updated → update Alpine navbar state ──────────
-                    .listen('.profile.updated', (data) => {
-                        window.dispatchEvent(
-                            new CustomEvent('profile-updated', { detail: data.profile ?? data })
-                        );
-                    })
 
-                    // ── 💰 Wallet balance updated → tell Livewire components ─────
-                    .listen('.wallet.updated', (data) => {
-                        Livewire.dispatch('wallet-updated', {
-                            balance: data.balance,
-                            formatted_balance: data.formatted_balance,
-                        });
-                    });
-                window.Echo.channel('network-radar')
-                    .listen('.radar.updated', (data) => {
-                        Livewire.dispatch('radar-updated', {
-                            networkSpeeds: data.networkSpeeds,
-                            networkAdvice: data.networkAdvice,
-                            updatedAt: data.updatedAt,
-                        });
-                    });
+
+
+
             }
 
             // Run once DOM + Vite bundle are ready
@@ -492,14 +476,20 @@
     reaching into "the" Livewire component, broadcast a global Livewire
     event. Every mounted chat component listens for that event via
     #[On(...)] and decides FOR ITSELF whether it's relevant.
+
+    UPDATE: added subscribeToOwnProfile() so the logged-in user's own
+    avatar/profile changes (broadcast on App.Models.User.{yourId}) are
+    actually picked up — previously nothing subscribed to that channel
+    for yourself, only for friends via subscribeToProfileUpdates().
     ═══════════════════════════════════════════════════════════════════ --}}
     <script>
         window.ChatBridge = window.ChatBridge || (function () {
             const userId = {{ Auth::id() ?? 'null' }};
 
             let notificationChannel = null;
-            const chatChannels = {};     // channelName -> Echo channel instance
-            const profileChannels = {};  // friendId    -> Echo channel instance
+            let ownProfileChannel = null;     // ← NEW: own profile channel
+            const chatChannels = {};          // channelName -> Echo channel instance
+            const profileChannels = {};       // friendId    -> Echo channel instance
 
             function ensureEcho(retryFn) {
                 if (typeof window.Echo === 'undefined') {
@@ -518,6 +508,43 @@
                 notificationChannel.listen('.message.sent', () => {
                     // Any mounted chat widget refreshes its own friend list.
                     window.Livewire?.dispatch('friend-list-refresh-needed');
+                });
+            }
+
+            // ── NEW: subscribe the logged-in user to THEIR OWN profile
+            // channel. This is exactly the channel App\Events\ProfileUpdated
+            // broadcasts on (App.Models.User.{id}), and it's already
+            // authorized in routes/channels.php. We were only ever
+            // subscribing to this channel for *friends* — never for
+            // ourselves — so our own avatar/profile updates had no
+            // listener to catch them.
+            function subscribeToOwnProfile() {
+                if (!userId) return;
+                if (!ensureEcho(subscribeToOwnProfile)) return;
+                if (ownProfileChannel) return; // already subscribed
+
+                const channelName = `App.Models.User.${userId}`;
+                ownProfileChannel = window.Echo.private(channelName);
+
+                ownProfileChannel.listen('.profile.updated', (e) => {
+                    // e = { user: {...}, profile: {...}, profile_data: {...} }
+                    // Keep the same event shape the old (broken) listener
+                    // used to hand out (`data.profile ?? data`), so any
+                    // existing Alpine/JS bound to window `profile-updated`
+                    // keeps working without changes.
+                    window.dispatchEvent(
+                        new CustomEvent('profile-updated', { detail: e.profile ?? e.user ?? e })
+                    );
+
+                    // Also give any Livewire component (e.g. navbar) a
+                    // chance to react without a full reload.
+                    window.Livewire?.dispatch('own-profile-updated', {
+                        userId: e.user?.id,
+                        name: e.user?.name,
+                        avatarUrl: e.user?.avatar_url,
+                        profile: e.profile,
+                        profileData: e.profile_data,
+                    });
                 });
             }
 
@@ -562,21 +589,35 @@
                     const channelName = `App.Models.User.${friendId}`;
                     const channel = window.Echo.private(channelName);
                     channel.listen('.profile.updated', (e) => {
+                        // FIXED: broadcastWith() nests these under `user`,
+                        // not at the top level — e.user_id / e.avatar_url
+                        // were always undefined before.
                         window.Livewire?.dispatch('friend-profile-updated', {
-                            userId: e.user_id,
-                            name: e.name,
-                            avatarUrl: e.avatar_url,
+                            userId: e.user?.id,
+                            name: e.user?.name,
+                            avatarUrl: e.user?.avatar_url,
                         });
                     });
                     profileChannels[friendId] = channel;
                 });
             }
 
-            return { subscribeToNotifications, subscribeToChat, subscribeToProfileUpdates };
+            return {
+                subscribeToNotifications,
+                subscribeToOwnProfile,
+                subscribeToChat,
+                subscribeToProfileUpdates,
+            };
         })();
 
-        document.addEventListener('DOMContentLoaded', () => window.ChatBridge.subscribeToNotifications());
-        document.addEventListener('livewire:navigated', () => window.ChatBridge.subscribeToNotifications());
+        document.addEventListener('DOMContentLoaded', () => {
+            window.ChatBridge.subscribeToNotifications();
+            window.ChatBridge.subscribeToOwnProfile();   // ← NEW
+        });
+        document.addEventListener('livewire:navigated', () => {
+            window.ChatBridge.subscribeToNotifications();
+            window.ChatBridge.subscribeToOwnProfile();   // ← NEW
+        });
     </script>
 
     @stack('scripts')

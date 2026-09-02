@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class ProjectFormComponent extends Component
@@ -35,7 +36,7 @@ class ProjectFormComponent extends Component
     public $start_year = '';
     public $end_year = '';
 
-    // ─── NEW: Client & Company ─────────────────────────────────────
+    // Client & Company
     public $client = '';
     public $company = '';
 
@@ -106,11 +107,14 @@ class ProjectFormComponent extends Component
         ];
     }
 
+    // ─── Mount ──────────────────────────────────────────────────────────────
+
     public function mount($id = null)
     {
         if ($id) {
             $this->projectId = $id;
             $project = Project::with('service')->findOrFail($id);
+            $this->authorize('update', $project);
 
             $this->title = $project->title;
             $this->slug = $project->slug;
@@ -126,7 +130,6 @@ class ProjectFormComponent extends Component
             $this->video_url = $project->video_url;
             $this->start_year = $project->start_year;
             $this->end_year = $project->end_year;
-            // ─── NEW: load client & company ─────────────────────
             $this->client = $project->client ?? '';
             $this->company = $project->company ?? '';
             $this->custom_fields = $project->custom_fields ?? [];
@@ -143,6 +146,8 @@ class ProjectFormComponent extends Component
             } else {
                 $this->videoInputType = 'url';
             }
+        } else {
+            $this->authorize('create', Project::class);
         }
 
         if (empty($this->slug) && !empty($this->title)) {
@@ -150,7 +155,7 @@ class ProjectFormComponent extends Component
         }
     }
 
-    // ─── Helper: generate unique slug ──────────────────────────────
+    // ─── Helper: generate unique slug ──────────────────────────────────────
 
     protected function generateUniqueSlug($baseSlug)
     {
@@ -164,12 +169,16 @@ class ProjectFormComponent extends Component
         return $slug;
     }
 
+    // ─── Update slug when title changes ────────────────────────────────────
+
     public function updatedTitle($value)
     {
         if (empty($this->slug) || $this->slug === Str::slug($value)) {
             $this->slug = $this->generateUniqueSlug(Str::slug($value));
         }
     }
+
+    // ─── Video input type change ───────────────────────────────────────────
 
     public function updatedVideoInputType($value)
     {
@@ -181,6 +190,8 @@ class ProjectFormComponent extends Component
         }
     }
 
+    // ─── Remove additional image ──────────────────────────────────────────
+
     public function removeAdditionalImage($index)
     {
         if (isset($this->existing_additional_images[$index])) {
@@ -189,6 +200,8 @@ class ProjectFormComponent extends Component
             $this->existing_additional_images = array_values($this->existing_additional_images);
         }
     }
+
+    // ─── Remove video file ─────────────────────────────────────────────────
 
     public function removeVideoFile()
     {
@@ -200,9 +213,19 @@ class ProjectFormComponent extends Component
         }
     }
 
+    // ─── Save ──────────────────────────────────────────────────────────────
+
     public function save()
     {
         $this->validate();
+
+        // Check permission based on edit or create
+        if ($this->projectId) {
+            $project = Project::findOrFail($this->projectId);
+            $this->authorize('update', $project);
+        } else {
+            $this->authorize('create', Project::class);
+        }
 
         // Handle featured image
         $featuredPath = null;
@@ -282,7 +305,6 @@ class ProjectFormComponent extends Component
         if ($videoFilePath) {
             $data['video_file'] = $videoFilePath;
         }
-        // If no new video file, we do NOT set 'video_file' so the existing one stays.
 
         if ($this->projectId) {
             $project = Project::findOrFail($this->projectId);
@@ -296,10 +318,14 @@ class ProjectFormComponent extends Component
         return redirect()->route('admin.projects.index');
     }
 
+    // ─── Get active services ─────────────────────────────────────────────
+
     public function getServicesProperty()
     {
         return Service::where('status', 'active')->orderBy('name')->get();
     }
+
+    // ─── Render ────────────────────────────────────────────────────────────
 
     public function render()
     {

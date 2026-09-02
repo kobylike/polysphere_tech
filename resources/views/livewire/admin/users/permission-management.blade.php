@@ -20,9 +20,11 @@
             <li class="breadcrumb-item active"><a href="javascript:void(0)">Permissions</a></li>
         </ol>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                <i class="fa-regular fa-plus me-1"></i> New Permission
-            </button>
+            @can('manage-permissions')
+                <button class="btn btn-primary btn-sm" wire:click="openCreate">
+                    <i class="fa-regular fa-plus me-1"></i> New Permission
+                </button>
+            @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
                 <i class="fa-regular fa-undo me-1"></i> Reset
             </button>
@@ -100,9 +102,11 @@
                 <div class="col-xl-4 col-lg-6 text-end">
                     <div class="d-flex flex-wrap gap-1 justify-content-end">
                         <span class="badge bg-dark text-white p-2">{{ count($selectedPermissions) }} selected</span>
-                        <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
-                            <i class="fa-regular fa-trash"></i> Delete
-                        </button>
+                        @can('manage-permissions')
+                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
+                                <i class="fa-regular fa-trash"></i> Delete
+                            </button>
+                        @endcan
                     </div>
                 </div>
             @endif
@@ -217,25 +221,27 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    <button class="btn btn-sm btn-primary"
-                                                        wire:click="viewPermission({{ $perm->id }})" title="View">
-                                                        <i class="fa-regular fa-eye"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-warning"
-                                                        wire:click="openEdit({{ $perm->id }})" title="Edit">
-                                                        <i class="fa-regular fa-pen"></i>
-                                                    </button>
-                                                    @if(!$isUsed)
-                                                        <button class="btn btn-sm btn-danger"
-                                                            wire:click="confirmDelete({{ $perm->id }})" title="Delete">
-                                                            <i class="fa-regular fa-trash"></i>
+                                                    @can('manage-permissions')
+                                                        <button class="btn btn-sm btn-primary"
+                                                            wire:click="viewPermission({{ $perm->id }})" title="View">
+                                                            <i class="fa-regular fa-eye"></i>
                                                         </button>
-                                                    @else
-                                                        <button class="btn btn-sm btn-secondary" disabled
-                                                            title="Used by roles — cannot delete">
-                                                            <i class="fa-regular fa-lock"></i>
+                                                        <button class="btn btn-sm btn-warning"
+                                                            wire:click="openEdit({{ $perm->id }})" title="Edit">
+                                                            <i class="fa-regular fa-pen"></i>
                                                         </button>
-                                                    @endif
+                                                        @if(!$isUsed)
+                                                            <button class="btn btn-sm btn-danger"
+                                                                wire:click="confirmDelete({{ $perm->id }})" title="Delete">
+                                                                <i class="fa-regular fa-trash"></i>
+                                                            </button>
+                                                        @else
+                                                            <button class="btn btn-sm btn-secondary" disabled
+                                                                title="Used by roles — cannot delete">
+                                                                <i class="fa-regular fa-lock"></i>
+                                                            </button>
+                                                        @endif
+                                                    @endcan
                                                 </div>
                                             </td>
                                         </tr>
@@ -246,9 +252,11 @@
                                                 <h5>No permissions found</h5>
                                                 <p class="text-muted">Try adjusting your search, or create your first
                                                     permission.</p>
-                                                <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                                                    <i class="fa-regular fa-plus"></i> Create First Permission
-                                                </button>
+                                                @can('manage-permissions')
+                                                    <button class="btn btn-primary btn-sm" wire:click="openCreate">
+                                                        <i class="fa-regular fa-plus"></i> Create First Permission
+                                                    </button>
+                                                @endcan
                                             </td>
                                         </tr>
                                     @endforelse
@@ -318,10 +326,12 @@
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
-                        <button class="btn btn-primary"
-                            wire:click="openEdit({{ $viewingPermission->id }}); $set('showViewModal', false)">
-                            <i class="fa-regular fa-pen"></i> Edit Permission
-                        </button>
+                        @can('manage-permissions')
+                            <button class="btn btn-primary"
+                                wire:click="openEdit({{ $viewingPermission->id }}); $set('showViewModal', false)">
+                                <i class="fa-regular fa-pen"></i> Edit Permission
+                            </button>
+                        @endcan
                     </div>
                 </div>
             </div>

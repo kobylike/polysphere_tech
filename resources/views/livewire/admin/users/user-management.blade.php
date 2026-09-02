@@ -1,6 +1,6 @@
 <div x-data="userHandler()" @notify.window="showToast($event.detail)" class="position-relative">
 
-    {{-- ─── Toast ────────────────────────────────────────────────────────── --}}
+    {{-- Toast --}}
     <div x-show="toastVisible" x-cloak x-transition:enter.duration.300ms.opacity.scale
         x-transition:leave.duration.200ms.opacity.scale class="position-fixed top-0 end-0 p-3"
         style="z-index: 9999; max-width: 420px; width: 100%;">
@@ -20,7 +20,7 @@
         </div>
     </div>
 
-    {{-- ─── PAGE TITLES ─────────────────────────────────────────────────────── --}}
+    {{-- PAGE TITLES --}}
     <div class="page-titles">
         <ol class="breadcrumb">
             <li>
@@ -41,19 +41,21 @@
             <li class="breadcrumb-item active"><a href="javascript:void(0)">User Management</a></li>
         </ol>
         <div class="d-flex gap-2">
-            <button class="btn btn-primary btn-sm" wire:click="openInviteModal">
-                <i class="fa-regular fa-envelope me-1"></i> Invite
-            </button>
-            <button class="btn btn-secondary btn-sm" wire:click="openCreate">
-                <i class="fa-regular fa-user-plus me-1"></i> Add User
-            </button>
+            @can('create', App\Models\User::class)
+                <button class="btn btn-primary btn-sm" wire:click="openInviteModal">
+                    <i class="fa-regular fa-envelope me-1"></i> Invite
+                </button>
+                <button class="btn btn-secondary btn-sm" wire:click="openCreate">
+                    <i class="fa-regular fa-user-plus me-1"></i> Add User
+                </button>
+            @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
                 <i class="fa-regular fa-undo me-1"></i> Reset
             </button>
         </div>
     </div>
 
-    {{-- ─── STATS ROW ──────────────────────────────────────────────────────── --}}
+    {{-- STATS ROW --}}
     <div class="container-fluid">
         <div class="row g-3 mb-3">
             <div class="col-xl-3 col-sm-6">
@@ -102,7 +104,7 @@
             </div>
         </div>
 
-        {{-- ─── SPOTLIGHT SUMMARY STRIP ────────────────────────────────────── --}}
+        {{-- SPOTLIGHT SUMMARY STRIP --}}
         <div class="row g-3 mb-3">
             <div class="col-12">
                 <div class="card border-0"
@@ -132,7 +134,7 @@
             </div>
         </div>
 
-        {{-- ─── FILTERS & BULK BAR ─────────────────────────────────────────── --}}
+        {{-- FILTERS & BULK BAR --}}
         <div class="row align-items-center mb-3">
             <div class="col-xl-8 col-lg-6">
                 <div class="d-flex flex-wrap gap-2">
@@ -174,20 +176,24 @@
                 <div class="col-xl-4 col-lg-6 text-end">
                     <div class="d-flex flex-wrap gap-1 justify-content-end">
                         <span class="badge bg-dark text-white p-2">{{ count($selectedUsers) }} selected</span>
-                        <button class="btn btn-success btn-sm" wire:click="bulkActivate"><i class="fa-regular fa-check"></i>
-                            Activate</button>
-                        <button class="btn btn-warning btn-sm" wire:click="bulkSuspend"><i class="fa-regular fa-ban"></i>
-                            Suspend</button>
-                        <button class="btn btn-info btn-sm text-white" wire:click="confirmBulkVerifyResend"><i
-                                class="fa-regular fa-paper-plane"></i> Resend Verification</button>
-                        <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete"><i
-                                class="fa-regular fa-trash"></i> Delete</button>
+                        @can('update', App\Models\User::class)
+                            <button class="btn btn-success btn-sm" wire:click="bulkActivate"><i class="fa-regular fa-check"></i>
+                                Activate</button>
+                            <button class="btn btn-warning btn-sm" wire:click="bulkSuspend"><i class="fa-regular fa-ban"></i>
+                                Suspend</button>
+                            <button class="btn btn-info btn-sm text-white" wire:click="confirmBulkVerifyResend"><i
+                                    class="fa-regular fa-paper-plane"></i> Resend Verification</button>
+                        @endcan
+                        @can('delete', App\Models\User::class)
+                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete"><i
+                                    class="fa-regular fa-trash"></i> Delete</button>
+                        @endcan
                     </div>
                 </div>
             @endif
         </div>
 
-        {{-- ─── TABLE ──────────────────────────────────────────────────────── --}}
+        {{-- TABLE --}}
         <div class="row">
             <div class="col-xl-12">
                 <div class="card">
@@ -196,12 +202,14 @@
                             <div class="tbl-caption">
                                 <h4 class="heading mb-0">Users</h4>
                                 <div>
-                                    <button class="btn btn-primary btn-sm" wire:click="openInviteModal">
-                                        <i class="fa-regular fa-envelope"></i> Invite
-                                    </button>
-                                    <button class="btn btn-secondary btn-sm" wire:click="openCreate">
-                                        <i class="fa-regular fa-user-plus"></i> Add User
-                                    </button>
+                                    @can('create', App\Models\User::class)
+                                        <button class="btn btn-primary btn-sm" wire:click="openInviteModal">
+                                            <i class="fa-regular fa-envelope"></i> Invite
+                                        </button>
+                                        <button class="btn btn-secondary btn-sm" wire:click="openCreate">
+                                            <i class="fa-regular fa-user-plus"></i> Add User
+                                        </button>
+                                    @endcan
                                 </div>
                             </div>
                             <table class="table">
@@ -342,42 +350,48 @@
                                             </td>
                                             <td>{{ $user->position ?? '—' }}</td>
                                             <td class="text-center">
-                                                <button
-                                                    class="btn btn-sm {{ $isSpotlight ? 'btn-warning' : 'btn-outline-secondary' }}"
-                                                    style="border-radius: 50%; width: 34px; height: 34px; padding: 0;"
-                                                    wire:click="confirmToggleSpotlight({{ $user->id }})"
-                                                    title="{{ $isSpotlight ? 'In spotlight — click to remove' : 'Click to add to spotlight' }}">
-                                                    <i class="fa-{{ $isSpotlight ? 'solid' : 'regular' }} fa-star"></i>
-                                                </button>
-                                            </td>
-                                            <td>
-                                                <button
-                                                    class="badge {{ $user->status === 'active' ? 'badge-success' : 'badge-danger' }} light border-0"
-                                                    style="cursor:pointer; border:none;"
-                                                    wire:click="confirmToggleStatus({{ $user->id }})"
-                                                    title="Click to toggle status">
-                                                    {{ ucfirst($user->status ?? 'active') }}
-                                                </button>
-                                            </td>
-                                            <td>
-                                                <div class="d-flex align-items-center gap-1">
+                                                @can('update', $user)
                                                     <button
-                                                        class="badge {{ $isVerified ? 'badge-success' : 'badge-secondary' }} light border-0"
-                                                        style="cursor:pointer; border:none;"
-                                                        wire:click="confirmToggleVerify({{ $user->id }})"
-                                                        title="{{ $isVerified ? 'Verified – click to unverify' : 'Unverified – click to verify' }}">
-                                                        <i
-                                                            class="fa-regular {{ $isVerified ? 'fa-shield-check' : 'fa-shield-halved' }}"></i>
-                                                        {{ $isVerified ? 'Verified' : 'Unverified' }}
+                                                        class="btn btn-sm {{ $isSpotlight ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                        style="border-radius: 50%; width: 34px; height: 34px; padding: 0;"
+                                                        wire:click="confirmToggleSpotlight({{ $user->id }})"
+                                                        title="{{ $isSpotlight ? 'In spotlight — click to remove' : 'Click to add to spotlight' }}">
+                                                        <i class="fa-{{ $isSpotlight ? 'solid' : 'regular' }} fa-star"></i>
                                                     </button>
-                                                    @if(!$isVerified)
-                                                        <button class="btn btn-sm btn-outline-info"
-                                                            wire:click="resendVerification({{ $user->id }})"
-                                                            title="Resend verification">
-                                                            <i class="fa-regular fa-paper-plane"></i>
+                                                @endcan
+                                            </td>
+                                            <td>
+                                                @can('toggleStatus', $user)
+                                                    <button
+                                                        class="badge {{ $user->status === 'active' ? 'badge-success' : 'badge-danger' }} light border-0"
+                                                        style="cursor:pointer; border:none;"
+                                                        wire:click="confirmToggleStatus({{ $user->id }})"
+                                                        title="Click to toggle status">
+                                                        {{ ucfirst($user->status ?? 'active') }}
+                                                    </button>
+                                                @endcan
+                                            </td>
+                                            <td>
+                                                @can('update', $user)
+                                                    <div class="d-flex align-items-center gap-1">
+                                                        <button
+                                                            class="badge {{ $isVerified ? 'badge-success' : 'badge-secondary' }} light border-0"
+                                                            style="cursor:pointer; border:none;"
+                                                            wire:click="confirmToggleVerify({{ $user->id }})"
+                                                            title="{{ $isVerified ? 'Verified – click to unverify' : 'Unverified – click to verify' }}">
+                                                            <i
+                                                                class="fa-regular {{ $isVerified ? 'fa-shield-check' : 'fa-shield-halved' }}"></i>
+                                                            {{ $isVerified ? 'Verified' : 'Unverified' }}
                                                         </button>
-                                                    @endif
-                                                </div>
+                                                        @if(!$isVerified)
+                                                            <button class="btn btn-sm btn-outline-info"
+                                                                wire:click="resendVerification({{ $user->id }})"
+                                                                title="Resend verification">
+                                                                <i class="fa-regular fa-paper-plane"></i>
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                @endcan
                                             </td>
                                             <td>
                                                 <div class="d-flex flex-column">
@@ -388,34 +402,43 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex justify-content-center gap-1">
-                                                    {{-- CONVERT TO EMPLOYEE BUTTON (only if not already employee) --}}
-                                                    @if(!$isEmployee)
-                                                        <button class="btn btn-sm btn-success"
-                                                            wire:click="openConvertToEmployee({{ $user->id }})"
-                                                            title="Convert to Employee">
-                                                            <i class="fa-regular fa-briefcase"></i>
+                                                    @can('view', $user)
+                                                        <button class="btn btn-sm btn-primary"
+                                                            wire:click="viewUser({{ $user->id }})" title="View">
+                                                            <i class="fa-regular fa-eye"></i>
                                                         </button>
-                                                    @endif
+                                                    @endcan
 
-                                                    <button class="btn btn-sm btn-primary"
-                                                        wire:click="viewUser({{ $user->id }})" title="View">
-                                                        <i class="fa-regular fa-eye"></i>
-                                                    </button>
-                                                    <button class="btn btn-sm btn-warning"
-                                                        wire:click="openEdit({{ $user->id }})" title="Edit">
-                                                        <i class="fa-regular fa-pen"></i>
-                                                    </button>
-                                                    @if(!$isSelf)
-                                                        <button class="btn btn-sm btn-danger"
-                                                            wire:click="confirmDelete({{ $user->id }})" title="Delete">
-                                                            <i class="fa-regular fa-trash"></i>
+                                                    @can('update', $user)
+                                                        <button class="btn btn-sm btn-warning"
+                                                            wire:click="openEdit({{ $user->id }})" title="Edit">
+                                                            <i class="fa-regular fa-pen"></i>
                                                         </button>
-                                                    @else
-                                                        <button class="btn btn-sm btn-secondary" disabled
-                                                            title="Cannot delete your own account">
-                                                            <i class="fa-regular fa-lock"></i>
-                                                        </button>
-                                                    @endif
+                                                    @endcan
+
+                                                    @can('delete', $user)
+                                                        @if(!$isSelf)
+                                                            <button class="btn btn-sm btn-danger"
+                                                                wire:click="confirmDelete({{ $user->id }})" title="Delete">
+                                                                <i class="fa-regular fa-trash"></i>
+                                                            </button>
+                                                        @else
+                                                            <button class="btn btn-sm btn-secondary" disabled
+                                                                title="Cannot delete your own account">
+                                                                <i class="fa-regular fa-lock"></i>
+                                                            </button>
+                                                        @endif
+                                                    @endcan
+
+                                                    @can('update', $user)
+                                                        @if(!$isEmployee)
+                                                            <button class="btn btn-sm btn-success"
+                                                                wire:click="openConvertToEmployee({{ $user->id }})"
+                                                                title="Convert to Employee">
+                                                                <i class="fa-regular fa-briefcase"></i>
+                                                            </button>
+                                                        @endif
+                                                    @endcan
                                                 </div>
                                             </td>
                                         </tr>
@@ -426,9 +449,11 @@
                                                 <h5>No users found</h5>
                                                 <p class="text-muted">Try adjusting your search filters, or add a new user.
                                                 </p>
-                                                <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                                                    <i class="fa-regular fa-user-plus me-1"></i> Add First User
-                                                </button>
+                                                @can('create', App\Models\User::class)
+                                                    <button class="btn btn-primary btn-sm" wire:click="openCreate">
+                                                        <i class="fa-regular fa-user-plus me-1"></i> Add First User
+                                                    </button>
+                                                @endcan
                                             </td>
                                         </tr>
                                     @endforelse
@@ -450,9 +475,7 @@
         </div>
     </div>
 
-    {{-- ─── MODALS ──────────────────────────────────────────────────────────── --}}
-
-    {{-- ── VIEW USER MODAL ────────────────────────────────────────────────── --}}
+    {{-- VIEW USER MODAL --}}
     @if($showViewModal && $viewingUser)
         @php
             $viewingRoles = $viewingUser->roles->pluck('name')->toArray();
@@ -561,17 +584,19 @@
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
-                        <button class="btn btn-primary"
-                            wire:click="openEdit({{ $viewingUser->id }}); $set('showViewModal', false)">
-                            <i class="fa-regular fa-pen"></i> Edit
-                        </button>
+                        @can('update', $viewingUser)
+                            <button class="btn btn-primary"
+                                wire:click="openEdit({{ $viewingUser->id }}); $set('showViewModal', false)">
+                                <i class="fa-regular fa-pen"></i> Edit
+                            </button>
+                        @endcan
                     </div>
                 </div>
             </div>
         </div>
     @endif
 
-    {{-- ── USER FORM MODAL (Create/Edit) ─────────────────────────────────── --}}
+    {{-- USER FORM MODAL (Create/Edit) --}}
     @if($showUserModal)
         <div class="modal fade show d-block" id="userModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -610,30 +635,38 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Roles --}}
-                            <div class="mb-3">
-                                <label class="form-label fw-bold small">Roles</label>
-                                <div class="d-flex flex-wrap gap-2">
-                                    @foreach($assignableRoles as $roleOption)
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" value="{{ $roleOption }}"
-                                                wire:model="selectedRoles" id="role_{{ $roleOption }}">
-                                            <label class="form-check-label" for="role_{{ $roleOption }}">
-                                                <span class="badge badge-secondary light border-0">
-                                                    <i
-                                                        class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : (strtolower($roleOption) === 'agent' ? 'fa-headset' : 'fa-user') }}"></i>
-                                                    {{ $roleOption }}
-                                                </span>
-                                            </label>
-                                        </div>
-                                    @endforeach
+                            {{-- Roles (conditional on assignRole permission) --}}
+                            @php $targetUser = $isEditing ? App\Models\User::find($selectedUserId) : new App\Models\User(); @endphp
+                            @if(auth()->user()->can('assignRole', $targetUser))
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Roles</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        @foreach($assignableRoles as $roleOption)
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" value="{{ $roleOption }}"
+                                                    wire:model="selectedRoles" id="role_{{ $roleOption }}">
+                                                <label class="form-check-label" for="role_{{ $roleOption }}">
+                                                    <span class="badge badge-secondary light border-0">
+                                                        <i
+                                                            class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
+                                                        {{ $roleOption }}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                    @error('selectedRoles')
+                                    <div class="text-danger small">{{ $message }}</div> @enderror
+                                    <small class="text-muted d-block mt-1">Every user gets the <strong>User</strong> role
+                                        automatically; the <strong>{{ $protectedRole }}</strong> role can't be assigned
+                                        here.</small>
                                 </div>
-                                @error('selectedRoles')
-                                <div class="text-danger small">{{ $message }}</div> @enderror
-                                <small class="text-muted d-block mt-1">Every user gets the <strong>User</strong> role
-                                    automatically; the <strong>{{ $protectedRole }}</strong> role can't be assigned
-                                    here.</small>
-                            </div>
+                            @else
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Roles</label>
+                                    <div class="text-muted">You do not have permission to assign roles.</div>
+                                </div>
+                            @endif
 
                             {{-- Position --}}
                             <div class="mb-3">
@@ -670,10 +703,9 @@
                                 </div>
                             </div>
 
-                            {{-- Spotlight (Homepage + About page) --}}
+                            {{-- Spotlight --}}
                             <div class="mb-3 p-3 rounded-3"
-                                style="background: {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fef2f2' : '#fffbeb' }};
-                                               border: 1px solid {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fecaca' : '#fde68a' }};">
+                                style="background: {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fef2f2' : '#fffbeb' }}; border: 1px solid {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fecaca' : '#fde68a' }};">
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="is_spotlight"
                                         wire:model.live="is_spotlight" @if($this->spotlightInfo['full'] && !$is_spotlight)
@@ -681,8 +713,8 @@
                                     <label class="form-check-label fw-bold small" for="is_spotlight">
                                         <i class="fa-solid fa-star text-warning"></i> Homepage / About Spotlight
                                     </label>
-                                    <div class="text-muted small">Featured on the homepage and About page leadership
-                                        block — max {{ $this->spotlightInfo['max'] }} people.</div>
+                                    <div class="text-muted small">Featured on the homepage and About page leadership block —
+                                        max {{ $this->spotlightInfo['max'] }} people.</div>
                                 </div>
                                 <div
                                     class="mt-2 small fw-bold {{ $this->spotlightInfo['full'] && !$is_spotlight ? 'text-danger' : 'text-warning' }}">
@@ -734,7 +766,7 @@
         </div>
     @endif
 
-    {{-- ── DELETE USER MODAL ────────────────────────────────────────────── --}}
+    {{-- DELETE USER MODAL --}}
     @if($showDeleteModal)
         <div class="modal fade show d-block" id="deleteModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -761,7 +793,7 @@
         </div>
     @endif
 
-    {{-- ── BULK DELETE MODAL ────────────────────────────────────────────── --}}
+    {{-- BULK DELETE MODAL --}}
     @if($showBulkDeleteModal)
         <div class="modal fade show d-block" id="bulkDeleteModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -788,7 +820,7 @@
         </div>
     @endif
 
-    {{-- ── TOGGLE STATUS MODAL ──────────────────────────────────────────── --}}
+    {{-- TOGGLE STATUS MODAL --}}
     @if($showToggleStatusModal)
         <div class="modal fade show d-block" id="toggleStatusModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -802,9 +834,7 @@
                         <i class="fa-regular fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                         <p>
                             You are about to <strong>
-                                @php
-                                    $targetUser = App\Models\User::find($toggleUserId);
-                                @endphp
+                                @php $targetUser = App\Models\User::find($toggleUserId); @endphp
                                 {{ $targetUser && $targetUser->status === 'active' ? 'suspend' : 'activate' }}
                             </strong> this user's account. This action can be reversed later.
                         </p>
@@ -821,7 +851,7 @@
         </div>
     @endif
 
-    {{-- ── TOGGLE VERIFICATION MODAL ─────────────────────────────────────── --}}
+    {{-- TOGGLE VERIFICATION MODAL --}}
     @if($showToggleVerifyModal)
         <div class="modal fade show d-block" id="toggleVerifyModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -835,9 +865,7 @@
                         <i class="fa-regular fa-shield-halved fa-3x text-info mb-3"></i>
                         <p>
                             You are about to manually mark this user's email as <strong>
-                                @php
-                                    $targetVerifyUser = App\Models\User::find($verifyUserId);
-                                @endphp
+                                @php $targetVerifyUser = App\Models\User::find($verifyUserId); @endphp
                                 {{ $targetVerifyUser && $targetVerifyUser->email_verified_at ? 'unverified' : 'verified' }}
                             </strong>. This overrides the normal email verification flow.
                         </p>
@@ -855,15 +883,15 @@
         </div>
     @endif
 
-    {{-- ── TOGGLE SPOTLIGHT MODAL ────────────────────────────────────────── --}}
+    {{-- TOGGLE SPOTLIGHT MODAL --}}
     @if($showSpotlightModal)
         <div class="modal fade show d-block" id="spotlightModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title"><i class="fa-solid fa-star text-warning me-1"></i> Change Spotlight
-                            Status?</h5>
+                        <h5 class="modal-title"><i class="fa-solid fa-star text-warning me-1"></i> Change Spotlight Status?
+                        </h5>
                         <button type="button" class="btn-close" wire:click="$set('showSpotlightModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
@@ -894,7 +922,7 @@
         </div>
     @endif
 
-    {{-- ── BULK VERIFY MODAL ─────────────────────────────────────────────── --}}
+    {{-- BULK VERIFY MODAL --}}
     @if($showBulkVerifyModal)
         <div class="modal fade show d-block" id="bulkVerifyModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -924,7 +952,7 @@
         </div>
     @endif
 
-    {{-- ── INVITE MODAL ──────────────────────────────────────────────────── --}}
+    {{-- INVITE MODAL --}}
     @if($showInviteModal)
         <div class="modal fade show d-block" id="inviteModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -948,8 +976,7 @@
                                 <option value="">— Default (User) —</option>
                                 @foreach($assignableRoles as $role)
                                     <option value="{{ \Spatie\Permission\Models\Role::where('name', $role)->first()->id }}">
-                                        {{ $role }}
-                                    </option>
+                                        {{ $role }}</option>
                                 @endforeach
                             </select>
                             @error('inviteRoleId')
@@ -998,7 +1025,8 @@
             </div>
         </div>
     @endif
-    {{-- ── CREDENTIALS MODAL (shown once, right after creating a user) ──── --}}
+
+    {{-- CREDENTIALS MODAL --}}
     @if($showCredentialsModal)
         <div class="modal fade show d-block" id="credentialsModal" tabindex="-1" style="background: rgba(0,0,0,0.6);"
             wire:ignore.self x-data="{ copied: false }">
@@ -1014,23 +1042,18 @@
                             <strong>{{ $createdUserName }}</strong> has been added and emailed their login details.
                             Here's a copy for your records — this password will not be shown again.
                         </p>
-
                         <div class="rounded-3 p-3 mb-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                             <div class="small text-uppercase fw-bold text-muted mb-1"
                                 style="letter-spacing:.05em; font-size:11px;">Email</div>
                             <div class="fw-bold">{{ $createdUserEmail }}</div>
                         </div>
-
                         <div class="rounded-3 p-3" style="background:#FFFBEB; border:1px solid #FDE68A;">
                             <div class="small text-uppercase fw-bold mb-1"
                                 style="letter-spacing:.05em; font-size:11px; color:#B45309;">Temporary Password</div>
                             <div class="d-flex align-items-center justify-content-between gap-2">
                                 <code class="fs-5 fw-bold" style="color:#78350F;">{{ $createdUserPassword }}</code>
-                                <button type="button" class="btn btn-sm btn-outline-warning flex-shrink-0" x-on:click="
-                                        navigator.clipboard.writeText('{{ $createdUserPassword }}');
-                                        copied = true;
-                                        setTimeout(() => copied = false, 2000);
-                                    ">
+                                <button type="button" class="btn btn-sm btn-outline-warning flex-shrink-0"
+                                    x-on:click="navigator.clipboard.writeText('{{ $createdUserPassword }}'); copied = true; setTimeout(() => copied = false, 2000);">
                                     <span x-show="!copied"><i class="fa-regular fa-copy"></i> Copy</span>
                                     <span x-show="copied" x-cloak><i class="fa-solid fa-check"></i> Copied!</span>
                                 </button>
@@ -1042,15 +1065,15 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" wire:click="$set('showCredentialsModal', false)">
-                            Done
-                        </button>
+                        <button type="button" class="btn btn-primary"
+                            wire:click="$set('showCredentialsModal', false)">Done</button>
                     </div>
                 </div>
             </div>
         </div>
     @endif
-    {{-- ── CONVERT TO EMPLOYEE MODAL ──────────────────────────────────── --}}
+
+    {{-- CONVERT TO EMPLOYEE MODAL --}}
     @if($showConvertEmployeeModal)
         <div class="modal fade show d-block" id="convertEmployeeModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -1064,7 +1087,6 @@
                     <div class="modal-body">
                         <p class="text-muted small mb-3"><span class="text-danger">*</span> Required field</p>
                         <div class="row g-3">
-
                             {{-- Employee ID / Gender --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Employee ID <span
@@ -1215,13 +1237,8 @@
                                             maxlength="{{ $emp_emergency_countryInfo['maxLength'] ?? 15 }}"
                                             class="form-control phone-number-input @error('emp_emergency_contact_phone') is-invalid @enderror"
                                             style="border-radius: 0 0.5rem 0.5rem 0; font-size: 0.9rem; padding: 0.45rem 0.75rem;"
-                                            x-data x-on:input="
-                                                               let v = $el.value.replace(/[^0-9]/g, '');
-                                                               let max = {{ $emp_emergency_countryInfo['maxLength'] ?? 15 }};
-                                                               if (v.length > max) v = v.substring(0, max);
-                                                               $el.value = v;
-                                                               $wire.emp_emergency_setPhone(v);
-                                                           ">
+                                            x-data
+                                            x-on:input="let v = $el.value.replace(/[^0-9]/g, ''); let max = {{ $emp_emergency_countryInfo['maxLength'] ?? 15 }}; if (v.length > max) v = v.substring(0, max); $el.value = v; $wire.emp_emergency_setPhone(v);">
                                     </div>
                                     @if($emp_emergency_showCountryDropdown)
                                         <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
@@ -1268,7 +1285,6 @@
                                 </div>
                             </div>
 
-                            {{-- Validation errors summary --}}
                             @if($errors->any())
                                 <div class="col-12">
                                     <div class="alert alert-danger">
@@ -1297,7 +1313,7 @@
 
 </div>
 
-{{-- ─── STYLES ─────────────────────────────────────────────────────────────── --}}
+{{-- STYLES --}}
 <style>
     [x-cloak] {
         display: none !important;
@@ -1373,7 +1389,7 @@
     }
 </style>
 
-{{-- ─── Alpine Handler ────────────────────────────────────────────────────── --}}
+{{-- Alpine Handler --}}
 <script>
     document.addEventListener('alpine:init', () => {
         Alpine.data('userHandler', () => ({

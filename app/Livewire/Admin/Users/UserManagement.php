@@ -18,6 +18,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class UserManagement extends Component
@@ -26,7 +27,7 @@ class UserManagement extends Component
 
     protected $paginationTheme = 'bootstrap';
 
-    // ─── Filters ──────────────────────────────────────────────────────
+    // ─── Filters ──────────────────────────────────────────────────────────
     public string $search = '';
     public string $statusFilter = '';
     public string $roleFilter = '';
@@ -35,13 +36,13 @@ class UserManagement extends Component
     public string $sortDir = 'desc';
     public int $perPage = 15;
 
-    // ─── Invite ──────────────────────────────────────────────────────
+    // ─── Invite ──────────────────────────────────────────────────────────
     public string $inviteEmail = '';
     public $inviteRoleId = null;
     public string $invitePosition = '';
     public int $inviteExpiryDays = 7;
 
-    // ─── Modals ──────────────────────────────────────────────────────
+    // ─── Modals ──────────────────────────────────────────────────────────
     public bool $showDeleteModal = false;
     public bool $showBulkDeleteModal = false;
     public bool $showUserModal = false;
@@ -56,7 +57,7 @@ class UserManagement extends Component
     public string $createdUserEmail = '';
     public string $createdUserPassword = '';
 
-    // ─── Convert to Employee Modal ──────────────────────────────────
+    // ─── Convert to Employee Modal ──────────────────────────────────────
     public bool $showConvertEmployeeModal = false;
     public ?int $convertUserId = null;
 
@@ -70,7 +71,7 @@ class UserManagement extends Component
     public string $emp_emergency_contact_name = '';
     public string $emp_emergency_contact_phone = '';
 
-    // Emergency phone country logic (mirroring HrDashboard)
+    // Emergency phone country logic
     public string $emp_emergency_countryCode = '+233';
     public string $emp_emergency_selectedFlag = 'gh.png';
     public array $emp_emergency_countries = [];
@@ -88,21 +89,21 @@ class UserManagement extends Component
     public bool $emp_showNewDepartment = false;
     public bool $emp_showNewPosition = false;
 
-    // ─── Selected user ──────────────────────────────────────────────
+    // ─── Selected user ──────────────────────────────────────────────────
     public ?int $selectedUserId = null;
     public ?User $viewingUser = null;
     public ?int $toggleUserId = null;
     public ?int $verifyUserId = null;
     public ?int $spotlightUserId = null;
 
-    // ─── Activity log ────────────────────────────────────────────────
+    // ─── Activity log ────────────────────────────────────────────────────
     public array $recentActivities = [];
 
-    // ─── Bulk selection ─────────────────────────────────────────────
+    // ─── Bulk selection ─────────────────────────────────────────────────
     public array $selectedUsers = [];
     public bool $selectAll = false;
 
-    // ─── User form fields ────────────────────────────────────────────
+    // ─── User form fields ────────────────────────────────────────────────
     public string $first_name = '';
     public string $last_name = '';
     public string $email = '';
@@ -114,17 +115,16 @@ class UserManagement extends Component
     public bool $is_featured_team = false;
     public bool $is_spotlight = false;
 
-    // ─── Generated password ──────────────────────────────────────────
+    // ─── Generated password ──────────────────────────────────────────────
     public ?string $generatedPassword = null;
 
-    // ─── Available roles ─────────────────────────────────────────────
+    // ─── Available roles ─────────────────────────────────────────────────
     public array $availableRoles = [];
     protected string $protectedRole = 'Super Admin';
     protected string $defaultRole = 'User';
     protected int $maxSpotlight = 3;
 
-    // ─── Mount ────────────────────────────────────────────────────────
-
+    // ─── Mount ────────────────────────────────────────────────────────────
     public function mount(): void
     {
         $this->loadAvailableRoles();
@@ -133,20 +133,19 @@ class UserManagement extends Component
         $this->emp_loadDepartmentsAndPositions();
     }
 
-    // ─── Roles ────────────────────────────────────────────────────────
-
+    // ─── Roles ────────────────────────────────────────────────────────────
     private function loadAvailableRoles(): void
     {
         $this->ensureDefaultRoles();
         $this->availableRoles = Role::orderBy('name')->pluck('name')->toArray();
         if (empty($this->availableRoles)) {
-            $this->availableRoles = ['Admin', 'Agent', 'User'];
+            $this->availableRoles = ['Admin', 'User'];
         }
     }
 
     private function ensureDefaultRoles(): void
     {
-        $defaultRoles = ['Super Admin', 'Admin', 'Agent', 'User'];
+        $defaultRoles = ['Super Admin', 'Admin', 'User'];
         foreach ($defaultRoles as $roleName) {
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }
@@ -160,8 +159,7 @@ class UserManagement extends Component
         ));
     }
 
-    // ─── Departments & Positions for conversion ──────────────────────
-
+    // ─── Departments & Positions for conversion ──────────────────────────
     private function emp_loadDepartmentsAndPositions()
     {
         $depts = UserProfile::where('is_employee', true)
@@ -219,8 +217,7 @@ class UserManagement extends Component
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Success', 'message' => "Position '{$name}' added."]);
     }
 
-    // ─── Employee ID Generator ────────────────────────────────────────
-
+    // ─── Employee ID Generator ────────────────────────────────────────────
     private function generateEmployeeId(): string
     {
         $max = UserProfile::where('is_employee', true)
@@ -233,8 +230,7 @@ class UserManagement extends Component
         return 'EMP-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
-    // ─── Country / Phone logic (mirroring HrDashboard) ───────────────
-
+    // ─── Country / Phone logic (mirroring HrDashboard) ──────────────────
     private function loadCountries()
     {
         $path = public_path('countries-full.json');
@@ -357,7 +353,7 @@ class UserManagement extends Component
         $this->emp_emergency_updateCountryInfo();
     }
 
-    // ─── Validation Rules ─────────────────────────────────────────────
+    // ─── Validation Rules ────────────────────────────────────────────────
 
     protected function rules(): array
     {
@@ -375,7 +371,7 @@ class UserManagement extends Component
         ];
     }
 
-    // ─── Query String ─────────────────────────────────────────────────
+    // ─── Query String ─────────────────────────────────────────────────────
 
     protected $queryString = [
         'search'         => ['except' => ''],
@@ -387,7 +383,7 @@ class UserManagement extends Component
         'perPage'        => ['except' => 15],
     ];
 
-    // ─── Filters / Sorting ────────────────────────────────────────────
+    // ─── Filters / Sorting ────────────────────────────────────────────────
 
     public function updatingSearch(): void
     {
@@ -426,7 +422,7 @@ class UserManagement extends Component
         $this->resetPage();
     }
 
-    // ─── Activity Log ─────────────────────────────────────────────────
+    // ─── Activity Log ─────────────────────────────────────────────────────
 
     private function logActivity(int $userId, string $action, string $description): void
     {
@@ -445,24 +441,41 @@ class UserManagement extends Component
         }
     }
 
-    // ─── View User ────────────────────────────────────────────────────
+    // ─── View User ────────────────────────────────────────────────────────
 
     public function viewUser(int $id): void
     {
-        $this->viewingUser = User::with('roles', 'profile')->findOrFail($id);
+        $user = User::with('roles', 'profile')->findOrFail($id);
+        $this->authorize('view', $user);
+
+        $this->viewingUser = $user;
         $this->recentActivities = class_exists(UserActivity::class)
             ? UserActivity::where('user_id', $id)->latest()->take(10)->get()->toArray()
             : [];
         $this->showViewModal = true;
     }
 
-    // ─── Create / Edit User ──────────────────────────────────────────
+    // ─── Create / Edit User ──────────────────────────────────────────────
 
     public function openCreate(): void
     {
-        $this->reset(['first_name', 'last_name', 'email', 'password', 'selectedRoles', 'formStatus', 'selectedUserId', 'position', 'is_featured_team', 'is_spotlight',  'generatedPassword']);
-        $this->isEditing     = false;
-        $this->formStatus    = 'active';
+        $this->authorize('create', User::class);
+
+        $this->reset([
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'selectedRoles',
+            'formStatus',
+            'selectedUserId',
+            'position',
+            'is_featured_team',
+            'is_spotlight',
+            'generatedPassword'
+        ]);
+        $this->isEditing = false;
+        $this->formStatus = 'active';
         $this->selectedRoles = [$this->defaultRole];
         $this->showUserModal = true;
     }
@@ -470,28 +483,28 @@ class UserManagement extends Component
     public function openEdit(int $id): void
     {
         $user = User::with('roles', 'profile')->findOrFail($id);
-        $this->selectedUserId = $user->id;
+        $this->authorize('update', $user);
 
+        $this->selectedUserId = $user->id;
         $nameParts = explode(' ', $user->name, 2);
         $this->first_name = $nameParts[0] ?? '';
-        $this->last_name  = $nameParts[1] ?? '';
-        $this->email      = $user->email;
+        $this->last_name = $nameParts[1] ?? '';
+        $this->email = $user->email;
         $this->formStatus = $user->status ?? 'active';
-        $this->password   = '';
-        $this->isEditing  = true;
+        $this->password = '';
+        $this->isEditing = true;
 
-        $this->position         = $user->profile?->position ?? '';
+        $this->position = $user->profile?->position ?? '';
         $this->is_featured_team = $user->profile?->is_featured_team ?? false;
-        $this->is_spotlight     = $user->profile?->is_spotlight ?? false;
+        $this->is_spotlight = $user->profile?->is_spotlight ?? false;
 
-        $this->selectedRoles = $user->roles->pluck('name')->toArray();
+        // Only show roles that are assignable (excluding Super Admin)
+        $this->selectedRoles = $user->roles->pluck('name')
+            ->reject(fn($role) => $role === $this->protectedRole)
+            ->toArray();
         if (empty($this->selectedRoles)) {
             $this->selectedRoles = [$this->defaultRole];
         }
-        $this->selectedRoles = array_values(array_filter(
-            $this->selectedRoles,
-            fn($role) => $role !== $this->protectedRole
-        ));
 
         $this->showUserModal = true;
     }
@@ -527,26 +540,26 @@ class UserManagement extends Component
         return $password;
     }
 
+    // ─── Save User ────────────────────────────────────────────────────────
+
     public function saveUser(): void
     {
         $this->validate();
 
-        // Enforce the spotlight cap before doing anything else
+        // Enforce spotlight cap
         if ($this->is_spotlight) {
             $alreadyUsed = UserProfile::where('is_spotlight', true)
                 ->when($this->isEditing && $this->selectedUserId, function ($q) {
                     $q->where('user_id', '!=', $this->selectedUserId);
                 })
                 ->count();
-
             if ($alreadyUsed >= $this->maxSpotlight) {
-                $this->addError('is_spotlight', "Spotlight is full ({$this->maxSpotlight}/{$this->maxSpotlight}). Remove someone else from the spotlight first.");
+                $this->addError('is_spotlight', "Spotlight is full ({$this->maxSpotlight}/{$this->maxSpotlight}). Remove someone else first.");
                 return;
             }
         }
 
         $fullName = trim($this->first_name . ' ' . $this->last_name);
-
         $roleNames = array_values(array_filter(
             $this->selectedRoles,
             fn($role) => $role !== $this->protectedRole
@@ -563,15 +576,22 @@ class UserManagement extends Component
 
         try {
             if ($this->isEditing) {
-                $password = $this->password ? Hash::make($this->password) : null;
+                $user = User::findOrFail($this->selectedUserId);
+                // Check assignRole permission if roles changed
+                $currentRoles = $user->roles->pluck('name')->toArray();
+                if ($currentRoles != $roleNames) {
+                    $this->authorize('assignRole', $user);
+                }
 
+                // Also ensure update permission (already checked in openEdit, but double-check)
+                $this->authorize('update', $user);
+
+                $password = $this->password ? Hash::make($this->password) : null;
                 if ($password) {
                     $data['password'] = $password;
                 }
 
-                $user = User::findOrFail($this->selectedUserId);
                 $emailChanged = $user->email !== $this->email;
-
                 if ($emailChanged) {
                     $data['email_verified_at'] = null;
                     $data['email_verification_token'] = Str::random(64);
@@ -592,22 +612,18 @@ class UserManagement extends Component
                     $this->logActivity($user->id, 'email_changed', 'Email address changed by admin; verification reset.');
                 }
 
-                $this->dispatch('notify', [
-                    'type' => 'success',
-                    'title' => 'User updated!',
-                    'message' => "{$fullName}'s account has been updated.",
-                ]);
+                $this->dispatch('notify', ['type' => 'success', 'title' => 'User updated!', 'message' => "{$fullName}'s account has been updated."]);
                 $this->generatedPassword = null;
-
                 $this->showUserModal = false;
-                $this->reset(['first_name', 'last_name', 'email', 'password', 'selectedRoles', 'formStatus', 'selectedUserId', 'position', 'is_featured_team', 'is_spotlight']);
+                $this->resetFormFields();
             } else {
+                // Creating new user – check create permission
+                $this->authorize('create', User::class);
+
                 $data['username'] = $this->generateUsername($this->first_name, $this->last_name);
                 $data['email_verified_at'] = now();
+                $data['must_change_password'] = true;
 
-                // Capture the plaintext password *before* hashing, whichever
-                // source it came from — manual entry or auto-generated — so
-                // it can be shown to the admin and emailed to the new user.
                 if (!empty($this->password)) {
                     $plainPassword = $this->password;
                     $data['password'] = Hash::make($plainPassword);
@@ -627,7 +643,7 @@ class UserManagement extends Component
 
                 $this->logActivity($user->id, 'admin_create', "Account created by admin ({$fullName}, {$this->email}).");
 
-                // Email the new user their login details.
+                // Email the new user
                 try {
                     Mail::to($user->email)->queue(
                         new AccountCreatedMail($user->fresh('roles'), $plainPassword, Auth::user()?->name)
@@ -635,21 +651,15 @@ class UserManagement extends Component
                     $this->logActivity($user->id, 'account_created_email_sent', "Welcome email with credentials sent to {$user->email}.");
                 } catch (\Throwable $e) {
                     report($e);
-                    // Don't fail the whole save just because the email didn't
-                    // go out — the credentials modal below is the fallback.
                 }
 
-                // Show a sticky credentials modal instead of a toast — a
-                // 4-second auto-dismissing toast is the wrong place for a
-                // one-time secret the admin needs time to read and copy.
                 $this->createdUserName = $fullName;
                 $this->createdUserEmail = $user->email;
                 $this->createdUserPassword = $plainPassword;
 
                 $this->generatedPassword = null;
                 $this->showUserModal = false;
-                $this->reset(['first_name', 'last_name', 'email', 'password', 'selectedRoles', 'formStatus', 'selectedUserId', 'position', 'is_featured_team', 'is_spotlight']);
-
+                $this->resetFormFields();
                 $this->showCredentialsModal = true;
 
                 $this->dispatch('notify', [
@@ -660,22 +670,33 @@ class UserManagement extends Component
             }
         } catch (\Throwable $e) {
             report($e);
-            $this->dispatch('notify', [
-                'type' => 'error',
-                'title' => 'Save failed',
-                'message' => $e->getMessage(),
-            ]);
-            return;
+            $this->dispatch('notify', ['type' => 'error', 'title' => 'Save failed', 'message' => $e->getMessage()]);
         }
     }
 
-    // ─── Convert to Employee ─────────────────────────────────────────
+    private function resetFormFields(): void
+    {
+        $this->reset([
+            'first_name',
+            'last_name',
+            'email',
+            'password',
+            'selectedRoles',
+            'formStatus',
+            'selectedUserId',
+            'position',
+            'is_featured_team',
+            'is_spotlight'
+        ]);
+    }
+
+    // ─── Convert to Employee ──────────────────────────────────────────────
 
     public function openConvertToEmployee(int $userId): void
     {
         $user = User::with('profile')->findOrFail($userId);
+        $this->authorize('update', $user);
 
-        // Prevent converting an already-employed user (just in case)
         if ($user->profile && $user->profile->is_employee) {
             $this->dispatch('notify', ['type' => 'error', 'title' => 'Error', 'message' => 'This user is already an employee.']);
             return;
@@ -744,8 +765,10 @@ class UserManagement extends Component
         ]);
 
         $user = User::findOrFail($this->convertUserId);
-        $profile = $user->profile ?: $user->profile()->create([]);
+        // Re-check permission inside the save method as well
+        $this->authorize('update', $user);
 
+        $profile = $user->profile ?: $user->profile()->create([]);
         $profile->update([
             'is_employee' => true,
             'employee_id' => $this->emp_employee_id,
@@ -758,13 +781,11 @@ class UserManagement extends Component
             'emergency_contact_phone' => $this->emp_emergency_getFullPhone(),
         ]);
 
-        // Assign the default 'User' role if the user has no roles (or keep existing)
         if ($user->roles->count() === 0) {
             $user->assignRole($this->defaultRole);
         }
 
         $this->logActivity($user->id, 'converted_to_employee', "User converted to employee (ID: {$this->emp_employee_id}) by admin.");
-
         $this->showConvertEmployeeModal = false;
         $this->convertUserId = null;
 
@@ -774,7 +795,6 @@ class UserManagement extends Component
             'message' => "{$user->name} is now an employee with ID {$this->emp_employee_id}.",
         ]);
 
-        // Reset fields
         $this->reset([
             'emp_employee_id',
             'emp_department',
@@ -787,7 +807,7 @@ class UserManagement extends Component
         ]);
     }
 
-    // ─── Single Delete ───────────────────────────────────────────────
+    // ─── Single Delete ────────────────────────────────────────────────────
 
     public function confirmDelete(int $id): void
     {
@@ -795,7 +815,9 @@ class UserManagement extends Component
             $this->dispatch('notify', ['type' => 'error', 'title' => 'Error', 'message' => 'You cannot delete your own account.']);
             return;
         }
-        $this->selectedUserId  = $id;
+        $user = User::findOrFail($id);
+        $this->authorize('delete', $user);
+        $this->selectedUserId = $id;
         $this->showDeleteModal = true;
     }
 
@@ -806,13 +828,15 @@ class UserManagement extends Component
             $this->showDeleteModal = false;
             return;
         }
-        User::findOrFail($this->selectedUserId)->delete();
+        $user = User::findOrFail($this->selectedUserId);
+        $this->authorize('delete', $user);
+        $user->delete();
         $this->showDeleteModal = false;
-        $this->selectedUserId  = null;
+        $this->selectedUserId = null;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Deleted', 'message' => 'User deleted successfully.']);
     }
 
-    // ─── Bulk Actions ─────────────────────────────────────────────────
+    // ─── Bulk Actions ─────────────────────────────────────────────────────
 
     public function updatedSelectAll(bool $value): void
     {
@@ -828,6 +852,7 @@ class UserManagement extends Component
     public function confirmBulkDelete(): void
     {
         if (empty($this->selectedUsers)) return;
+        $this->authorize('delete', User::class);
         $this->selectedUsers = array_filter($this->selectedUsers, fn($id) => (int) $id !== Auth::id());
         if (empty($this->selectedUsers)) {
             $this->dispatch('notify', ['type' => 'error', 'title' => 'Error', 'message' => 'You cannot delete your own account.']);
@@ -844,38 +869,43 @@ class UserManagement extends Component
             $this->showBulkDeleteModal = false;
             return;
         }
+        $this->authorize('delete', User::class);
         User::whereIn('id', $ids)->delete();
-        $this->selectedUsers       = [];
-        $this->selectAll           = false;
+        $this->selectedUsers = [];
+        $this->selectAll = false;
         $this->showBulkDeleteModal = false;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Deleted', 'message' => count($ids) . ' user(s) deleted.']);
     }
 
     public function bulkActivate(): void
     {
+        if (empty($this->selectedUsers)) return;
+        $this->authorize('update', User::class);
         $ids = $this->selectedUsers;
         User::whereIn('id', $ids)->update(['status' => 'active']);
         foreach ($ids as $id) {
             $this->logActivity((int) $id, 'bulk_activate', 'Account activated via bulk admin action.');
         }
         $this->selectedUsers = [];
-        $this->selectAll     = false;
+        $this->selectAll = false;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Activated', 'message' => 'Selected users activated.']);
     }
 
     public function bulkSuspend(): void
     {
+        if (empty($this->selectedUsers)) return;
+        $this->authorize('update', User::class);
         $ids = $this->selectedUsers;
         User::whereIn('id', $ids)->update(['status' => 'suspended']);
         foreach ($ids as $id) {
             $this->logActivity((int) $id, 'bulk_suspend', 'Account suspended via bulk admin action.');
         }
         $this->selectedUsers = [];
-        $this->selectAll     = false;
+        $this->selectAll = false;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Suspended', 'message' => 'Selected users suspended.']);
     }
 
-    // ─── Toggle Status ────────────────────────────────────────────────
+    // ─── Toggle Status ────────────────────────────────────────────────────
 
     public function confirmToggleStatus(int $id): void
     {
@@ -883,75 +913,32 @@ class UserManagement extends Component
             $this->dispatch('notify', ['type' => 'error', 'title' => 'Error', 'message' => 'You cannot change your own status.']);
             return;
         }
+        $user = User::findOrFail($id);
+        $this->authorize('toggleStatus', $user);
         $this->toggleUserId = $id;
         $this->showToggleStatusModal = true;
     }
-    public function confirmToggleSpotlight(int $id): void
-    {
-        $this->spotlightUserId = $id;
-        $this->showSpotlightModal = true;
-    }
 
-    public function toggleSpotlightConfirmed(): void
-    {
-        if (!$this->spotlightUserId) return;
-
-        $user = User::with('profile')->findOrFail($this->spotlightUserId);
-        $profile = $user->profile ?: $user->profile()->create([]);
-
-        // Only enforce the cap when turning it ON
-        if (!$profile->is_spotlight) {
-            $used = UserProfile::where('is_spotlight', true)->count();
-            if ($used >= $this->maxSpotlight) {
-                $this->showSpotlightModal = false;
-                $this->spotlightUserId = null;
-                $this->dispatch('notify', [
-                    'type' => 'error',
-                    'title' => 'Spotlight is full',
-                    'message' => "Only {$this->maxSpotlight} people can be spotlighted at once. Remove someone from the spotlight first.",
-                ]);
-                return;
-            }
-        }
-
-        $profile->is_spotlight = !$profile->is_spotlight;
-        $profile->save();
-
-        $this->logActivity($user->id, 'spotlight_toggle', $profile->is_spotlight
-            ? 'Added to homepage/About spotlight by admin.'
-            : 'Removed from homepage/About spotlight by admin.');
-
-        $this->showSpotlightModal = false;
-        $this->spotlightUserId = null;
-
-        $this->dispatch('notify', [
-            'type' => 'success',
-            'title' => $profile->is_spotlight ? 'Spotlighted!' : 'Removed',
-            'message' => $profile->is_spotlight
-                ? "{$user->name} now appears in the homepage/About spotlight."
-                : "{$user->name} was removed from the spotlight.",
-        ]);
-    }
     public function toggleStatusConfirmed(): void
     {
         if (!$this->toggleUserId) return;
-
         $user = User::findOrFail($this->toggleUserId);
+        $this->authorize('toggleStatus', $user);
         $newStatus = $user->status === 'active' ? 'suspended' : 'active';
         $user->status = $newStatus;
         $user->save();
-
         $this->logActivity($user->id, 'status_toggle', "Status changed to '{$newStatus}' by admin.");
-
         $this->showToggleStatusModal = false;
         $this->toggleUserId = null;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Status changed', 'message' => "User status changed to '{$newStatus}'."]);
     }
 
-    // ─── Toggle Verification ──────────────────────────────────────────
+    // ─── Toggle Verification ─────────────────────────────────────────────
 
     public function confirmToggleVerify(int $id): void
     {
+        $user = User::findOrFail($id);
+        $this->authorize('update', $user);
         $this->verifyUserId = $id;
         $this->showToggleVerifyModal = true;
     }
@@ -959,9 +946,8 @@ class UserManagement extends Component
     public function toggleVerifyConfirmed(): void
     {
         if (!$this->verifyUserId) return;
-
         $user = User::findOrFail($this->verifyUserId);
-
+        $this->authorize('update', $user);
         if ($user->email_verified_at) {
             $user->email_verified_at = null;
             $action = 'unverified';
@@ -970,19 +956,18 @@ class UserManagement extends Component
             $action = 'verified';
         }
         $user->save();
-
         $this->logActivity($user->id, 'verification_toggle', "Email marked as {$action} by admin.");
-
         $this->showToggleVerifyModal = false;
         $this->verifyUserId = null;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Verification', 'message' => "User email marked as {$action}."]);
     }
 
-    // ─── Resend Verification ──────────────────────────────────────────
+    // ─── Resend Verification ─────────────────────────────────────────────
 
     public function resendVerification(int $id): void
     {
         $user = User::findOrFail($id);
+        $this->authorize('update', $user);
 
         if ($user->email_verified_at) {
             $this->dispatch('notify', ['type' => 'error', 'title' => 'Error', 'message' => 'This user is already verified.']);
@@ -992,24 +977,24 @@ class UserManagement extends Component
         $user->email_verification_token = Str::random(64);
         $user->email_verification_sent_at = now();
         $user->save();
-
         $user->sendEmailVerificationNotification();
 
         $this->logActivity($user->id, 'verification_resent', 'Verification email resent by admin.');
-
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Sent', 'message' => "Verification email sent to {$user->email}."]);
     }
 
-    // ─── Bulk Resend Verification ─────────────────────────────────────
+    // ─── Bulk Resend Verification ────────────────────────────────────────
 
     public function confirmBulkVerifyResend(): void
     {
         if (empty($this->selectedUsers)) return;
+        $this->authorize('update', User::class);
         $this->showBulkVerifyModal = true;
     }
 
     public function bulkResendVerification(): void
     {
+        $this->authorize('update', User::class);
         $users = User::whereIn('id', $this->selectedUsers)
             ->whereNull('email_verified_at')
             ->get();
@@ -1022,12 +1007,86 @@ class UserManagement extends Component
             $this->logActivity($user->id, 'verification_resent', 'Verification email resent via bulk admin action.');
         }
 
-        $this->selectedUsers      = [];
-        $this->selectAll          = false;
+        $this->selectedUsers = [];
+        $this->selectAll = false;
         $this->showBulkVerifyModal = false;
-
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Sent', 'message' => $users->count() . ' verification email(s) sent.']);
     }
+
+    // ─── Spotlight Toggle ─────────────────────────────────────────────────
+
+    public function confirmToggleSpotlight(int $id): void
+    {
+        $user = User::with('profile')->findOrFail($id);
+        $this->authorize('update', $user);
+        $this->spotlightUserId = $id;
+        $this->showSpotlightModal = true;
+    }
+
+    public function toggleSpotlightConfirmed(): void
+    {
+        if (!$this->spotlightUserId) return;
+        $user = User::with('profile')->findOrFail($this->spotlightUserId);
+        $this->authorize('update', $user);
+        $profile = $user->profile ?: $user->profile()->create([]);
+
+        if (!$profile->is_spotlight) {
+            $used = UserProfile::where('is_spotlight', true)->count();
+            if ($used >= $this->maxSpotlight) {
+                $this->showSpotlightModal = false;
+                $this->spotlightUserId = null;
+                $this->dispatch('notify', ['type' => 'error', 'title' => 'Spotlight is full', 'message' => "Only {$this->maxSpotlight} people can be spotlighted at once."]);
+                return;
+            }
+        }
+
+        $profile->is_spotlight = !$profile->is_spotlight;
+        $profile->save();
+
+        $this->logActivity($user->id, 'spotlight_toggle', $profile->is_spotlight ? 'Added to homepage/About spotlight by admin.' : 'Removed from homepage/About spotlight by admin.');
+        $this->showSpotlightModal = false;
+        $this->spotlightUserId = null;
+        $this->dispatch('notify', ['type' => 'success', 'title' => $profile->is_spotlight ? 'Spotlighted!' : 'Removed', 'message' => $profile->is_spotlight ? "{$user->name} now appears in the spotlight." : "{$user->name} was removed from the spotlight."]);
+    }
+
+    // ─── Invitation ───────────────────────────────────────────────────────
+
+    public function openInviteModal(): void
+    {
+        $this->authorize('create', User::class);
+        $this->reset(['inviteEmail', 'inviteRoleId', 'invitePosition', 'inviteExpiryDays']);
+        $this->inviteExpiryDays = 7;
+        $this->showInviteModal = true;
+    }
+
+    public function sendInvitation(): void
+    {
+        $this->authorize('create', User::class);
+        $this->validate([
+            'inviteEmail' => 'required|email|max:255|unique:invitations,email|unique:users,email',
+            'inviteRoleId' => 'nullable|exists:roles,id',
+            'invitePosition' => 'nullable|string|max:255',
+            'inviteExpiryDays' => 'required|integer|min:1|max:30',
+        ]);
+
+        $token = Str::random(64);
+        $invitation = Invitation::create([
+            'email'      => $this->inviteEmail,
+            'token'      => $token,
+            'role_id'    => $this->inviteRoleId ?: null,
+            'position'   => $this->invitePosition ?: null,
+            'expires_at' => now()->addDays($this->inviteExpiryDays),
+            'invited_by' => Auth::id(),
+        ]);
+
+        Mail::to($this->inviteEmail)->queue(new InvitationMail($invitation));
+        $this->logActivity(Auth::id(), 'invitation_sent', "Invitation sent to {$this->inviteEmail}");
+
+        $this->showInviteModal = false;
+        $this->reset(['inviteEmail', 'inviteRoleId', 'invitePosition', 'inviteExpiryDays']);
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Invitation sent', 'message' => "Invitation sent to {$this->inviteEmail}"]);
+    }
+
     public function getSpotlightInfoProperty(): array
     {
         $used = UserProfile::where('is_spotlight', true)
@@ -1042,45 +1101,8 @@ class UserManagement extends Component
             'full' => $used >= $this->maxSpotlight,
         ];
     }
-    // ─── Invitation ────────────────────────────────────────────────────
 
-    public function openInviteModal(): void
-    {
-        $this->reset(['inviteEmail', 'inviteRoleId', 'invitePosition', 'inviteExpiryDays']);
-        $this->inviteExpiryDays = 7;
-        $this->showInviteModal = true;
-    }
-
-    public function sendInvitation(): void
-    {
-        $this->validate([
-            'inviteEmail' => 'required|email|max:255|unique:invitations,email|unique:users,email',
-            'inviteRoleId' => 'nullable|exists:roles,id',
-            'invitePosition' => 'nullable|string|max:255',
-            'inviteExpiryDays' => 'required|integer|min:1|max:30',
-        ]);
-
-        $token = Str::random(64);
-
-        $invitation = Invitation::create([
-            'email'      => $this->inviteEmail,
-            'token'      => $token,
-            'role_id'    => $this->inviteRoleId ?: null,
-            'position'   => $this->invitePosition ?: null,
-            'expires_at' => now()->addDays($this->inviteExpiryDays),
-            'invited_by' => Auth::id(),
-        ]);
-
-        Mail::to($this->inviteEmail)->queue(new InvitationMail($invitation));
-
-        $this->logActivity(Auth::id(), 'invitation_sent', "Invitation sent to {$this->inviteEmail}");
-
-        $this->showInviteModal = false;
-        $this->reset(['inviteEmail', 'inviteRoleId', 'invitePosition', 'inviteExpiryDays']);
-        $this->dispatch('notify', ['type' => 'success', 'title' => 'Invitation sent', 'message' => "Invitation sent to {$this->inviteEmail}"]);
-    }
-
-    // ─── Query ─────────────────────────────────────────────────────────
+    // ─── Query ─────────────────────────────────────────────────────────────
 
     private function getQuery()
     {
@@ -1088,7 +1110,6 @@ class UserManagement extends Component
             ->with('roles', 'profile')
             ->leftJoin('user_profiles', 'users.id', '=', 'user_profiles.user_id')
             ->select('users.*', 'user_profiles.position as position', 'user_profiles.is_featured_team', 'user_profiles.is_spotlight', 'user_profiles.is_employee')
-            // 👆 added is_spotlight
             ->when($this->search, fn($q) => $q->where(function ($q) {
                 $q->where('users.name', 'like', "%{$this->search}%")
                     ->orWhere('users.email', 'like', "%{$this->search}%");
@@ -1103,7 +1124,7 @@ class UserManagement extends Component
             ->distinct();
     }
 
-    // ─── Render ────────────────────────────────────────────────────────
+    // ─── Render ────────────────────────────────────────────────────────────
 
     public function render()
     {

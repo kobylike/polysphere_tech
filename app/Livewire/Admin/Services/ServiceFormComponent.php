@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class ServiceFormComponent extends Component
@@ -63,6 +64,7 @@ class ServiceFormComponent extends Component
         if ($id) {
             $this->serviceId = $id;
             $service = Service::findOrFail($id);
+            $this->authorize('update', $service);
 
             $this->name = $service->name;
             $this->slug = $service->slug;
@@ -73,6 +75,8 @@ class ServiceFormComponent extends Component
 
             $this->existing_featured_image = $service->featured_image;
             $this->existing_additional_images = $service->additional_images ?? [];
+        } else {
+            $this->authorize('create', Service::class);
         }
 
         if (empty($this->slug) && !empty($this->name)) {
@@ -154,9 +158,11 @@ class ServiceFormComponent extends Component
 
         if ($this->serviceId) {
             $service = Service::findOrFail($this->serviceId);
+            $this->authorize('update', $service);
             $service->update($data);
             session()->flash('success', 'Service updated successfully!');
         } else {
+            $this->authorize('create', Service::class);
             $maxOrder = Service::max('order') ?? 0;
             $data['order'] = $maxOrder + 1;
             Service::create($data);

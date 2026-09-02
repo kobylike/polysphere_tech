@@ -3,6 +3,8 @@
 namespace App\Livewire\Admin\Users;
 
 use App\Models\Role;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -55,6 +57,21 @@ class RoleManagement extends Component
     protected array $protectedRoles = ['Super Admin', 'User'];
 
     // ──────────────────────────────────────────────────────────────────────
+    // Authorization
+    // ──────────────────────────────────────────────────────────────────────
+
+    public function mount(): void
+    {
+        /** @var \App\Models\User */
+        $user = Auth::user();
+
+        // Only Super Admin can manage roles
+        if (! $user->can('manage-roles')) {
+            abort(403, 'You do not have permission to manage roles.');
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
     // Lifecycle
     // ──────────────────────────────────────────────────────────────────────
 
@@ -91,6 +108,7 @@ class RoleManagement extends Component
 
     public function openCreate(): void
     {
+        $this->authorize('manage-roles');
         $this->resetForm();
         $this->isEditing     = false;
         $this->showRoleModal = true;
@@ -98,6 +116,7 @@ class RoleManagement extends Component
 
     public function openEdit(int $id): void
     {
+        $this->authorize('manage-roles');
         $role = Role::with('permissions')->findOrFail($id);
 
         // 🔥 Prevent editing protected roles
@@ -117,12 +136,14 @@ class RoleManagement extends Component
 
     public function viewRole(int $id): void
     {
+        $this->authorize('manage-roles');
         $this->viewingRole    = Role::with('permissions', 'users')->findOrFail($id);
         $this->showViewModal  = true;
     }
 
     public function confirmDelete(int $id): void
     {
+        $this->authorize('manage-roles');
         $role = Role::findOrFail($id);
 
         if ($this->isProtectedRole($role->name)) {
@@ -136,6 +157,7 @@ class RoleManagement extends Component
 
     public function confirmBulkDelete(): void
     {
+        $this->authorize('manage-roles');
         // Filter out protected roles from the bulk selection
         $this->selectedRoles = array_filter($this->selectedRoles, function ($id) {
             $role = Role::find($id);
@@ -166,6 +188,7 @@ class RoleManagement extends Component
 
     public function saveRole(): void
     {
+        $this->authorize('manage-roles');
         $this->validate();
 
         // 🔥 Extra guard: if editing a protected role, abort
@@ -204,6 +227,7 @@ class RoleManagement extends Component
 
     public function deleteRole(): void
     {
+        $this->authorize('manage-roles');
         if ($this->deletingId) {
             $role = Role::find($this->deletingId);
             if ($role && $this->isProtectedRole($role->name)) {
@@ -224,6 +248,7 @@ class RoleManagement extends Component
 
     public function bulkDelete(): void
     {
+        $this->authorize('manage-roles');
         // Sanitize: remove any protected roles that might have slipped through
         $ids = array_filter($this->selectedRoles, function ($id) {
             $role = Role::find($id);

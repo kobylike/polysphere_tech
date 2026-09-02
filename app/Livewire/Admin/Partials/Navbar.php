@@ -8,6 +8,25 @@ use Livewire\Component;
 
 class Navbar extends Component
 {
+    public $user;
+
+    protected function getListeners()
+    {
+        return [
+            'own-profile-updated' => 'syncProfile',
+        ];
+    }
+
+    public function mount()
+    {
+        $this->user = Auth::user();
+    }
+
+    public function syncProfile($payload = null): void
+    {
+        // Reload the user from the database – re‑evaluates avatar_url with fresh timestamp
+        $this->user = Auth::user();
+    }
 
     public function logout()
     {
@@ -22,8 +41,11 @@ class Navbar extends Component
             return redirect()->route('login');
         }
     }
+
     public function render()
     {
-        return view('livewire.admin.partials.navbar');
+        return view('livewire.admin.partials.navbar', [
+            'user' => $this->user,
+        ]);
     }
 }

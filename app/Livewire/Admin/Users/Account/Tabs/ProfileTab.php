@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users\Account\Tabs;
 
+use App\Helpers\ProfileHelper;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
@@ -29,10 +30,10 @@ class ProfileTab extends Component
     public $search = '';
     public $showCountryDropdown = false;
 
-    // ─── Employee fields ─────────────────────────────────────────────
+    // Employee fields
     public $gender;
     public $date_of_birth;
-    public $country_code;          // ISO code for location (e.g., 'GH')
+    public $country_code;
     public $city;
     public $emergency_contact_name;
     public $emergency_contact_phone_local;
@@ -48,15 +49,15 @@ class ProfileTab extends Component
     public $avatar;
     public $confirmingAvatarDelete = false;
 
-    // Profile fields (existing)
+    // Profile fields
     public $about_me;
     public $skills = [];
     public $education = [];
     public $social_links = [
         'linkedin' => '',
-        'github' => '',
-        'twitter' => '',
-        'youtube' => '',
+        'github'   => '',
+        'twitter'  => '',
+        'youtube'  => '',
     ];
 
     protected function rules()
@@ -96,8 +97,6 @@ class ProfileTab extends Component
             'education.*.end_year' => 'nullable|string|max:10|after_or_equal:education.*.start_year',
             'education.*.currently_studying' => 'boolean',
             'social_links.*' => 'nullable|url|max:255',
-
-            // Employee fields (nullable)
             'gender' => 'nullable|in:male,female,other',
             'date_of_birth' => 'nullable|date|before:today',
             'country_code' => 'nullable|string|max:10',
@@ -145,15 +144,8 @@ class ProfileTab extends Component
         if ($profile) {
             $this->about_me = $profile->about_me;
             $this->skills = $profile->skills ?? [];
-
             $this->education = $profile->education ?? [];
             foreach ($this->education as &$edu) {
-                if (isset($edu['year']) && !isset($edu['start_year'])) {
-                    $edu['start_year'] = $edu['year'];
-                    $edu['end_year'] = null;
-                    $edu['currently_studying'] = false;
-                    unset($edu['year']);
-                }
                 if (!isset($edu['currently_studying'])) {
                     $edu['currently_studying'] = false;
                 }
@@ -161,7 +153,6 @@ class ProfileTab extends Component
                     $edu['end_year'] = null;
                 }
             }
-
             if ($profile->social_links) {
                 foreach ($profile->social_links as $key => $value) {
                     if (array_key_exists($key, $this->social_links)) {
@@ -169,10 +160,8 @@ class ProfileTab extends Component
                     }
                 }
             }
-
-            // Load employee fields
             $this->gender = $profile->gender;
-            $this->date_of_birth = $profile->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : '';
+            $this->date_of_birth = $profile->date_of_birth?->format('Y-m-d');
             $this->country_code = $profile->country_code;
             $this->city = $profile->city;
             $this->emergency_contact_name = $profile->emergency_contact_name;
@@ -323,7 +312,6 @@ class ProfileTab extends Component
 
     public function emergency_loadCountries()
     {
-        // Reuse the same country list (already loaded in main)
         $this->emergency_filteredCountries = $this->countries;
         $this->emergency_updateCountryInfo();
     }
@@ -450,6 +438,11 @@ class ProfileTab extends Component
         $this->confirmingAvatarDelete = true;
     }
 
+    public function cancelAvatarDelete()
+    {
+        $this->confirmingAvatarDelete = false;
+    }
+
     public function deleteAvatar()
     {
         if ($this->user->avatar) {
@@ -463,16 +456,17 @@ class ProfileTab extends Component
         $this->avatar = null;
         $this->confirmingAvatarDelete = false;
 
+        // ✅ Reload the user from the database to get fresh `updated_at`
+        $this->user = $this->user->fresh();
+
+        // 🚀 Broadcast the update
+        ProfileHelper::broadcast($this->user);
+
         $this->dispatch('notify', [
-            'type' => 'success',
-            'title' => 'Avatar removed',
+            'type'    => 'success',
+            'title'   => 'Avatar removed',
             'message' => 'Your profile picture has been deleted.',
         ]);
-    }
-
-    public function cancelAvatarDelete()
-    {
-        $this->confirmingAvatarDelete = false;
     }
 
     // ─── Skills ──────────────────────────────────────────────────────────────
@@ -523,7 +517,7 @@ class ProfileTab extends Component
     {
         $this->validate();
 
-        // Handle new avatar upload
+        // Handle avatar upload
         if ($this->avatar) {
             if ($this->user->avatar) {
                 $oldPath = storage_path('app/public/' . $this->user->avatar);
@@ -537,12 +531,12 @@ class ProfileTab extends Component
 
         // Update user
         $this->user->update([
-            'name' => $this->name,
+            'name'  => $this->name,
             'email' => $this->email,
             'phone' => $this->getFullPhone(),
         ]);
 
-        // Profile
+        // Update or create profile
         $profile = $this->user->profile;
         if (!$profile) {
             $profile = $this->user->profile()->create([]);
@@ -556,26 +550,35 @@ class ProfileTab extends Component
         }
 
         $profile->update([
-            'about_me' => $this->about_me,
-            'skills' => $this->skills,
-            'education' => $this->education,
-            'social_links' => $this->social_links,
-
-            // Employee fields
-            'gender' => $this->gender,
-            'date_of_birth' => $this->date_of_birth ? Carbon::parse($this->date_of_birth) : null,
-            'country_code' => $this->country_code,
-            'city' => $this->city,
-            'emergency_contact_name' => $this->emergency_contact_name,
+            'about_me'                => $this->about_me,
+            'skills'                  => $this->skills,
+            'education'               => $this->education,
+            'social_links'            => $this->social_links,
+            'gender'                  => $this->gender,
+            'date_of_birth'           => $this->date_of_birth ? Carbon::parse($this->date_of_birth) : null,
+            'country_code'            => $this->country_code,
+            'city'                    => $this->city,
+            'emergency_contact_name'  => $this->emergency_contact_name,
             'emergency_contact_phone' => $this->emergency_contact_phone_local ? $this->emergency_getFullPhone() : null,
         ]);
 
+        // ✅ Reload the user from the database to get fresh `updated_at`
+        $this->user = $this->user->fresh();
+
+        // 🚀 Broadcast the updated profile
+        ProfileHelper::broadcast($this->user);
+
+        // Reset the temporary avatar after successful save
+        $this->avatar = null;
+
         $this->dispatch('notify', [
-            'type' => 'success',
-            'title' => 'Profile updated!',
+            'type'    => 'success',
+            'title'   => 'Profile updated!',
             'message' => 'Your changes have been saved successfully.',
         ]);
     }
+
+    // ─── Render ─────────────────────────────────────────────────────────────
 
     public function render()
     {

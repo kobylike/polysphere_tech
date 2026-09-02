@@ -26,7 +26,7 @@ class ForcePasswordChange extends Component
     {
         // Nothing to do here if this user isn't actually flagged.
         if (!Auth::user()->must_change_password) {
-            $this->redirectRoute('dashboard', navigate: true);
+            return $this->redirect(route('dashboard'));
         }
     }
 
@@ -59,14 +59,12 @@ class ForcePasswordChange extends Component
     public function updatePassword()
     {
         $this->validate();
-        $this->loading = true;
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if (!Hash::check($this->current_password, $user->password)) {
             $this->addError('current_password', 'That temporary password is incorrect.');
-            $this->loading = false;
             return;
         }
 
@@ -77,9 +75,8 @@ class ForcePasswordChange extends Component
 
         session()->flash('status', 'Your password has been updated. Welcome aboard!');
 
-        $this->redirectRoute('dashboard', navigate: true);
+        return $this->redirect(route('dashboard'));
     }
-
     public function togglePasswordVisibility(string $field = 'password')
     {
         match ($field) {

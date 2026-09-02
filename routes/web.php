@@ -129,41 +129,104 @@ Route::get('/services', ServiceComponent::class)->name('services');
 Route::get('/services/{slug}', ServiceDetails::class)->name('service.details');
 
 
-// Admin – protected
-
 Route::get('/force-password-change', ForcePasswordChange::class)
     ->middleware('auth')
     ->name('password.change.force');
-Route::middleware(['auth', 'verified', 'not.suspended'])->group(function () {
 
-    Route::get('/account/{tab?}', AccountSettings::class)
-        ->where('tab', 'overview|profile|security|activity')
-        ->name('account');
-    Route::get('/dashboard', DashboardComponent::class)->name('dashboard');
-    //User Management
-    Route::get('/user-management', UserManagement::class)->name('users');
-    Route::get('/user-managemment/roles', RoleManagement::class)->name('roles');
-    Route::get('/user-managemment/permissions', PermissionManagement::class)->name('permissions');
-    Route::get('/hr', HrDashboard::class)->name('hr.dashboard');
-    Route::get('/chat-messenger', ChatMessengerMain::class)->name('messenger');
-    // Blog Management – using slug for edit
-    Route::get('/blog-management', PostManagement::class)->name('manage.posts');
-    Route::get('/blog-management/create', PostFormComponent::class)->name('create.post');
-    Route::get('/blog-management/{slug}/edit', PostFormComponent::class)->name('edit.post'); // slug
-    Route::post('/ckeditor/upload', [CKEditorController::class, 'upload'])->name('ckeditor.upload');
 
-    // Category Management
-    Route::get('/category-management', CategoryComponent::class)->name('manage.categories');
-    Route::get('/category-management/create', CategoryFormComponent::class)->name('create.categories');
-    Route::get('/category-management/{id}/edit', CategoryFormComponent::class)->name('edit.categories');
 
-    //Project Management
-    Route::get('/projects-management', ProjectManagement::class)->name('admin.projects.index');
-    Route::get('/projects-management/create', ProjectFormComponent::class)->name('admin.projects.create');
-    Route::get('/projects-management/{id}/edit', ProjectFormComponent::class)->name('admin.projects.edit');
+Route::middleware(['auth', 'force.password.change'])->group(function () {
 
-    //Service Management
-    Route::get('/services-management', ServiceManagement::class)->name('admin.services.index');
-    Route::get('/services-management/create', ServiceFormComponent::class)->name('admin.services.create');
-    Route::get('/services-management/{id}/edit', ServiceFormComponent::class)->name('admin.services.edit');
+    Route::middleware(['verified', 'not.suspended'])->group(function () {
+
+        // ─── Public (for all authenticated users) ──────────────────────────
+        Route::get('/account/{tab?}', AccountSettings::class)
+            ->where('tab', 'overview|profile|security|activity')
+            ->name('account');
+
+        Route::get('/dashboard', DashboardComponent::class)->name('dashboard');
+
+        // Chat messenger – accessible to everyone (may have internal permissions)
+        Route::get('/chat-messenger', ChatMessengerMain::class)->name('messenger');
+
+        // ─── User Management ────────────────────────────────────────────────
+        Route::get('/user-management', UserManagement::class)
+            ->middleware('can:View Users')
+            ->name('users');
+
+        Route::get('/user-management/roles', RoleManagement::class)
+            ->middleware('can:manage-roles')
+            ->name('roles');
+
+        Route::get('/user-management/permissions', PermissionManagement::class)
+            ->middleware('can:manage-permissions')
+            ->name('permissions');
+
+        // ─── HR Dashboard ────────────────────────────────────────────────────
+        Route::get('/hr', HrDashboard::class)
+            ->middleware('can:View HR Dashboard')
+            ->name('hr.dashboard');
+
+        // ─── Blog Management ────────────────────────────────────────────────
+        Route::prefix('blog-management')->group(function () {
+            Route::get('/', PostManagement::class)
+                ->middleware('can:View Posts')
+                ->name('manage.posts');
+
+            Route::get('/create', PostFormComponent::class)
+                ->middleware('can:Create Posts')
+                ->name('create.post');
+
+            Route::get('/{slug}/edit', PostFormComponent::class)
+                ->middleware('can:Edit Posts')
+                ->name('edit.post');
+        });
+
+        Route::post('/ckeditor/upload', [CKEditorController::class, 'upload'])->name('ckeditor.upload');
+
+        // ─── Category Management ────────────────────────────────────────────
+        Route::prefix('category-management')->group(function () {
+            Route::get('/', CategoryComponent::class)
+                ->middleware('can:View Categories')
+                ->name('manage.categories');
+
+            Route::get('/create', CategoryFormComponent::class)
+                ->middleware('can:Create Categories')
+                ->name('create.categories');
+
+            Route::get('/{id}/edit', CategoryFormComponent::class)
+                ->middleware('can:Edit Categories')
+                ->name('edit.categories');
+        });
+
+        // ─── Project Management ─────────────────────────────────────────────
+        Route::prefix('projects-management')->group(function () {
+            Route::get('/', ProjectManagement::class)
+                ->middleware('can:View Projects')
+                ->name('admin.projects.index');
+
+            Route::get('/create', ProjectFormComponent::class)
+                ->middleware('can:Create Projects')
+                ->name('admin.projects.create');
+
+            Route::get('/{id}/edit', ProjectFormComponent::class)
+                ->middleware('can:Edit Projects')
+                ->name('admin.projects.edit');
+        });
+
+        // ─── Service Management ─────────────────────────────────────────────
+        Route::prefix('services-management')->group(function () {
+            Route::get('/', ServiceManagement::class)
+                ->middleware('can:View Services')
+                ->name('admin.services.index');
+
+            Route::get('/create', ServiceFormComponent::class)
+                ->middleware('can:Create Services')
+                ->name('admin.services.create');
+
+            Route::get('/{id}/edit', ServiceFormComponent::class)
+                ->middleware('can:Edit Services')
+                ->name('admin.services.edit');
+        });
+    });
 });

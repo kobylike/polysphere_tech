@@ -9,6 +9,7 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class PostManagement extends Component
@@ -34,6 +35,13 @@ class PostManagement extends Component
 
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
+
+    // ─── Mount ──────────────────────────────────────────────────────
+
+    public function mount()
+    {
+        $this->authorize('viewAny', Post::class);
+    }
 
     // ─── Reset pagination when filters change ─────────────────────
 
@@ -96,21 +104,47 @@ class PostManagement extends Component
 
         switch ($this->bulkAction) {
             case 'delete':
+                // Check delete permission for each selected post
+                foreach ($this->selectedPosts as $id) {
+                    $post = Post::find($id);
+                    if ($post) {
+                        $this->authorize('delete', $post);
+                    }
+                }
                 Post::whereIn('id', $this->selectedPosts)->delete();
                 session()->flash('success', 'Selected posts deleted successfully.');
                 break;
 
             case 'publish':
+                // Check update permission for each selected post
+                foreach ($this->selectedPosts as $id) {
+                    $post = Post::find($id);
+                    if ($post) {
+                        $this->authorize('update', $post);
+                    }
+                }
                 Post::whereIn('id', $this->selectedPosts)->update(['status' => 'published', 'published_at' => now()]);
                 session()->flash('success', 'Selected posts published.');
                 break;
 
             case 'draft':
+                foreach ($this->selectedPosts as $id) {
+                    $post = Post::find($id);
+                    if ($post) {
+                        $this->authorize('update', $post);
+                    }
+                }
                 Post::whereIn('id', $this->selectedPosts)->update(['status' => 'draft']);
                 session()->flash('success', 'Selected posts moved to draft.');
                 break;
 
             case 'trash':
+                foreach ($this->selectedPosts as $id) {
+                    $post = Post::find($id);
+                    if ($post) {
+                        $this->authorize('update', $post);
+                    }
+                }
                 Post::whereIn('id', $this->selectedPosts)->update(['status' => 'trash']);
                 session()->flash('success', 'Selected posts moved to trash.');
                 break;
@@ -130,6 +164,7 @@ class PostManagement extends Component
     public function deleteSingle($id)
     {
         $post = Post::findOrFail($id);
+        $this->authorize('delete', $post);
         $post->delete();
         session()->flash('success', 'Post deleted successfully.');
     }

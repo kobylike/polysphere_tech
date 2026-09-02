@@ -21,7 +21,7 @@
 
     {{-- ─── PROFILE HERO ───────────────────────────────────────────────────── --}}
     @php
-        $user = auth()->user();
+        // ✅ NOW USING $user PASSED FROM THE COMPONENT – NOT auth()->user()
         $roles = $user->roles->pluck('name')->map(fn($r) => ucfirst($r))->implode(', ');
         $statusClass = $user->status === 'active' ? 'success' : 'danger';
         $position = $user->position ?? '—';
@@ -48,7 +48,6 @@
                         <div class="profile-avatar-inner">
                             <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}" class="profile-avatar-img">
                             <span class="profile-status-dot status-{{ $statusClass }}"></span>
-                            {{-- Role badge removed from here --}}
                         </div>
                     </div>
 
@@ -56,11 +55,7 @@
                     <div class="profile-user-info">
                         <div class="profile-name-wrapper">
                             <h2 class="profile-name">{{ $user->name }}</h2>
-                            {{-- Role tick badge placed here --}}
                             <img src="{{ $tickUrl }}" alt="Role badge" class="profile-role-badge-inline" title="{{ $roleNames ?: 'No role' }}">
-                            {{-- @if($isVerified)
-                                <i class="fa-regular fa-circle-check text-success profile-verified-icon" title="Email verified"></i>
-                            @endif --}}
                             @if($isFeatured)
                                 <span class="badge bg-primary light border-0 profile-featured-badge">Featured</span>
                             @endif
@@ -110,7 +105,7 @@
                 </div>
             </div>
 
-            {{-- ─── TAB NAVIGATION (Original Underline Style) ─────────────────── --}}
+            {{-- ─── TAB NAVIGATION ─────────────────────────────────────────────── --}}
             <div class="profile-tabs-wrapper">
                 <ul class="nav nav-underline nav-underline-primary nav-underline-text-dark nav-underline-gap-x-0" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -153,7 +148,6 @@
             @endswitch
         </div>
     </div>
-
     {{-- ─── STYLES ─────────────────────────────────────────────────────────── --}}
     <style>
         /* ── Profile Hero Wrapper ──────────────────────────────────────────── */

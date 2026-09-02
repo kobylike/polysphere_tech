@@ -6,6 +6,7 @@ use App\Models\Service;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class ServiceManagement extends Component
@@ -20,6 +21,11 @@ class ServiceManagement extends Component
     public $selectedServices = [];
     public $selectAll = false;
     public $bulkAction = '';
+
+    public function mount()
+    {
+        $this->authorize('viewAny', Service::class);
+    }
 
     public function updatingSearch()
     {
@@ -57,18 +63,29 @@ class ServiceManagement extends Component
             return;
         }
 
+        // Check permissions for each bulk action
         switch ($this->bulkAction) {
             case 'delete':
+                foreach ($this->selectedServices as $id) {
+                    $service = Service::find($id);
+                    if ($service) {
+                        $this->authorize('delete', $service);
+                    }
+                }
                 Service::whereIn('id', $this->selectedServices)->delete();
                 session()->flash('success', 'Selected services deleted.');
                 break;
             case 'active':
-                Service::whereIn('id', $this->selectedServices)->update(['status' => 'active']);
-                session()->flash('success', 'Selected services activated.');
-                break;
             case 'inactive':
-                Service::whereIn('id', $this->selectedServices)->update(['status' => 'inactive']);
-                session()->flash('success', 'Selected services deactivated.');
+                foreach ($this->selectedServices as $id) {
+                    $service = Service::find($id);
+                    if ($service) {
+                        $this->authorize('update', $service);
+                    }
+                }
+                $status = $this->bulkAction === 'active' ? 'active' : 'inactive';
+                Service::whereIn('id', $this->selectedServices)->update(['status' => $status]);
+                session()->flash('success', 'Selected services ' . ($status === 'active' ? 'activated' : 'deactivated') . '.');
                 break;
             default:
                 session()->flash('error', 'Invalid bulk action.');
@@ -83,6 +100,7 @@ class ServiceManagement extends Component
     public function deleteSingle($id)
     {
         $service = Service::findOrFail($id);
+        $this->authorize('delete', $service);
         $service->delete();
         session()->flash('success', 'Service deleted.');
     }
@@ -90,6 +108,7 @@ class ServiceManagement extends Component
     public function moveUp($id)
     {
         $service = Service::findOrFail($id);
+        $this->authorize('update', $service);
         $prev = Service::where('order', '<', $service->order)
             ->orderBy('order', 'desc')
             ->first();
@@ -105,6 +124,7 @@ class ServiceManagement extends Component
     public function moveDown($id)
     {
         $service = Service::findOrFail($id);
+        $this->authorize('update', $service);
         $next = Service::where('order', '>', $service->order)
             ->orderBy('order', 'asc')
             ->first();

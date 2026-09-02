@@ -9,10 +9,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsurePasswordIsChanged
 {
-    /**
-     * Block every authenticated route except the forced-change page
-     * itself (and logout) while must_change_password is still true.
-     */
+
     public function handle(Request $request, Closure $next): Response
     {
         $user = Auth::user();
@@ -22,6 +19,7 @@ class EnsurePasswordIsChanged
             && $user->must_change_password
             && !$request->routeIs('password.change.force')
             && !$request->routeIs('logout')
+            && !$request->routeIs('livewire.*')
         ) {
             return redirect()->route('password.change.force');
         }

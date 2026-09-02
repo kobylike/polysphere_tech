@@ -5,9 +5,11 @@ namespace App\Livewire\Auth;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('layouts.auth')]
+#[Title('Login- Polysphere Tech')]
 class Login extends Component
 {
     public $email = '';
@@ -49,9 +51,6 @@ class Login extends Component
             return;
         }
 
-        // Validate credentials without logging the user in yet — needed
-        // because 2FA users shouldn't get an authenticated session until
-        // they've passed the verification step.
         if (!Auth::validate([
             'email'    => $this->email,
             'password' => $this->password,
@@ -87,6 +86,13 @@ class Login extends Component
 
         $user->updateLastLogin();
         $user->resetFailedLoginAttempts();
+
+        // Send admin-created accounts straight to the force-change page —
+        // skip the dashboard→middleware→redirect round trip entirely.
+        if ($user->must_change_password) {
+            // return $this->redirect(route('password.change.force'));
+            $this->redirectRoute('password.change.force', navigate: true);
+        }
 
         return $this->redirect(route('dashboard'));
     }

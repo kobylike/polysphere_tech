@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class CategoryFormComponent extends Component
@@ -46,9 +47,15 @@ class CategoryFormComponent extends Component
 
     public function mount($id = null)
     {
+        // Authorization: check viewAny (or view) on Category
+        $this->authorize('viewAny', Category::class);
+
         if ($id) {
             $this->categoryId = $id;
             $category = Category::findOrFail($id);
+            // Check update permission for this specific category
+            $this->authorize('update', $category);
+
             $this->name = $category->name;
             $this->slug = $category->slug;
             $this->description = $category->description;
@@ -96,9 +103,11 @@ class CategoryFormComponent extends Component
 
         if ($this->categoryId) {
             $category = Category::findOrFail($this->categoryId);
+            $this->authorize('update', $category);
             $category->update($data);
             $message = 'Category updated successfully!';
         } else {
+            $this->authorize('create', Category::class);
             $maxOrder = Category::max('order') ?? 0;
             $data['order'] = $maxOrder + 1;
             Category::create($data);
@@ -114,8 +123,10 @@ class CategoryFormComponent extends Component
 
     public function edit($id)
     {
-        $this->editingId = $id;
         $category = Category::findOrFail($id);
+        $this->authorize('update', $category);
+
+        $this->editingId = $id;
         $this->name = $category->name;
         $this->slug = $category->slug;
         $this->description = $category->description;
@@ -137,6 +148,8 @@ class CategoryFormComponent extends Component
     public function delete($id)
     {
         $category = Category::findOrFail($id);
+        $this->authorize('delete', $category);
+
         if ($category->posts()->count() > 0) {
             session()->flash('error', 'Cannot delete category because it has posts associated.');
             return;
@@ -151,6 +164,8 @@ class CategoryFormComponent extends Component
     public function moveUp($id)
     {
         $category = Category::findOrFail($id);
+        $this->authorize('update', $category);
+
         $previous = Category::where('order', '<', $category->order)
             ->orderBy('order', 'desc')
             ->first();
@@ -166,6 +181,8 @@ class CategoryFormComponent extends Component
     public function moveDown($id)
     {
         $category = Category::findOrFail($id);
+        $this->authorize('update', $category);
+
         $next = Category::where('order', '>', $category->order)
             ->orderBy('order', 'asc')
             ->first();

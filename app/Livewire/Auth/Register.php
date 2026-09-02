@@ -11,9 +11,11 @@ use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('layouts.auth')]
+#[Title('Register - Polysphere Tech')]
 class Register extends Component
 {
     // ─── Invitation ──────────────────────────────────────────────

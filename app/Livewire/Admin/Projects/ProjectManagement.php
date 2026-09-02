@@ -7,6 +7,7 @@ use App\Models\Service;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class ProjectManagement extends Component
@@ -15,13 +16,22 @@ class ProjectManagement extends Component
 
     public $search = '';
     public $status = '';
-    public $service = ''; // changed from 'category'
+    public $service = '';
     public $perPage = 10;
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
     public $selectedProjects = [];
     public $selectAll = false;
     public $bulkAction = '';
+
+    // ─── Mount ──────────────────────────────────────────────────────────────
+
+    public function mount()
+    {
+        $this->authorize('viewAny', Project::class);
+    }
+
+    // ─── Filters ────────────────────────────────────────────────────────────
 
     public function updatingSearch()
     {
@@ -38,6 +48,8 @@ class ProjectManagement extends Component
         $this->resetPage();
     }
 
+    // ─── Sorting ────────────────────────────────────────────────────────────
+
     public function sortBy($field)
     {
         if ($this->sortField === $field) {
@@ -48,6 +60,8 @@ class ProjectManagement extends Component
         }
     }
 
+    // ─── Select All ─────────────────────────────────────────────────────────
+
     public function updatedSelectAll($value)
     {
         if ($value) {
@@ -57,11 +71,28 @@ class ProjectManagement extends Component
         }
     }
 
+    // ─── Bulk Actions ──────────────────────────────────────────────────────
+
     public function applyBulkAction()
     {
         if (empty($this->selectedProjects)) {
             session()->flash('error', 'No projects selected.');
             return;
+        }
+
+        // Check permission based on action
+        switch ($this->bulkAction) {
+            case 'delete':
+                $this->authorize('delete', Project::class);
+                break;
+            case 'publish':
+            case 'draft':
+            case 'trash':
+                $this->authorize('update', Project::class);
+                break;
+            default:
+                session()->flash('error', 'Invalid bulk action.');
+                return;
         }
 
         switch ($this->bulkAction) {
@@ -91,16 +122,21 @@ class ProjectManagement extends Component
         $this->bulkAction = '';
     }
 
+    // ─── Delete Single ──────────────────────────────────────────────────────
+
     public function deleteSingle($id)
     {
         $project = Project::findOrFail($id);
+        $this->authorize('delete', $project);
         $project->delete();
         session()->flash('success', 'Project deleted.');
     }
 
+    // ─── Get Projects ──────────────────────────────────────────────────────
+
     public function getProjects()
     {
-        $query = Project::with(['service', 'author']); // eager load service instead of category
+        $query = Project::with(['service', 'author']);
 
         if (!empty($this->search)) {
             $query->where(function ($q) {
@@ -119,6 +155,8 @@ class ProjectManagement extends Component
         $query->orderBy($this->sortField, $this->sortDirection);
         return $query->paginate($this->perPage);
     }
+
+    // ─── Render ────────────────────────────────────────────────────────────
 
     public function render()
     {

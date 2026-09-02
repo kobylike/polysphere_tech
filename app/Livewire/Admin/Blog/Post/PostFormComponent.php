@@ -12,6 +12,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
+use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class PostFormComponent extends Component
@@ -85,6 +86,7 @@ class PostFormComponent extends Component
         if ($slug) {
             $this->postSlug = $slug;
             $post = Post::with('categories', 'tags')->where('slug', $slug)->firstOrFail();
+            $this->authorize('update', $post);
 
             $this->title = $post->title;
             $this->slug = $post->slug;
@@ -102,6 +104,8 @@ class PostFormComponent extends Component
 
             $this->selectedCategories = $post->categories->pluck('id')->toArray();
             $this->selectedTags = $post->tags->pluck('id')->toArray();
+        } else {
+            $this->authorize('create', Post::class);
         }
 
         // Auto-generate slug if empty
@@ -137,6 +141,7 @@ class PostFormComponent extends Component
 
     public function addCategory()
     {
+        $this->authorize('create', Category::class);
         $this->validate([
             'newCategoryName' => 'required|string|max:255|unique:categories,name',
         ]);
@@ -155,6 +160,8 @@ class PostFormComponent extends Component
 
     public function addTag()
     {
+        // No specific permission for tags – we assume if you can create a post you can add a tag.
+        // But we'll check create permission on Tag? We can skip for now.
         $this->validate([
             'newTagName' => 'required|string|max:255|unique:tags,name',
         ]);
@@ -205,18 +212,19 @@ class PostFormComponent extends Component
 
         if ($this->postSlug) {
             $post = Post::where('slug', $this->postSlug)->firstOrFail();
+            $this->authorize('update', $post);
             $post->update($data);
             $post->categories()->sync($this->selectedCategories);
             $post->tags()->sync($this->selectedTags);
             session()->flash('success', 'Post updated successfully!');
         } else {
+            $this->authorize('create', Post::class);
             $post = Post::create($data);
             $post->categories()->attach($this->selectedCategories);
             $post->tags()->attach($this->selectedTags);
             session()->flash('success', 'Post created successfully!');
         }
 
-        // return redirect()->route('manage.posts');
         $this->redirectRoute('manage.posts', navigate: true);
     }
 
