@@ -102,6 +102,36 @@
             </div>
         </div>
 
+        {{-- ─── SPOTLIGHT SUMMARY STRIP ────────────────────────────────────── --}}
+        <div class="row g-3 mb-3">
+            <div class="col-12">
+                <div class="card border-0"
+                    style="background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 1px solid #fde68a !important;">
+                    <div class="card-body d-flex align-items-center justify-content-between flex-wrap gap-2 py-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                style="width:44px; height:44px; background: linear-gradient(135deg, #f59e0b, #d97706); flex-shrink:0;">
+                                <i class="fa-solid fa-star text-white fs-20"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0 fw-bold" style="color:#92400e;">Homepage / About Spotlight</h6>
+                                <span class="small" style="color:#b45309;">These users appear on the homepage and About
+                                    page leadership block.</span>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge border-0 px-3 py-2 fs-14" style="background:#f59e0b; color:#fff;">
+                                {{ $stats['spotlight'] }} / 3 slots used
+                            </span>
+                            @if($stats['spotlight'] >= 3)
+                                <span class="badge border-0 px-3 py-2 fs-14 bg-danger text-white">Full</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- ─── FILTERS & BULK BAR ─────────────────────────────────────────── --}}
         <div class="row align-items-center mb-3">
             <div class="col-xl-8 col-lg-6">
@@ -209,6 +239,9 @@
                                                 @endif
                                             </span>
                                         </th>
+                                        <th class="text-center" style="width:90px;" title="Homepage / About spotlight">
+                                            <i class="fa-solid fa-star text-warning"></i> Spotlight
+                                        </th>
                                         <th wire:click="sort('status')" style="cursor:pointer;">
                                             Status
                                             <span class="ms-1">
@@ -256,6 +289,8 @@
                                             $isVerified = (bool) $user->email_verified_at;
                                             $avatarColors = ['primary', 'success', 'warning', 'info', 'secondary'];
                                             $avatarColor = $avatarColors[crc32($user->name) % count($avatarColors)];
+                                            $isEmployee = (bool) ($user->is_employee ?? false);
+                                            $isSpotlight = (bool) ($user->is_spotlight ?? false);
                                         @endphp
                                         <tr
                                             class="{{ in_array((string) $user->id, $selectedUsers) ? 'table-active' : '' }}">
@@ -283,6 +318,15 @@
                                                         @if($user->is_featured_team)
                                                             <span class="badge bg-primary light border-0 ms-1">Featured</span>
                                                         @endif
+                                                        @if($isEmployee)
+                                                            <span class="badge bg-success light border-0 ms-1">Employee</span>
+                                                        @endif
+                                                        @if($isSpotlight)
+                                                            <span class="badge border-0 ms-1 text-white"
+                                                                style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                                                <i class="fa-solid fa-star"></i> Spotlight
+                                                            </span>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </td>
@@ -297,6 +341,15 @@
                                                 @endif
                                             </td>
                                             <td>{{ $user->position ?? '—' }}</td>
+                                            <td class="text-center">
+                                                <button
+                                                    class="btn btn-sm {{ $isSpotlight ? 'btn-warning' : 'btn-outline-secondary' }}"
+                                                    style="border-radius: 50%; width: 34px; height: 34px; padding: 0;"
+                                                    wire:click="confirmToggleSpotlight({{ $user->id }})"
+                                                    title="{{ $isSpotlight ? 'In spotlight — click to remove' : 'Click to add to spotlight' }}">
+                                                    <i class="fa-{{ $isSpotlight ? 'solid' : 'regular' }} fa-star"></i>
+                                                </button>
+                                            </td>
                                             <td>
                                                 <button
                                                     class="badge {{ $user->status === 'active' ? 'badge-success' : 'badge-danger' }} light border-0"
@@ -335,6 +388,15 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex justify-content-center gap-1">
+                                                    {{-- CONVERT TO EMPLOYEE BUTTON (only if not already employee) --}}
+                                                    @if(!$isEmployee)
+                                                        <button class="btn btn-sm btn-success"
+                                                            wire:click="openConvertToEmployee({{ $user->id }})"
+                                                            title="Convert to Employee">
+                                                            <i class="fa-regular fa-briefcase"></i>
+                                                        </button>
+                                                    @endif
+
                                                     <button class="btn btn-sm btn-primary"
                                                         wire:click="viewUser({{ $user->id }})" title="View">
                                                         <i class="fa-regular fa-eye"></i>
@@ -359,7 +421,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="8" class="text-center py-5">
+                                            <td colspan="9" class="text-center py-5">
                                                 <i class="fa-regular fa-users-slash fs-2 d-block mb-2 text-muted"></i>
                                                 <h5>No users found</h5>
                                                 <p class="text-muted">Try adjusting your search filters, or add a new user.
@@ -388,15 +450,14 @@
         </div>
     </div>
 
-    {{-- ────────────────────────────────────────────────────────────────────── --}}
-    {{-- MODALS --}}
-    {{-- ────────────────────────────────────────────────────────────────────── --}}
+    {{-- ─── MODALS ──────────────────────────────────────────────────────────── --}}
 
     {{-- ── VIEW USER MODAL ────────────────────────────────────────────────── --}}
     @if($showViewModal && $viewingUser)
         @php
             $viewingRoles = $viewingUser->roles->pluck('name')->toArray();
             $viewingVerified = (bool) $viewingUser->email_verified_at;
+            $viewingSpotlight = (bool) ($viewingUser->profile?->is_spotlight ?? false);
         @endphp
         <div class="modal fade show d-block" id="viewUserModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -417,6 +478,12 @@
                                 <span class="text-muted">{{ $viewingUser->email }}</span>
                                 @if($viewingUser->is_featured_team)
                                     <span class="badge bg-primary light border-0 ms-1">Featured</span>
+                                @endif
+                                @if($viewingSpotlight)
+                                    <span class="badge border-0 ms-1 text-white"
+                                        style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                        <i class="fa-solid fa-star"></i> Spotlight
+                                    </span>
                                 @endif
                             </div>
                         </div>
@@ -461,6 +528,17 @@
                                 <div class="fw-bold text-muted small">Joined</div>
                                 <div>{{ $viewingUser->created_at->format('F d, Y g:i A') }}</div>
                             </div>
+                            <div class="col-md-6">
+                                <div class="fw-bold text-muted small">Spotlight</div>
+                                <div>
+                                    @if($viewingSpotlight)
+                                        <span class="text-warning fw-bold"><i class="fa-solid fa-star"></i> On homepage & About
+                                            page</span>
+                                    @else
+                                        <span class="text-muted">Not spotlighted</span>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                         @if(count($recentActivities) > 0)
                             <hr>
@@ -493,6 +571,7 @@
         </div>
     @endif
 
+    {{-- ── USER FORM MODAL (Create/Edit) ─────────────────────────────────── --}}
     @if($showUserModal)
         <div class="modal fade show d-block" id="userModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
             wire:ignore.self>
@@ -503,7 +582,6 @@
                         <button type="button" class="btn-close" wire:click="$set('showUserModal', false)"></button>
                     </div>
                     <div class="modal-body">
-                        {{-- We'll use a div with wire:key to force re-render --}}
                         <div wire:key="user-form-{{ $isEditing ? 'edit' : 'create' }}">
                             {{-- First Name --}}
                             <div class="row">
@@ -592,6 +670,32 @@
                                 </div>
                             </div>
 
+                            {{-- Spotlight (Homepage + About page) --}}
+                            <div class="mb-3 p-3 rounded-3"
+                                style="background: {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fef2f2' : '#fffbeb' }};
+                                               border: 1px solid {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fecaca' : '#fde68a' }};">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="is_spotlight"
+                                        wire:model.live="is_spotlight" @if($this->spotlightInfo['full'] && !$is_spotlight)
+                                        disabled @endif>
+                                    <label class="form-check-label fw-bold small" for="is_spotlight">
+                                        <i class="fa-solid fa-star text-warning"></i> Homepage / About Spotlight
+                                    </label>
+                                    <div class="text-muted small">Featured on the homepage and About page leadership
+                                        block — max {{ $this->spotlightInfo['max'] }} people.</div>
+                                </div>
+                                <div
+                                    class="mt-2 small fw-bold {{ $this->spotlightInfo['full'] && !$is_spotlight ? 'text-danger' : 'text-warning' }}">
+                                    <i class="fa-regular fa-circle-info"></i>
+                                    {{ $this->spotlightInfo['used'] }} / {{ $this->spotlightInfo['max'] }} slots used
+                                    @if($this->spotlightInfo['full'] && !$is_spotlight)
+                                        — full, remove someone else first
+                                    @endif
+                                </div>
+                                @error('is_spotlight')
+                                <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                            </div>
+
                             @if($isEditing)
                                 <div class="mb-3">
                                     <label class="form-label fw-bold small">Password <span class="text-muted small fw-normal">—
@@ -629,6 +733,7 @@
             </div>
         </div>
     @endif
+
     {{-- ── DELETE USER MODAL ────────────────────────────────────────────── --}}
     @if($showDeleteModal)
         <div class="modal fade show d-block" id="deleteModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
@@ -750,6 +855,45 @@
         </div>
     @endif
 
+    {{-- ── TOGGLE SPOTLIGHT MODAL ────────────────────────────────────────── --}}
+    @if($showSpotlightModal)
+        <div class="modal fade show d-block" id="spotlightModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
+            wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="fa-solid fa-star text-warning me-1"></i> Change Spotlight
+                            Status?</h5>
+                        <button type="button" class="btn-close" wire:click="$set('showSpotlightModal', false)"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <i class="fa-solid fa-star fa-3x text-warning mb-3"></i>
+                        @php
+                            $targetSpotlightUser = App\Models\User::with('profile')->find($spotlightUserId);
+                            $currentlyIn = $targetSpotlightUser?->profile?->is_spotlight ?? false;
+                        @endphp
+                        <p>
+                            You are about to <strong>{{ $currentlyIn ? 'remove' : 'add' }}</strong>
+                            <strong>{{ $targetSpotlightUser?->name }}</strong>
+                            {{ $currentlyIn ? 'from' : 'to' }} the homepage / About page spotlight.
+                        </p>
+                        @if(!$currentlyIn)
+                            <p class="text-muted small">Only 3 people can be spotlighted at once.</p>
+                        @endif
+                    </div>
+                    <div class="modal-footer justify-content-center">
+                        <button class="btn btn-secondary" wire:click="$set('showSpotlightModal', false)">Cancel</button>
+                        <button class="btn btn-warning" wire:click="toggleSpotlightConfirmed" wire:loading.attr="disabled">
+                            <span wire:loading.remove><i class="fa-solid fa-star"></i>
+                                {{ $currentlyIn ? 'Remove' : 'Add to Spotlight' }}</span>
+                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Updating…</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- ── BULK VERIFY MODAL ─────────────────────────────────────────────── --}}
     @if($showBulkVerifyModal)
         <div class="modal fade show d-block" id="bulkVerifyModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
@@ -848,6 +992,302 @@
                         <button class="btn btn-success" wire:click="sendInvitation" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular fa-paper-plane"></i> Send Invitation</span>
                             <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Sending…</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+    {{-- ── CREDENTIALS MODAL (shown once, right after creating a user) ──── --}}
+    @if($showCredentialsModal)
+        <div class="modal fade show d-block" id="credentialsModal" tabindex="-1" style="background: rgba(0,0,0,0.6);"
+            wire:ignore.self x-data="{ copied: false }">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header"
+                        style="background: linear-gradient(120deg,#0F172A,#312E81); border-radius: calc(0.5rem - 1px) calc(0.5rem - 1px) 0 0;">
+                        <h5 class="modal-title text-white"><i class="fa-solid fa-circle-check me-2"></i>User Created
+                            Successfully</h5>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="mb-3">
+                            <strong>{{ $createdUserName }}</strong> has been added and emailed their login details.
+                            Here's a copy for your records — this password will not be shown again.
+                        </p>
+
+                        <div class="rounded-3 p-3 mb-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                            <div class="small text-uppercase fw-bold text-muted mb-1"
+                                style="letter-spacing:.05em; font-size:11px;">Email</div>
+                            <div class="fw-bold">{{ $createdUserEmail }}</div>
+                        </div>
+
+                        <div class="rounded-3 p-3" style="background:#FFFBEB; border:1px solid #FDE68A;">
+                            <div class="small text-uppercase fw-bold mb-1"
+                                style="letter-spacing:.05em; font-size:11px; color:#B45309;">Temporary Password</div>
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <code class="fs-5 fw-bold" style="color:#78350F;">{{ $createdUserPassword }}</code>
+                                <button type="button" class="btn btn-sm btn-outline-warning flex-shrink-0" x-on:click="
+                                        navigator.clipboard.writeText('{{ $createdUserPassword }}');
+                                        copied = true;
+                                        setTimeout(() => copied = false, 2000);
+                                    ">
+                                    <span x-show="!copied"><i class="fa-regular fa-copy"></i> Copy</span>
+                                    <span x-show="copied" x-cloak><i class="fa-solid fa-check"></i> Copied!</span>
+                                </button>
+                            </div>
+                            <div class="small mt-2" style="color:#92400E;">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                The user has also received this by email and should change it on first login.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" wire:click="$set('showCredentialsModal', false)">
+                            Done
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+    {{-- ── CONVERT TO EMPLOYEE MODAL ──────────────────────────────────── --}}
+    @if($showConvertEmployeeModal)
+        <div class="modal fade show d-block" id="convertEmployeeModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
+            wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Convert to Employee</h5>
+                        <button type="button" class="btn-close"
+                            wire:click="$set('showConvertEmployeeModal', false)"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted small mb-3"><span class="text-danger">*</span> Required field</p>
+                        <div class="row g-3">
+
+                            {{-- Employee ID / Gender --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Employee ID <span
+                                        class="text-danger">*</span></label>
+                                <input type="text" class="form-control @error('emp_employee_id') is-invalid @enderror"
+                                    wire:model="emp_employee_id" readonly
+                                    style="background:#f8fafc; color:#1e293b; cursor:not-allowed;">
+                                @error('emp_employee_id')
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Gender <span class="text-danger">*</span></label>
+                                <select class="form-select @error('emp_gender') is-invalid @enderror"
+                                    wire:model="emp_gender">
+                                    <option value="">Select Gender</option>
+                                    <option value="male">Male</option>
+                                    <option value="female">Female</option>
+                                    <option value="other">Other</option>
+                                </select>
+                                @error('emp_gender')
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Department --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Department <span
+                                        class="text-danger">*</span></label>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select @error('emp_department') is-invalid @enderror"
+                                        wire:model="emp_department">
+                                        <option value="">Select Department</option>
+                                        @foreach($emp_departmentsList as $dept)
+                                            <option value="{{ $dept }}">{{ $dept }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-primary" type="button"
+                                        wire:click="$toggle('emp_showNewDepartment')" title="Add new department">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                @if($emp_showNewDepartment)
+                                    <div class="mt-2 d-flex gap-2">
+                                        <input type="text"
+                                            class="form-control form-control-sm @error('emp_newDepartment') is-invalid @enderror"
+                                            wire:model="emp_newDepartment" placeholder="New department name"
+                                            @keydown.enter="emp_addDepartment()">
+                                        <button class="btn btn-sm btn-success" wire:click="emp_addDepartment"><i
+                                                class="fas fa-check"></i></button>
+                                        <button class="btn btn-sm btn-secondary"
+                                            wire:click="$set('emp_showNewDepartment', false)"><i
+                                                class="fas fa-times"></i></button>
+                                    </div>
+                                    @error('emp_newDepartment')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                @endif
+                                @error('emp_department')
+                                <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Position --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Position / Job Title <span
+                                        class="text-danger">*</span></label>
+                                <div class="d-flex gap-2">
+                                    <select class="form-select @error('emp_position') is-invalid @enderror"
+                                        wire:model="emp_position">
+                                        <option value="">Select Position</option>
+                                        @foreach($emp_positionsList as $pos)
+                                            <option value="{{ $pos }}">{{ $pos }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-primary" type="button"
+                                        wire:click="$toggle('emp_showNewPosition')" title="Add new position">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                @if($emp_showNewPosition)
+                                    <div class="mt-2 d-flex gap-2">
+                                        <input type="text"
+                                            class="form-control form-control-sm @error('emp_newPosition') is-invalid @enderror"
+                                            wire:model="emp_newPosition" placeholder="New position name"
+                                            @keydown.enter="emp_addPosition()">
+                                        <button class="btn btn-sm btn-success" wire:click="emp_addPosition"><i
+                                                class="fas fa-check"></i></button>
+                                        <button class="btn btn-sm btn-secondary"
+                                            wire:click="$set('emp_showNewPosition', false)"><i
+                                                class="fas fa-times"></i></button>
+                                    </div>
+                                    @error('emp_newPosition')
+                                    <div class="text-danger small mt-1">{{ $message }}</div> @enderror
+                                @endif
+                                @error('emp_position')
+                                <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Employment Type / Hire Date --}}
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Employment Type <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select @error('emp_employment_type') is-invalid @enderror"
+                                    wire:model="emp_employment_type">
+                                    <option value="full-time">Full‑Time</option>
+                                    <option value="part-time">Part‑Time</option>
+                                    <option value="contract">Contract</option>
+                                    <option value="intern">Intern</option>
+                                </select>
+                                @error('emp_employment_type')
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Hire Date <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control @error('emp_hire_date') is-invalid @enderror"
+                                    wire:model="emp_hire_date" max="{{ now()->format('Y-m-d') }}">
+                                @error('emp_hire_date')
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            {{-- Emergency Contact --}}
+                            <div class="col-12">
+                                <h6 class="border-bottom pb-2 fw-bold text-primary mt-2"><i
+                                        class="fas fa-phone-alt me-2"></i> Emergency Contact</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">Contact Name <span
+                                        class="text-danger">*</span></label>
+                                <input type="text"
+                                    class="form-control @error('emp_emergency_contact_name') is-invalid @enderror"
+                                    wire:model="emp_emergency_contact_name">
+                                @error('emp_emergency_contact_name')
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+                            <div class="col-md-6" wire:key="emp-emergency-phone">
+                                <label class="form-label fw-bold small">Contact Phone <span
+                                        class="text-danger">*</span></label>
+                                <div class="phone-wrapper position-relative">
+                                    <div class="input-group">
+                                        <button type="button" wire:click="emp_emergency_toggleCountryDropdown"
+                                            class="btn btn-outline-secondary d-flex align-items-center gap-2 phone-country-btn"
+                                            style="border-radius: 0.5rem 0 0 0.5rem; border-right: none; background: #f8fafc; padding: 0.45rem 0.65rem; white-space: nowrap;">
+                                            <img src="{{ asset('flags/' . $emp_emergency_selectedFlag) }}" class="rounded-1"
+                                                style="width: 22px; height: 15px; object-fit: cover; flex-shrink: 0;">
+                                            <span class="fw-semibold text-dark"
+                                                style="font-size: 0.82rem;">{{ $emp_emergency_countryCode }}</span>
+                                            <i class="fas fa-chevron-down text-muted" style="font-size: 0.6rem;"></i>
+                                        </button>
+                                        <input type="tel" inputmode="numeric" wire:model.defer="emp_emergency_contact_phone"
+                                            placeholder="{{ $emp_emergency_phoneExample ? 'e.g. ' . $emp_emergency_phoneExample : 'Phone number' }}"
+                                            maxlength="{{ $emp_emergency_countryInfo['maxLength'] ?? 15 }}"
+                                            class="form-control phone-number-input @error('emp_emergency_contact_phone') is-invalid @enderror"
+                                            style="border-radius: 0 0.5rem 0.5rem 0; font-size: 0.9rem; padding: 0.45rem 0.75rem;"
+                                            x-data x-on:input="
+                                                               let v = $el.value.replace(/[^0-9]/g, '');
+                                                               let max = {{ $emp_emergency_countryInfo['maxLength'] ?? 15 }};
+                                                               if (v.length > max) v = v.substring(0, max);
+                                                               $el.value = v;
+                                                               $wire.emp_emergency_setPhone(v);
+                                                           ">
+                                    </div>
+                                    @if($emp_emergency_showCountryDropdown)
+                                        <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
+                                            x-data x-on:click.away="$wire.emp_emergency_closeCountryDropdown()">
+                                            <div class="sticky-top bg-white p-2 border-bottom">
+                                                <div class="position-relative">
+                                                    <i class="fas fa-search position-absolute text-muted"
+                                                        style="left: 10px; top: 50%; transform: translateY(-50%); font-size: 0.7rem;"></i>
+                                                    <input type="text"
+                                                        wire:model.live.debounce.200ms="emp_emergency_countrySearch"
+                                                        placeholder="Search country…" class="form-control form-control-sm"
+                                                        style="border-radius: 0.4rem; font-size: 0.8rem; padding: 0.3rem 0.5rem 0.3rem 1.8rem;">
+                                                </div>
+                                            </div>
+                                            <div class="p-1">
+                                                @forelse($emp_emergency_filteredCountries as $country)
+                                                    <button type="button"
+                                                        wire:click="emp_emergency_selectCountry('{{ $country['code'] }}', '{{ $country['flag'] }}')"
+                                                        class="dropdown-item d-flex align-items-center gap-2 py-1 px-2 rounded {{ $emp_emergency_countryCode === $country['code'] ? 'active' : '' }}"
+                                                        style="font-size: 0.8rem;">
+                                                        <img src="{{ asset('flags/' . $country['flag']) }}" class="rounded-1"
+                                                            style="width: 20px; height: 14px; object-fit: cover; flex-shrink: 0;">
+                                                        <span
+                                                            class="flex-grow-1 text-truncate text-start">{{ $country['name'] }}</span>
+                                                        <span class="text-muted flex-shrink-0"
+                                                            style="font-size: 0.7rem;">{{ $country['code'] }}</span>
+                                                    </button>
+                                                @empty
+                                                    <div class="px-2 py-2 text-muted text-center" style="font-size: 0.8rem;">No
+                                                        countries found</div>
+                                                @endforelse
+                                            </div>
+                                        </div>
+                                    @endif
+                                    @if($emp_emergency_contact_phone)
+                                        <div class="form-text text-primary" style="font-size: 0.75rem; margin-top: 0.25rem;">
+                                            <i class="fas fa-info-circle me-1"></i> Will be saved as:
+                                            <strong>{{ $emp_emergency_countryCode }}{{ $emp_emergency_contact_phone }}</strong>
+                                        </div>
+                                    @endif
+                                    @error('emp_emergency_contact_phone')
+                                        <div class="invalid-feedback d-block" style="font-size: 0.75rem;">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            {{-- Validation errors summary --}}
+                            @if($errors->any())
+                                <div class="col-12">
+                                    <div class="alert alert-danger">
+                                        <ul class="mb-0">
+                                            @foreach($errors->all() as $error)
+                                                <li>{{ $error }}</li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary"
+                            wire:click="$set('showConvertEmployeeModal', false)">Cancel</button>
+                        <button class="btn btn-success" wire:click="saveConvertedEmployee" wire:loading.attr="disabled">
+                            <span wire:loading.remove><i class="fas fa-briefcase me-1"></i> Convert to Employee</span>
+                            <span wire:loading><i class="fas fa-spinner fa-spin me-1"></i> Converting…</span>
                         </button>
                     </div>
                 </div>

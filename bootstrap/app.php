@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register custom route middleware aliases
         $middleware->alias([
             'not.suspended' => \App\Http\Middleware\EnsureUserIsNotSuspended::class,
+            'force.password.change' => \App\Http\Middleware\EnsurePasswordIsChanged::class,
         ]);
 
         $middleware->web(append: [

@@ -6,8 +6,9 @@ use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -277,16 +278,14 @@ class Register extends Component
 
     private function generateUsername(string $firstName, string $lastName): string
     {
-        // Combine first and last name, remove spaces, lowercase
         $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $firstName . $lastName));
+        $base = $base !== '' ? $base : 'user';
         $username = $base;
-        $counter  = 1;
-
+        $counter = 1;
         while (User::where('username', $username)->exists()) {
             $username = $base . $counter;
             $counter++;
         }
-
         return $username;
     }
 
@@ -431,7 +430,7 @@ class Register extends Component
 
         $user = User::create([
             'name'     => $fullName,
-            'username' => $this->generateUsername($this->first_name, $this->last_name),
+            'username' => $this->generateUsername($this->first_name, $this->last_name) ?: 'user_' . Str::random(6),
             'email'    => $this->email,
             'password' => Hash::make($this->password),
             'phone'    => $fullPhone,

@@ -7,6 +7,7 @@ use Livewire\WithFileUploads;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Carbon\Carbon;
 
 class ProfileTab extends Component
 {
@@ -20,7 +21,7 @@ class ProfileTab extends Component
     public $selectedFlag = 'gh.png';
     public $phone_full;
 
-    // Country dropdown
+    // Country dropdown (main phone)
     public $countries = [];
     public $filteredCountries = [];
     public $countryInfo = [];
@@ -28,11 +29,26 @@ class ProfileTab extends Component
     public $search = '';
     public $showCountryDropdown = false;
 
+    // ─── Employee fields ─────────────────────────────────────────────
+    public $gender;
+    public $date_of_birth;
+    public $country_code;          // ISO code for location (e.g., 'GH')
+    public $city;
+    public $emergency_contact_name;
+    public $emergency_contact_phone_local;
+    public $emergency_countryCode = '+233';
+    public $emergency_selectedFlag = 'gh.png';
+    public $emergency_phoneExample = '';
+    public $emergency_showCountryDropdown = false;
+    public $emergency_search = '';
+    public $emergency_filteredCountries = [];
+    public $emergency_countryInfo = [];
+
     // Avatar
     public $avatar;
     public $confirmingAvatarDelete = false;
 
-    // Profile fields
+    // Profile fields (existing)
     public $about_me;
     public $skills = [];
     public $education = [];
@@ -48,6 +64,10 @@ class ProfileTab extends Component
         $min = $this->countryInfo['minLength'] ?? 5;
         $max = $this->countryInfo['maxLength'] ?? 15;
         $pattern = $this->countryInfo['pattern'] ?? '^[0-9]{' . $min . ',' . $max . '}$';
+
+        $emergencyMin = $this->emergency_countryInfo['minLength'] ?? 5;
+        $emergencyMax = $this->emergency_countryInfo['maxLength'] ?? 15;
+        $emergencyPattern = $this->emergency_countryInfo['pattern'] ?? '^[0-9]{' . $emergencyMin . ',' . $emergencyMax . '}$';
 
         return [
             'name' => 'required|string|max:255',
@@ -76,6 +96,18 @@ class ProfileTab extends Component
             'education.*.end_year' => 'nullable|string|max:10|after_or_equal:education.*.start_year',
             'education.*.currently_studying' => 'boolean',
             'social_links.*' => 'nullable|url|max:255',
+
+            // Employee fields (nullable)
+            'gender' => 'nullable|in:male,female,other',
+            'date_of_birth' => 'nullable|date|before:today',
+            'country_code' => 'nullable|string|max:10',
+            'city' => 'nullable|string|max:100',
+            'emergency_contact_name' => 'nullable|string|max:255',
+            'emergency_contact_phone_local' => [
+                'nullable',
+                'string',
+                'regex:/' . $emergencyPattern . '/',
+            ],
         ];
     }
 
@@ -86,9 +118,15 @@ class ProfileTab extends Component
         $max = $this->countryInfo['maxLength'] ?? 15;
         $example = !empty($this->phoneExample) ? " Example: {$this->phoneExample}" : '';
 
+        $emergencyCountry = $this->emergency_countryInfo['name'] ?? 'your country';
+        $emergencyMin = $this->emergency_countryInfo['minLength'] ?? 5;
+        $emergencyMax = $this->emergency_countryInfo['maxLength'] ?? 15;
+        $emergencyExample = !empty($this->emergency_phoneExample) ? " Example: {$this->emergency_phoneExample}" : '';
+
         return [
             'phone_local.regex' => "Enter a valid {$country} number ({$min}–{$max} digits).{$example}",
             'phone_local.unique' => 'This phone number is already registered.',
+            'emergency_contact_phone_local.regex' => "Enter a valid {$emergencyCountry} number ({$emergencyMin}–{$emergencyMax} digits).{$emergencyExample}",
             'education.*.end_year.after_or_equal' => 'End year must be after or equal to start year.',
         ];
     }
@@ -101,6 +139,7 @@ class ProfileTab extends Component
 
         $this->loadCountries();
         $this->parsePhoneNumber($this->user->phone);
+        $this->emergency_loadCountries();
 
         $profile = $this->user->profile;
         if ($profile) {
@@ -130,10 +169,18 @@ class ProfileTab extends Component
                     }
                 }
             }
+
+            // Load employee fields
+            $this->gender = $profile->gender;
+            $this->date_of_birth = $profile->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : '';
+            $this->country_code = $profile->country_code;
+            $this->city = $profile->city;
+            $this->emergency_contact_name = $profile->emergency_contact_name;
+            $this->emergency_parsePhoneNumber($profile->emergency_contact_phone);
         }
     }
 
-    // ─── Country / Phone logic ──────────────────────────────────────────────
+    // ─── Country / Phone logic (main) ────────────────────────────────
 
     public function loadCountries()
     {
@@ -272,6 +319,125 @@ class ProfileTab extends Component
         $this->updateCountryInfo();
     }
 
+    // ─── Emergency Phone logic ──────────────────────────────────────
+
+    public function emergency_loadCountries()
+    {
+        // Reuse the same country list (already loaded in main)
+        $this->emergency_filteredCountries = $this->countries;
+        $this->emergency_updateCountryInfo();
+    }
+
+    public function emergency_updateCountryInfo()
+    {
+        $country = collect($this->countries)->firstWhere('code', $this->emergency_countryCode);
+        if ($country) {
+            $this->emergency_countryInfo = $country;
+            $this->emergency_phoneExample = $country['example'] ?? '';
+        } else {
+            $this->emergency_countryInfo = [
+                'name'      => 'Ghana',
+                'pattern'   => '^[0-9]{9}$',
+                'minLength' => 9,
+                'maxLength' => 9,
+                'example'   => '201234567',
+            ];
+            $this->emergency_phoneExample = '201234567';
+        }
+    }
+
+    public function emergency_selectCountry($code, $flag)
+    {
+        $this->emergency_countryCode = $code;
+        $this->emergency_selectedFlag = $flag;
+        $this->emergency_updateCountryInfo();
+        $this->emergency_contact_phone_local = '';
+        $this->emergency_showCountryDropdown = false;
+        $this->emergency_search = '';
+        $this->emergency_filteredCountries = $this->countries;
+    }
+
+    public function emergency_toggleCountryDropdown()
+    {
+        $this->emergency_showCountryDropdown = !$this->emergency_showCountryDropdown;
+        if ($this->emergency_showCountryDropdown) {
+            $this->emergency_search = '';
+            $this->emergency_filteredCountries = $this->countries;
+        }
+    }
+
+    public function emergency_closeCountryDropdown()
+    {
+        $this->emergency_showCountryDropdown = false;
+        $this->emergency_search = '';
+        $this->emergency_filteredCountries = $this->countries;
+    }
+
+    public function emergency_searchCountries($searchTerm)
+    {
+        $this->emergency_search = $searchTerm;
+        $this->emergency_filteredCountries = collect($this->countries)
+            ->filter(
+                fn($c) =>
+                stripos($c['name'], $this->emergency_search) !== false ||
+                    stripos($c['code'], $this->emergency_search) !== false
+            )
+            ->values()
+            ->toArray();
+    }
+
+    public function emergency_setPhone(string $value): void
+    {
+        $clean = preg_replace('/[^0-9]/', '', $value);
+        $max   = $this->emergency_countryInfo['maxLength'] ?? 15;
+
+        if (strlen($clean) > $max) {
+            $clean = substr($clean, 0, $max);
+        }
+
+        $this->emergency_contact_phone_local = $clean;
+    }
+
+    public function emergency_getFullPhone(): string
+    {
+        $clean = ltrim($this->emergency_contact_phone_local, '0');
+        return $this->emergency_countryCode . $clean;
+    }
+
+    private function emergency_parsePhoneNumber(?string $phone): void
+    {
+        if (empty($phone)) {
+            $this->emergency_contact_phone_local = '';
+            $this->emergency_countryCode = '+233';
+            $this->emergency_selectedFlag = 'gh.png';
+            $this->emergency_updateCountryInfo();
+            return;
+        }
+
+        $matchedCountry = null;
+        $matchedCode = '';
+        foreach ($this->countries as $country) {
+            $code = $country['code'];
+            if (str_starts_with($phone, $code)) {
+                if (strlen($code) > strlen($matchedCode)) {
+                    $matchedCode = $code;
+                    $matchedCountry = $country;
+                }
+            }
+        }
+
+        if ($matchedCountry) {
+            $this->emergency_countryCode = $matchedCode;
+            $this->emergency_selectedFlag = $matchedCountry['flag'];
+            $this->emergency_contact_phone_local = substr($phone, strlen($matchedCode));
+        } else {
+            $this->emergency_countryCode = '+233';
+            $this->emergency_selectedFlag = 'gh.png';
+            $this->emergency_contact_phone_local = $phone;
+        }
+        $this->emergency_updateCountryInfo();
+    }
+
     // ─── Avatar ──────────────────────────────────────────────────────────────
 
     public function updatedAvatar()
@@ -359,7 +525,6 @@ class ProfileTab extends Component
 
         // Handle new avatar upload
         if ($this->avatar) {
-            // Delete old if exists
             if ($this->user->avatar) {
                 $oldPath = storage_path('app/public/' . $this->user->avatar);
                 if (file_exists($oldPath)) {
@@ -395,6 +560,14 @@ class ProfileTab extends Component
             'skills' => $this->skills,
             'education' => $this->education,
             'social_links' => $this->social_links,
+
+            // Employee fields
+            'gender' => $this->gender,
+            'date_of_birth' => $this->date_of_birth ? Carbon::parse($this->date_of_birth) : null,
+            'country_code' => $this->country_code,
+            'city' => $this->city,
+            'emergency_contact_name' => $this->emergency_contact_name,
+            'emergency_contact_phone' => $this->emergency_contact_phone_local ? $this->emergency_getFullPhone() : null,
         ]);
 
         $this->dispatch('notify', [

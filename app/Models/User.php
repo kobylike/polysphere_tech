@@ -25,6 +25,7 @@ use PragmaRX\Google2FA\Google2FA;
     'username',
     'email',
     'password',
+    'must_change_password',
     'status',
     'phone',
     'avatar',
@@ -59,7 +60,16 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_seen_at' => 'datetime',
         ];
     }
-
+    public static function spotlightTeam(int $limit = 3)
+    {
+        return static::whereHas('profile', fn($q) => $q->spotlight())
+            ->with('profile')
+            ->join('user_profiles', 'users.id', '=', 'user_profiles.user_id')
+            ->orderBy('user_profiles.display_order', 'asc')
+            ->select('users.*')
+            ->limit($limit)
+            ->get();
+    }
     public function sendEmailVerificationNotification()
     {
         \Illuminate\Support\Facades\Notification::send(
@@ -495,5 +505,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function lastSeenForHumans(): string
     {
         return $this->last_seen_at ? $this->last_seen_at->diffForHumans() : 'Unknown';
+    }
+    public function activities()
+    {
+        return $this->hasMany(UserActivity::class);
     }
 }

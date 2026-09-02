@@ -23,11 +23,9 @@
     {{-- ─── Deactivation Confirmation Modal ────────────────────────────── --}}
     <div x-data="{ open: @entangle('confirmingDeactivation') }" x-show="open" x-cloak
         @keydown.escape.window="open = false; $wire.cancelDeactivation()">
-
         <div class="modal-backdrop fade show" x-show="open" x-transition:enter.duration.200ms.opacity
             x-transition:leave.duration.150ms.opacity style="background: rgba(0,0,0,0.5); z-index: 1050;"
             @click="open = false; $wire.cancelDeactivation()"></div>
-
         <div class="modal fade show d-block" x-show="open" x-transition:enter.duration.200ms.opacity.scale
             x-transition:leave.duration.150ms.opacity.scale tabindex="-1" style="z-index: 1060;"
             @click.self="open = false; $wire.cancelDeactivation()">
@@ -42,13 +40,12 @@
                         <div class="text-center py-3">
                             <i class="fas fa-user-slash text-danger" style="font-size: 3rem;"></i>
                             <p class="mt-3 text-secondary">This action is <strong>permanent</strong> and cannot be
-                                undone. All your data will be removed.</p>
+                                undone.</p>
                             <div class="form-check mt-3">
                                 <input type="checkbox" class="form-check-input" id="confirmDeactivate"
                                     wire:model="deactivationAcknowledged">
-                                <label class="form-check-label" for="confirmDeactivate">
-                                    I confirm that I want to deactivate my account.
-                                </label>
+                                <label class="form-check-label" for="confirmDeactivate">I confirm I want to
+                                    deactivate.</label>
                             </div>
                             @error('deactivationAcknowledged')
                                 <span class="text-danger small d-block mt-1">{{ $message }}</span>
@@ -60,7 +57,7 @@
                             @click="open = false; $wire.cancelDeactivation()">Cancel</button>
                         <button type="button" class="btn btn-danger px-4 rounded-pill"
                             @click="$wire.deactivateAccount()">
-                            <i class="fas fa-user-slash me-1"></i> Yes, Deactivate
+                            <i class="fas fa-user-slash me-1"></i> Deactivate
                         </button>
                     </div>
                 </div>
@@ -71,8 +68,8 @@
     {{-- ─── MAIN CONTENT ─────────────────────────────────────────────────── --}}
     <div class="row g-4">
 
-        {{-- ─── Change Password ─────────────────────────────────────────── --}}
-        <div class="col-xl-6">
+        {{-- Change Password --}}
+        <div class="col-lg-6 col-12">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent border-0">
                     <h6 class="card-title fw-bold"><i class="fas fa-key text-primary me-2"></i> Change Password</h6>
@@ -89,7 +86,7 @@
                         <div class="mb-3">
                             <label class="form-label fw-semibold">New Password</label>
                             <input type="password" class="form-control @error('new_password') is-invalid @enderror"
-                                wire:model="new_password" placeholder="Enter new password (min 8 chars)">
+                                wire:model="new_password" placeholder="Min 8 characters">
                             @error('new_password')
                             <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
@@ -97,12 +94,12 @@
                             <label class="form-label fw-semibold">Confirm New Password</label>
                             <input type="password"
                                 class="form-control @error('new_password_confirmation') is-invalid @enderror"
-                                wire:model="new_password_confirmation" placeholder="Confirm new password">
+                                wire:model="new_password_confirmation" placeholder="Confirm password">
                             @error('new_password_confirmation')
                             <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                        <button type="submit" class="btn btn-primary" wire:loading.attr="disabled"
-                            wire:target="changePassword">
+                        <button type="submit" class="btn btn-primary btn-sm w-100 w-sm-auto"
+                            wire:loading.attr="disabled" wire:target="changePassword">
                             <span wire:loading.remove wire:target="changePassword"><i class="fas fa-save me-1"></i>
                                 Update Password</span>
                             <span wire:loading wire:target="changePassword"><i class="fas fa-spinner fa-spin me-1"></i>
@@ -113,15 +110,15 @@
             </div>
         </div>
 
-        {{-- ─── Two-Factor Authentication ──────────────────────────────── --}}
-        <div class="col-xl-6">
+        {{-- Two-Factor Authentication --}}
+        <div class="col-lg-6 col-12">
             <div class="card border-0 shadow-sm h-100">
                 <div class="card-header bg-transparent border-0">
                     <h6 class="card-title fw-bold"><i class="fas fa-shield-alt text-primary me-2"></i> Two-Factor
                         Authentication</h6>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
                         <div>
                             <span class="fw-semibold">Status</span>
                             <div class="mt-1">
@@ -138,12 +135,12 @@
                         </div>
                         @if($twoFactorEnabled)
                             <button type="button" wire:click="disableTwoFactor" wire:loading.attr="disabled"
-                                wire:target="disableTwoFactor" class="btn btn-outline-danger btn-sm">
+                                class="btn btn-outline-danger btn-sm">
                                 <i class="fas fa-times me-1"></i> Disable
                             </button>
                         @else
                             <button type="button" wire:click="enableTwoFactor" wire:loading.attr="disabled"
-                                wire:target="enableTwoFactor" class="btn btn-primary btn-sm">
+                                class="btn btn-primary btn-sm">
                                 <span wire:loading.remove wire:target="enableTwoFactor"><i class="fas fa-plus me-1"></i>
                                     Enable</span>
                                 <span wire:loading wire:target="enableTwoFactor"><i class="fas fa-spinner fa-spin me-1"></i>
@@ -153,20 +150,16 @@
                     </div>
 
                     @if($twoFactorEnabled)
-                        <div class="d-flex gap-3 mt-3">
-                            {{-- FIX: was $set('showingQrCode', true), which only flipped the
-                            flag without ever loading the SVG — qrCodeSvg stays empty because
-                            it gets cleared to '' the moment 2FA is confirmed. Now calls a
-                            dedicated method that loads the QR before showing it. --}}
+                        <div class="d-flex flex-wrap gap-2 mt-3">
                             <button type="button" wire:click="showQrCode" wire:loading.attr="disabled"
-                                wire:target="showQrCode" class="btn btn-outline-primary btn-sm flex-grow-1">
+                                class="btn btn-outline-primary btn-sm flex-grow-1 flex-sm-grow-0">
                                 <span wire:loading.remove wire:target="showQrCode"><i class="fas fa-qrcode me-1"></i> Show
                                     QR</span>
                                 <span wire:loading wire:target="showQrCode"><i class="fas fa-spinner fa-spin me-1"></i>
                                     Loading…</span>
                             </button>
                             <button type="button" wire:click="$set('showingRecoveryCodes', true)"
-                                class="btn btn-outline-warning btn-sm flex-grow-1">
+                                class="btn btn-outline-warning btn-sm flex-grow-1 flex-sm-grow-0">
                                 <i class="fas fa-key me-1"></i> Recovery Codes
                             </button>
                         </div>
@@ -175,17 +168,13 @@
             </div>
         </div>
 
-        {{-- ─── QR Code Setup / Re-view ──────────────────────────────────── --}}
-        {{-- FIX: dropped the "!$twoFactorEnabled" requirement — that made this whole
-        block invisible once 2FA was confirmed, which is exactly when "Show QR" needs
-        it to appear. The verify-code form below is still hidden once already enabled,
-        since re-confirming isn't needed at that point. --}}
+        {{-- QR Code Setup --}}
         @if($showingQrCode && $hasSecret)
             <div class="col-12" wire:key="qr-setup-section">
                 <div class="card border-0 shadow-lg" style="border-left: 4px solid #6366f1;">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="fw-bold"><i class="fas fa-qrcode text-primary me-2"></i>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                            <h5 class="fw-bold mb-0"><i class="fas fa-qrcode text-primary me-2"></i>
                                 {{ $twoFactorEnabled ? 'Authenticator QR Code' : 'Authenticator Setup' }}
                             </h5>
                             <div class="d-flex gap-2">
@@ -209,7 +198,7 @@
                                         </button>
                                     </div>
                                 @elseif($qrCodeSvg)
-                                    <div class="bg-white d-inline-block p-3 rounded-3 shadow-sm">
+                                    <div class="bg-white d-inline-block p-2 p-md-3 rounded-3 shadow-sm">
                                         {!! $qrCodeSvg !!}
                                     </div>
                                 @else
@@ -238,15 +227,15 @@
                                             @error('code')
                                             <div class="invalid-feedback">{{ $message }}</div> @enderror
                                         </div>
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" class="btn btn-primary btn-sm">
                                             <i class="fas fa-check me-1"></i> Verify & Enable
                                         </button>
                                         <button type="button" wire:click="$set('showingQrCode', false)"
-                                            class="btn btn-link text-muted">Cancel</button>
+                                            class="btn btn-link text-muted btn-sm">Cancel</button>
                                     </form>
                                 @else
                                     <button type="button" wire:click="$set('showingQrCode', false)"
-                                        class="btn btn-outline-secondary">Close</button>
+                                        class="btn btn-outline-secondary btn-sm">Close</button>
                                 @endunless
                             </div>
                         </div>
@@ -255,13 +244,13 @@
             </div>
         @endif
 
-        {{-- ─── Recovery Codes ──────────────────────────────────────────── --}}
+        {{-- Recovery Codes --}}
         @if($showingRecoveryCodes && $twoFactorEnabled)
             <div class="col-12" wire:key="recovery-codes-section">
                 <div class="card border-0 shadow-lg" style="border-left: 4px solid #f59e0b;">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <h5 class="fw-bold"><i class="fas fa-key text-warning me-2"></i> Recovery Codes</h5>
+                    <div class="card-body p-3 p-md-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                            <h5 class="fw-bold mb-0"><i class="fas fa-key text-warning me-2"></i> Recovery Codes</h5>
                             <button type="button" wire:click="$set('showingRecoveryCodes', false)"
                                 class="btn-close"></button>
                         </div>
@@ -277,7 +266,7 @@
                                     </div>
                                 @endforeach
                             </div>
-                            <div class="d-flex gap-2">
+                            <div class="d-flex flex-wrap gap-2">
                                 <button type="button" class="btn btn-outline-primary btn-sm" onclick="downloadRecoveryCodes()">
                                     <i class="fas fa-download me-1"></i> Download
                                 </button>
@@ -285,7 +274,7 @@
                                     <i class="fas fa-print me-1"></i> Print
                                 </button>
                                 <button type="button" wire:click="regenerateRecoveryCodes" wire:loading.attr="disabled"
-                                    wire:target="regenerateRecoveryCodes" class="btn btn-outline-danger btn-sm">
+                                    class="btn btn-outline-danger btn-sm">
                                     <span wire:loading.remove wire:target="regenerateRecoveryCodes"><i
                                             class="fas fa-redo me-1"></i> Regenerate</span>
                                     <span wire:loading wire:target="regenerateRecoveryCodes"><i
@@ -300,7 +289,7 @@
             </div>
         @endif
 
-        {{-- ─── Account Deactivation ─────────────────────────────────────── --}}
+        {{-- Account Deactivation --}}
         <div class="col-12">
             <div class="card border-0 shadow-sm" style="border-left: 4px solid #ef4444;">
                 <div class="card-header bg-transparent border-0">
@@ -316,7 +305,7 @@
                             <p class="mb-0 fs-13">Your account will be suspended and all data will be removed.</p>
                         </div>
                     </div>
-                    <button type="button" class="btn btn-danger" wire:click="confirmDeactivation">
+                    <button type="button" class="btn btn-danger btn-sm" wire:click="confirmDeactivation">
                         <i class="fas fa-user-slash me-1"></i> Deactivate Account
                     </button>
                 </div>
@@ -342,6 +331,22 @@
 
     .outline-dashed {
         border: 1px dashed #f59e0b;
+    }
+
+    @media (max-width: 575.98px) {
+        .btn-sm {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .form-control-lg {
+            font-size: 1rem;
+            padding: 0.4rem 0.5rem;
+        }
+
+        .modal-dialog {
+            margin: 0.5rem;
+        }
     }
 </style>
 
@@ -380,7 +385,6 @@
         }));
     });
 
-    // ─── Copy / Download / Print helpers ──────────────────────────────────
     function copyToClipboard() {
         const el = document.getElementById('setupKey');
         if (!el) return;
@@ -404,20 +408,13 @@
         const el = document.querySelector('[x-data]');
         if (el && el.__x && el.__x.$data.showToast) {
             el.__x.$data.showToast({ type: 'success', title: 'Copied!', message: msg });
-        } else {
-            const div = document.createElement('div');
-            div.className = 'position-fixed top-0 end-0 m-3 p-3 rounded-4 shadow-lg bg-success text-white';
-            div.textContent = msg;
-            div.style.zIndex = 9999;
-            document.body.appendChild(div);
-            setTimeout(() => div.remove(), 3000);
         }
     }
 
     function downloadRecoveryCodes() {
         const codes = @json($recoveryCodes);
         if (!codes.length) { alert('No recovery codes.'); return; }
-        const content = `Polysphere Tech – Recovery Codes\n\n${codes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\nGenerated: ${new Date().toLocaleString()}\nAccount: {{ auth()->user()->email }}`;
+        const content = `Polysphere Tech – Recovery Codes\n\n${codes.map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\nGenerated: ${new Date().toLocaleString()}`;
         const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -432,16 +429,11 @@
     function printRecoveryCodes() {
         const codes = @json($recoveryCodes);
         if (!codes.length) { alert('No recovery codes.'); return; }
-        const html = `<!DOCTYPE html>
-            <html><head><title>Recovery Codes</title>
-            <style>body{font-family:Arial;padding:20px;} .code{background:#f8f9fa;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:4px;}</style>
-            </head><body>
+        const html = `<!DOCTYPE html><html><head><title>Recovery Codes</title><style>body{font-family:Arial;padding:20px;}</style></head><body>
             <h1>Polysphere Tech – Recovery Codes</h1>
-            <p><strong>Account:</strong> {{ auth()->user()->email }}</p>
             <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-            <hr>
-            ${codes.map((c, i) => `<div class="code"><strong>#${i + 1}:</strong> ${c}</div>`).join('')}
-            <p><em>Store these securely. Each code can be used once.</em></p>
+            <hr>${codes.map((c, i) => `<div style="background:#f8f9fa;padding:10px;margin:8px 0;border:1px solid #ddd;border-radius:4px;"><strong>#${i + 1}:</strong> ${c}</div>`).join('')}
+            <p><em>Store securely. Each code can be used once.</em></p>
             </body></html>`;
         const win = window.open('', '_blank');
         win.document.write(html);

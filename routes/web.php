@@ -7,6 +7,7 @@ use App\Livewire\Admin\Blog\Category\CategoryFormComponent;
 use App\Livewire\Admin\Blog\Post\PostFormComponent;
 use App\Livewire\Admin\Blog\Post\PostManagement;
 use App\Livewire\Admin\Dashboard\DashboardComponent;
+use App\Livewire\Admin\Hrm\HrDashboard;
 use App\Livewire\Admin\Messenger\ChatMessengerComponent;
 use App\Livewire\Admin\Messenger\ChatMessengerMain;
 use App\Livewire\Admin\Projects\ProjectFormComponent;
@@ -22,6 +23,7 @@ use App\Livewire\Admin\Users\PermissionManagement;
 use App\Livewire\Admin\Users\RoleManagement;
 use App\Livewire\Admin\Users\UserManagement;
 use App\Livewire\Auth\EmailVerification;
+use App\Livewire\Auth\ForcePasswordChange;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\PasswordReset;
@@ -121,8 +123,6 @@ Route::get('/about-us', AboutComponent::class)->name('about');
 Route::get('/faq', FaqComponent::class)->name('faq');
 Route::get('/blog', PostComponent::class)->name('posts');
 Route::get('/blog/{slug}', PostDetails::class)->name('blog.details');
-Route::get('/team', TeamComponent::class)->name('team');
-Route::get('/team-details', TeamDetails::class)->name('team.details');
 Route::get('/projects', ProjectComponent::class)->name('projects');
 Route::get('/projects/{slug}', ProjectDetails::class)->name('project.details');
 Route::get('/services', ServiceComponent::class)->name('services');
@@ -130,6 +130,10 @@ Route::get('/services/{slug}', ServiceDetails::class)->name('service.details');
 
 
 // Admin – protected
+
+Route::get('/force-password-change', ForcePasswordChange::class)
+    ->middleware('auth')
+    ->name('password.change.force');
 Route::middleware(['auth', 'verified', 'not.suspended'])->group(function () {
 
     Route::get('/account/{tab?}', AccountSettings::class)
@@ -140,7 +144,7 @@ Route::middleware(['auth', 'verified', 'not.suspended'])->group(function () {
     Route::get('/user-management', UserManagement::class)->name('users');
     Route::get('/user-managemment/roles', RoleManagement::class)->name('roles');
     Route::get('/user-managemment/permissions', PermissionManagement::class)->name('permissions');
-
+    Route::get('/hr', HrDashboard::class)->name('hr.dashboard');
     Route::get('/chat-messenger', ChatMessengerMain::class)->name('messenger');
     // Blog Management – using slug for edit
     Route::get('/blog-management', PostManagement::class)->name('manage.posts');

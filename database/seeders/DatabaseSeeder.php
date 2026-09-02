@@ -42,6 +42,7 @@ class DatabaseSeeder extends Seeder
                     . 'products that make a difference in the world.',
                 'position'          => 'CEO / Founder',
                 'is_featured_team'  => true,
+                'is_spotlight'      => true,
                 'display_order'     => 1,
                 'skills' => [
                     ['name' => 'Leadership & Strategy', 'level' => 100],

@@ -17,9 +17,21 @@ class UserProfile extends Model
         'education',
         'social_links',
         'position',
+        'gender',
         'is_featured_team',
+        'is_spotlight',
         'display_order',
-
+        'employee_id',
+        'department',
+        'hire_date',
+        'employment_type',
+        'is_employee',
+        'emergency_contact_name',
+        'emergency_contact_phone',
+        // 🔥 NEW FIELDS
+        'date_of_birth',
+        'country_code',
+        'city',
     ];
 
     protected $casts = [
@@ -27,11 +39,18 @@ class UserProfile extends Model
         'education' => 'array',
         'social_links' => 'array',
         'is_featured_team' => 'boolean',
-
+        'is_spotlight' => 'boolean',
+        'hire_date' => 'date',
+        'date_of_birth' => 'date',
     ];
 
     // ─── Relationships ───────────────────────────────────────────────
+    // in UserProfile.php
 
+    public function scopeSpotlight($query)
+    {
+        return $query->where('is_spotlight', true)->orderBy('display_order', 'asc');
+    }
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -62,8 +81,43 @@ class UserProfile extends Model
     {
         $result = [];
         foreach ($this->skills ?? [] as $skill) {
+            if (!is_array($skill) || !isset($skill['name'])) {
+                continue;
+            }
             $result[$skill['name']] = $skill['level'] ?? 0;
         }
         return $result;
+    }
+    public function getCountryNameAttribute(): ?string
+    {
+        if (empty($this->country_code)) {
+            return null;
+        }
+
+        // Load countries from the same JSON
+        $path = public_path('countries-full.json');
+        if (!file_exists($path)) {
+            $path = public_path('countries.json');
+        }
+
+        if (file_exists($path)) {
+            $json = file_get_contents($path);
+            $countries = json_decode($json, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($countries)) {
+                // The JSON may have different key names; we'll search by 'code' or 'iso'
+                foreach ($countries as $country) {
+                    // Try to match 'code' (dial code) or 'iso' (ISO code)
+                    if (isset($country['code']) && $country['code'] === $this->country_code) {
+                        return $country['name'];
+                    }
+                    if (isset($country['iso']) && $country['iso'] === $this->country_code) {
+                        return $country['name'];
+                    }
+                }
+            }
+        }
+
+        // Fallback: return the code itself
+        return $this->country_code;
     }
 }

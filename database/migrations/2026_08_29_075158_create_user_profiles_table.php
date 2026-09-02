@@ -14,7 +14,16 @@ return new class extends Migration
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-
+            $table->string('employee_id')->nullable()->unique();
+            $table->string('department')->nullable();
+            $table->date('hire_date')->nullable();
+            $table->string('employment_type')->default('full-time'); // full-time, part-time, contract, intern
+            $table->boolean('is_employee')->default(false);
+            $table->string('emergency_contact_name')->nullable();
+            $table->string('emergency_contact_phone')->nullable();
+            $table->date('date_of_birth')->nullable();
+            $table->string('country_code', 10)->nullable(); // ISO 3166-1 alpha-2
+            $table->string('city', 100)->nullable();
             // Core profile fields
             $table->text('about_me')->nullable();
             $table->json('skills')->nullable();
@@ -22,7 +31,9 @@ return new class extends Migration
             $table->json('social_links')->nullable();
             // Team display fields (admin managed)
             $table->string('position')->nullable();
+            $table->string('gender', 20)->nullable();
             $table->boolean('is_featured_team')->default(false);
+            $table->boolean('is_spotlight')->default(false);
             $table->integer('display_order')->default(0);
 
             $table->timestamps();
