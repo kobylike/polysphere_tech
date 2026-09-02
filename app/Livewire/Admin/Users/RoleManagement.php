@@ -209,6 +209,10 @@ class RoleManagement extends Component
                 'color'       => $this->color,
             ]);
             $role->syncPermissions($permissions);
+            foreach ($role->users as $user) {
+                $user->broadcastPermissions();
+            }
+
             session()->flash('success', "Role '{$role->name}' updated successfully.");
         } else {
             $role = Role::create([

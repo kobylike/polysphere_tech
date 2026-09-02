@@ -189,6 +189,9 @@ class PermissionManagement extends Component
                 }
             }
             $permission->update($data);
+            $permission->roles->each(function ($role) {
+                $role->users->each->broadcastPermissions();
+            });
             session()->flash('success', "Permission '{$permission->name}' updated successfully.");
         } else {
             $permission = Permission::create($data);

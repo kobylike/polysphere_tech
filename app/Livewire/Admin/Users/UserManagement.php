@@ -600,6 +600,8 @@ class UserManagement extends Component
 
                 $user->update($data);
                 $user->syncRoles($roleNames);
+                $user->broadcastPermissions();
+
 
                 $profile = $user->profile ?: $user->profile()->create([]);
                 $profile->position = $this->position;
