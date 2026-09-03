@@ -25,18 +25,22 @@
         </div>
     </div>
 
-
-    <div
-    x-data="{ successVisible: $wire.entangle('success').defer }"
-    x-init="
-        $watch('successVisible', (value) => {
-            clearTimeout(window._psToastTimer);
-            if (value) {
-                window._psToastTimer = setTimeout(() => { successVisible = false }, 6000);
-            }
+    {{--
+        No Alpine anywhere in this component anymore. The toast and the
+        submit-button loading state are both driven purely by Livewire's
+        own server state / wire:loading, so there's no separate client-side
+        JS state that can ever drift out of sync with what the server
+        actually knows.
+    --}}
+    <script>
+        document.addEventListener('livewire:navigated', () => {
+            // Fires on every navigation Livewire handles, including a
+            // browser back/forward restore of a cached page snapshot.
+            // Broadcasting this makes sure the component never shows a
+            // stale "success" state left over from a previous visit.
+            window.Livewire.dispatch('contact-form-reset');
         });
-    "
->
+    </script>
 
     <section class="contact-page-section section-space">
         <div class="small-container">
@@ -46,25 +50,26 @@
                 <div class="col-xxl-4 col-xl-4 col-lg-4">
                     <div class="contact-p-info-area">
 
-                        {{-- Success Toast --}}
-                        <div
-                            x-show="successVisible"
-                            x-cloak
-                            x-transition:enter="ps-toast-enter"
-                            x-transition:enter-start="ps-toast-enter-start"
-                            x-transition:enter-end="ps-toast-enter-end"
-                            x-transition:leave="ps-toast-leave"
-                            x-transition:leave-start="ps-toast-leave-start"
-                            x-transition:leave-end="ps-toast-leave-end"
-                            class="alert alert-success d-flex align-items-center gap-3 rounded-3 mb-30"
-                            role="alert"
-                        >
-                            <i class="fas fa-check-circle fa-lg" style="color: #16a34a;"></i>
-                            <div>
-                                <strong>Message sent!</strong> We'll get back to you within 24 hours.
+                        {{-- Success Toast: plain server-driven markup, no client-side state --}}
+                        @if ($success)
+                            <div
+                                wire:key="contact-success-toast"
+                                wire:poll.6000ms="dismissSuccess"
+                                class="alert alert-success d-flex align-items-center gap-3 rounded-3 mb-30 ps-toast-in"
+                                role="alert"
+                            >
+                                <i class="fas fa-check-circle fa-lg" style="color: #16a34a;"></i>
+                                <div>
+                                    <strong>Message sent!</strong> We'll get back to you within 24 hours.
+                                </div>
+                                <button
+                                    type="button"
+                                    class="btn-close ms-auto"
+                                    wire:click="dismissSuccess"
+                                    aria-label="Close"
+                                ></button>
                             </div>
-                            <button type="button" class="btn-close ms-auto" @click="successVisible = false" aria-label="Close"></button>
-                        </div>
+                        @endif
 
                         <!-- Location -->
                         <div class="contact-box mb-30 ps-contact-card">
@@ -73,7 +78,7 @@
                             </div>
                             <div class="info">
                                 <span class="ps-contact-card__label">Our Location</span>
-                                <h4 class="ps-contact-card__value">123 Tech Hub, Innovation District, Silicon Valley, CA 94025</h4>
+                                <h4 class="ps-contact-card__value">Accra, Ghana</h4>
                             </div>
                         </div>
 
@@ -83,8 +88,8 @@
                                 <i class="fat fa-phone-volume"></i>
                             </div>
                             <div class="info">
-                                <span class="ps-contact-card__label">Call Us 24/7</span>
-                                <h4 class="ps-contact-card__value"><a href="tel:+1234567890">+1 (234) 567-8900</a></h4>
+                                <span class="ps-contact-card__label">Call Us 24/7</span>233597563427
+                                <h4 class="ps-contact-card__value"><a href="tel:+233597563427">+233 (59) 756-3427</a></h4>
                             </div>
                         </div>
 
@@ -95,7 +100,7 @@
                             </div>
                             <div class="info">
                                 <span class="ps-contact-card__label">Email Us</span>
-                                <h4 class="ps-contact-card__value"><a href="mailto:info@polyspheretech.com">info@polyspheretech.com</a></h4>
+                                <h4 class="ps-contact-card__value"><a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a></h4>
                             </div>
                         </div>
 
@@ -125,8 +130,6 @@
                         <div class="contact-page-form">
                             <form
                                 wire:submit.prevent="submit"
-                                x-data
-                                x-init="$wire.set('renderedAt', Date.now().toString(), false)"
                                 novalidate
                             >
                                 {{-- Honeypot -- hidden from real users via CSS, removed
@@ -273,26 +276,45 @@
                                         </p>
                                     </div>
 
-                                    <!-- Submit Button -->
-                                    <div class="col-lg-12">
-                                        <button
-                                            type="submit"
-                                            class="ps-submit-btn primary-btn-1 w-100"
-                                            wire:loading.attr="disabled"
-                                            wire:loading.class="ps-submit-btn--loading"
-                                        >
-                                            <span class="ps-btn-inner" wire:loading.remove>
-                                                Send Message &nbsp; <i class="icon-right-arrow"></i>
-                                            </span>
-                                            <span class="ps-btn-inner" wire:loading>
-                                                <i class="fas fa-spinner fa-spin"></i> Sending…
-                                            </span>
-                                        </button>
-                                    </div>
+                                 <!-- Submit Button -->
+<div class="col-lg-12">
+    <button
+        type="submit"
+        class="ps-submit-btn primary-btn-1 w-100"
+        wire:loading.attr="disabled"
+        wire:loading.class="ps-submit-btn--loading"
+        wire:target="submit"
+    >
+        <span class="ps-btn-inner" wire:loading.remove wire:target="submit">
+            Send Message &nbsp; <i class="icon-right-arrow"></i>
+        </span>
+        <span
+            class="ps-btn-inner"
+            wire:loading
+            wire:target="submit"
+            style="display:none;"
+        >
+            <i class="fas fa-spinner fa-spin"></i> Sending…
+        </span>
+    </button>
+</div>
 
                                 </div>
                             </form>
                         </div>
+
+                        <script>
+                            // Sets a per-render timestamp used server-side to reject
+                            // bot submissions that fire faster than a human possibly
+                            // could. Plain Livewire JS API, no Alpine required.
+                            (function () {
+                                function psSetRenderedAt() {
+                                    @this.set('renderedAt', Date.now().toString());
+                                }
+                                document.addEventListener('livewire:initialized', psSetRenderedAt);
+                                document.addEventListener('livewire:navigated', psSetRenderedAt);
+                            })();
+                        </script>
 
                     </div>
                 </div>
@@ -301,287 +323,294 @@
         </div>
     </section>
 
-</div>
+    <style>
+        .ps-contact-card {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 20px 24px;
+            background: var(--surface, #ffffff);
+            border: 1px solid rgba(0,0,0,0.06);
+        }
+        .ps-contact-card:hover {
+            border-color: rgba(37, 99, 235, 0.2);
+            box-shadow: 0 8px 30px -12px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .ps-contact-card__icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(37, 99, 235, 0.08);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #3b82f6;
+            font-size: 20px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+        .ps-contact-card:hover .ps-contact-card__icon {
+            background: rgba(37, 99, 235, 0.15);
+            transform: scale(1.05);
+        }
+        .ps-contact-card__label {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6c757d;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .ps-contact-card__value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary, #0a0a0a);
+            margin: 0;
+            line-height: 1.4;
+        }
+        .ps-contact-card__value a {
+            color: var(--text-primary, #0a0a0a);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .ps-contact-card__value a:hover {
+            color: #3b82f6;
+        }
 
-<style>
-    [x-cloak] { display: none !important; }
+        .ps-trust-badge {
+            padding: 12px 20px;
+            background: rgba(34, 197, 94, 0.06);
+            border-radius: 12px;
+            border: 1px solid rgba(34, 197, 94, 0.1);
+        }
+        .ps-pulse-dot-small {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: ps-pulse 1.8s ease-in-out infinite;
+            box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
+        }
+        @keyframes ps-pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.7); }
+            100% { opacity: 1; transform: scale(1); }
+        }
 
-    .ps-contact-card {
-        transition: all 0.3s ease;
-        border-radius: 12px;
-        padding: 20px 24px;
-        background: var(--surface, #ffffff);
-        border: 1px solid rgba(0,0,0,0.06);
-    }
-    .ps-contact-card:hover {
-        border-color: rgba(37, 99, 235, 0.2);
-        box-shadow: 0 8px 30px -12px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
-    }
-    .ps-contact-card__icon {
-        width: 48px;
-        height: 48px;
-        background: rgba(37, 99, 235, 0.08);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #3b82f6;
-        font-size: 20px;
-        flex-shrink: 0;
-        transition: all 0.3s ease;
-    }
-    .ps-contact-card:hover .ps-contact-card__icon {
-        background: rgba(37, 99, 235, 0.15);
-        transform: scale(1.05);
-    }
-    .ps-contact-card__label {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #6c757d;
-        font-weight: 600;
-        display: block;
-        margin-bottom: 2px;
-    }
-    .ps-contact-card__value {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text-primary, #0a0a0a);
-        margin: 0;
-        line-height: 1.4;
-    }
-    .ps-contact-card__value a {
-        color: var(--text-primary, #0a0a0a);
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-    .ps-contact-card__value a:hover {
-        color: #3b82f6;
-    }
+        .ps-form-card {
+            padding: 0 10px;
+        }
 
-    .ps-trust-badge {
-        padding: 12px 20px;
-        background: rgba(34, 197, 94, 0.06);
-        border-radius: 12px;
-        border: 1px solid rgba(34, 197, 94, 0.1);
-    }
-    .ps-pulse-dot-small {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        background: #22c55e;
-        border-radius: 50%;
-        animation: ps-pulse 1.8s ease-in-out infinite;
-        box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
-    }
-    @keyframes ps-pulse {
-        0% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.7); }
-        100% { opacity: 1; transform: scale(1); }
-    }
+        .ps-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .ps-form-label {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary, #0a0a0a);
+        }
+        .ps-required {
+            color: #f43f5e;
+        }
 
-    .ps-form-card {
-        padding: 0 10px;
-    }
+        .ps-form-field {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--surface, #ffffff);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+        .ps-form-field:focus-within {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        .ps-form-field--error {
+            border-color: #f43f5e;
+        }
+        .ps-form-field--error:focus-within {
+            border-color: #f43f5e;
+            box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
+        }
+        .ps-form-field--textarea {
+            align-items: flex-start;
+        }
 
-    .ps-form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .ps-form-label {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-primary, #0a0a0a);
-    }
-    .ps-required {
-        color: #f43f5e;
-    }
+        .ps-form-icon {
+            flex: 0 0 42px;
+            width: 42px;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1;
+            transition: color 0.3s ease;
+        }
+        .ps-form-field:focus-within .ps-form-icon {
+            color: #3b82f6;
+        }
+        .ps-form-icon--textarea {
+            height: 46px;
+            padding-top: 2px;
+        }
 
-    .ps-form-field {
-        position: relative;
-        display: flex;
-        align-items: center;
-        background: var(--surface, #ffffff);
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        transition: all 0.3s ease;
-    }
-    .ps-form-field:focus-within {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-    .ps-form-field--error {
-        border-color: #f43f5e;
-    }
-    .ps-form-field--error:focus-within {
-        border-color: #f43f5e;
-        box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
-    }
-    .ps-form-field--textarea {
-        align-items: flex-start;
-    }
+        .ps-form-input {
+            flex: 1 1 auto;
+            min-width: 0;
+            padding: 12px 14px 12px 0;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            color: var(--text-primary, #0a0a0a);
+            outline: none;
+            border-radius: 10px;
+            font-family: inherit;
+        }
+        .ps-form-input::placeholder {
+            color: #94a3b8;
+        }
+        .ps-form-input--textarea {
+            padding: 14px 14px 14px 0;
+            resize: vertical;
+            min-height: 120px;
+        }
 
-    .ps-form-icon {
-        flex: 0 0 42px;
-        width: 42px;
-        height: 46px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #94a3b8;
-        font-size: 14px;
-        line-height: 1;
-        transition: color 0.3s ease;
-    }
-    .ps-form-field:focus-within .ps-form-icon {
-        color: #3b82f6;
-    }
-    .ps-form-icon--textarea {
-        height: 46px;
-        padding-top: 2px;
-    }
+        .ps-form-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 24px;
+            margin-top: 4px;
+        }
+        .ps-char-count {
+            font-size: 12px;
+            color: #94a3b8;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+        .ps-char-count--warn {
+            color: #f59e0b;
+            font-weight: 600;
+        }
 
-    .ps-form-input {
-        flex: 1 1 auto;
-        min-width: 0;
-        padding: 12px 14px 12px 0;
-        border: none;
-        background: transparent;
-        font-size: 15px;
-        color: var(--text-primary, #0a0a0a);
-        outline: none;
-        border-radius: 10px;
-        font-family: inherit;
-    }
-    .ps-form-input::placeholder {
-        color: #94a3b8;
-    }
-    .ps-form-input--textarea {
-        padding: 14px 14px 14px 0;
-        resize: vertical;
-        min-height: 120px;
-    }
+        .ps-form-error {
+            font-size: 13px;
+            color: #f43f5e;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-    .ps-form-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        min-height: 24px;
-        margin-top: 4px;
-    }
-    .ps-char-count {
-        font-size: 12px;
-        color: #94a3b8;
-        font-weight: 500;
-    }
+        .ps-category-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .ps-category-pill {
+            padding: 6px 16px;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+            background: var(--surface, #ffffff);
+            color: #64748b;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .ps-category-pill:hover {
+            border-color: #3b82f6;
+            color: #0a0a0a;
+        }
+        .ps-category-pill--active {
+            border-color: #3b82f6;
+            background: rgba(37, 99, 235, 0.08);
+            color: #3b82f6;
+        }
 
-    .ps-form-error {
-        font-size: 13px;
-        color: #f43f5e;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
+        .ps-privacy-note {
+            font-size: 13px;
+            color: #6c757d;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .ps-privacy-note i {
+            color: #3b82f6;
+        }
+        .ps-privacy-link {
+            color: #3b82f6;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            transition: color 0.3s ease;
+        }
+        .ps-privacy-link:hover {
+            color: #1d4ed8;
+        }
 
-    .ps-category-pills {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .ps-category-pill {
-        padding: 6px 16px;
-        border-radius: 50px;
-        border: 1px solid #e2e8f0;
-        background: var(--surface, #ffffff);
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .ps-category-pill:hover {
-        border-color: #3b82f6;
-        color: #0a0a0a;
-    }
-    .ps-category-pill--active {
-        border-color: #3b82f6;
-        background: rgba(37, 99, 235, 0.08);
-        color: #3b82f6;
-    }
+        .ps-submit-btn {
+            display: block;
+            position: relative;
+            width: 100%;
+            box-sizing: border-box;
+            height: 56px;
+            padding: 0 32px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.2;
+            color: #ffffff !important;
+            background: #2563eb;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .ps-submit-btn .ps-btn-inner {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+        }
+        .ps-submit-btn:hover {
+            background: #000000;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.4);
+        }
+        .ps-submit-btn:disabled,
+        .ps-submit-btn--loading {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
 
-    .ps-privacy-note {
-        font-size: 13px;
-        color: #6c757d;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .ps-privacy-note i {
-        color: #3b82f6;
-    }
-    .ps-privacy-link {
-        color: #3b82f6;
-        text-decoration: underline;
-        text-underline-offset: 2px;
-        transition: color 0.3s ease;
-    }
-    .ps-privacy-link:hover {
-        color: #1d4ed8;
-    }
+        /* Plain CSS entrance animation, replayed automatically by the browser
+           every time this element is freshly inserted into the DOM — no JS
+           transition library needed. */
+        @keyframes ps-toast-in {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .ps-toast-in {
+            animation: ps-toast-in 0.3s ease;
+        }
 
-    .ps-submit-btn {
-        position: relative;
-        width: 100%;
-        min-height: 56px;
-        padding: 14px 32px;
-        font-size: 16px;
-        font-weight: 600;
-        line-height: 1.2;
-        color: #ffffff;
-        background: #2563eb;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    .ps-submit-btn .ps-btn-inner {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        width: 100%;
-    }
-    .ps-submit-btn:hover {
-        background: #1d4ed8;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px -8px rgba(37, 99, 235, 0.4);
-    }
-    .ps-submit-btn:disabled,
-    .ps-submit-btn--loading {
-        opacity: 0.7;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    .ps-toast-enter { transition: opacity 0.3s ease, transform 0.3s ease; }
-    .ps-toast-enter-start { opacity: 0; transform: translateY(-8px); }
-    .ps-toast-enter-end { opacity: 1; transform: translateY(0); }
-    .ps-toast-leave { transition: opacity 0.25s ease, transform 0.25s ease; }
-    .ps-toast-leave-start { opacity: 1; transform: translateY(0); }
-    .ps-toast-leave-end { opacity: 0; transform: translateY(-8px); }
-
-    @media (max-width: 767px) {
-        .ps-contact-card { padding: 16px 20px; }
-        .ps-contact-card__icon { width: 40px; height: 40px; font-size: 16px; }
-        .ps-form-card { padding: 0; }
-        .ps-form-input { font-size: 14px; }
-    }
-</style>
-
+        @media (max-width: 767px) {
+            .ps-contact-card { padding: 16px 20px; }
+            .ps-contact-card__icon { width: 40px; height: 40px; font-size: 16px; }
+            .ps-form-card { padding: 0; }
+            .ps-form-input { font-size: 14px; }
+        }
+    </style>
 
     <div class="container-fluid g-0 fix">
         <div class="row">
@@ -600,283 +629,3 @@
     </div>
 
 </div>
-
-<style>
-    [x-cloak] { display: none !important; }
-
-    .ps-contact-card {
-        transition: all 0.3s ease;
-        border-radius: 12px;
-        padding: 20px 24px;
-        background: var(--surface, #ffffff);
-        border: 1px solid rgba(0,0,0,0.06);
-    }
-    .ps-contact-card:hover {
-        border-color: rgba(37, 99, 235, 0.2);
-        box-shadow: 0 8px 30px -12px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
-    }
-    .ps-contact-card__icon {
-        width: 48px;
-        height: 48px;
-        background: rgba(37, 99, 235, 0.08);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #3b82f6;
-        font-size: 20px;
-        flex-shrink: 0;
-        transition: all 0.3s ease;
-    }
-    .ps-contact-card:hover .ps-contact-card__icon {
-        background: rgba(37, 99, 235, 0.15);
-        transform: scale(1.05);
-    }
-    .ps-contact-card__label {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #6c757d;
-        font-weight: 600;
-        display: block;
-        margin-bottom: 2px;
-    }
-    .ps-contact-card__value {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--text-primary, #0a0a0a);
-        margin: 0;
-        line-height: 1.4;
-    }
-    .ps-contact-card__value a {
-        color: var(--text-primary, #0a0a0a);
-        text-decoration: none;
-        transition: color 0.3s ease;
-    }
-    .ps-contact-card__value a:hover {
-        color: #3b82f6;
-    }
-
-    .ps-trust-badge {
-        padding: 12px 20px;
-        background: rgba(34, 197, 94, 0.06);
-        border-radius: 12px;
-        border: 1px solid rgba(34, 197, 94, 0.1);
-    }
-    .ps-pulse-dot-small {
-        display: inline-block;
-        width: 8px;
-        height: 8px;
-        background: #22c55e;
-        border-radius: 50%;
-        animation: ps-pulse 1.8s ease-in-out infinite;
-        box-shadow: 0 0 12px rgba(34, 197, 94, 0.3);
-    }
-    @keyframes ps-pulse {
-        0% { opacity: 1; transform: scale(1); }
-        50% { opacity: 0.4; transform: scale(0.7); }
-        100% { opacity: 1; transform: scale(1); }
-    }
-
-    .ps-form-card {
-        padding: 0 10px;
-    }
-
-    .ps-form-group {
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-    .ps-form-label {
-        font-size: 14px;
-        font-weight: 600;
-        color: var(--text-primary, #0a0a0a);
-    }
-    .ps-required {
-        color: #f43f5e;
-    }
-
-    .ps-form-field {
-        position: relative;
-        display: flex;
-        align-items: center;
-        background: var(--surface, #ffffff);
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        transition: all 0.3s ease;
-    }
-    .ps-form-field:focus-within {
-        border-color: #3b82f6;
-        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-    }
-    .ps-form-field--error {
-        border-color: #f43f5e;
-    }
-    .ps-form-field--error:focus-within {
-        border-color: #f43f5e;
-        box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.1);
-    }
-    .ps-form-field--textarea {
-        align-items: flex-start;
-    }
-
-    .ps-form-icon {
-        flex: 0 0 42px;
-        width: 42px;
-        height: 46px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #94a3b8;
-        font-size: 14px;
-        line-height: 1;
-        transition: color 0.3s ease;
-    }
-    .ps-form-field:focus-within .ps-form-icon {
-        color: #3b82f6;
-    }
-    .ps-form-icon--textarea {
-        height: 46px;
-        padding-top: 2px;
-    }
-
-    .ps-form-input {
-        flex: 1 1 auto;
-        min-width: 0;
-        padding: 12px 14px 12px 0;
-        border: none;
-        background: transparent;
-        font-size: 15px;
-        color: var(--text-primary, #0a0a0a);
-        outline: none;
-        border-radius: 10px;
-        font-family: inherit;
-    }
-    .ps-form-input::placeholder {
-        color: #94a3b8;
-    }
-    .ps-form-input--textarea {
-        padding: 14px 14px 14px 0;
-        resize: vertical;
-        min-height: 120px;
-    }
-
-    .ps-form-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        min-height: 24px;
-        margin-top: 4px;
-    }
-    .ps-char-count {
-        font-size: 12px;
-        color: #94a3b8;
-        font-weight: 500;
-        transition: color 0.2s ease;
-    }
-    .ps-char-count--warn {
-        color: #f59e0b;
-        font-weight: 600;
-    }
-
-    .ps-form-error {
-        font-size: 13px;
-        color: #f43f5e;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 4px;
-    }
-
-    .ps-category-pills {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-    }
-    .ps-category-pill {
-        padding: 6px 16px;
-        border-radius: 50px;
-        border: 1px solid #e2e8f0;
-        background: var(--surface, #ffffff);
-        color: #64748b;
-        font-size: 13px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    .ps-category-pill:hover {
-        border-color: #3b82f6;
-        color: #0a0a0a;
-    }
-    .ps-category-pill--active {
-        border-color: #3b82f6;
-        background: rgba(37, 99, 235, 0.08);
-        color: #3b82f6;
-    }
-
-    .ps-privacy-note {
-        font-size: 13px;
-        color: #6c757d;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-    .ps-privacy-note i {
-        color: #3b82f6;
-    }
-    .ps-privacy-link {
-        color: #3b82f6;
-        text-decoration: underline;
-        text-underline-offset: 2px;
-        transition: color 0.3s ease;
-    }
-    .ps-privacy-link:hover {
-        color: #1d4ed8;
-    }
-
-    .ps-submit-btn {
-        display: block;
-        position: relative;
-        width: 100%;
-        box-sizing: border-box;
-        height: 56px;
-        padding: 0 32px;
-        font-size: 16px;
-        font-weight: 600;
-        line-height: 1.2;
-        color: #ffffff !important;
-        background: #2563eb;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    .ps-submit-btn .ps-btn-inner {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        width: 100%;
-        height: 100%;
-    }
-    .ps-submit-btn:hover {
-        background: #1d4ed8;
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px -8px rgba(37, 99, 235, 0.4);
-    }
-    .ps-submit-btn:disabled,
-    .ps-submit-btn--loading {
-        opacity: 0.7;
-        cursor: not-allowed;
-        transform: none;
-    }
-
-    @media (max-width: 767px) {
-        .ps-contact-card { padding: 16px 20px; }
-        .ps-contact-card__icon { width: 40px; height: 40px; font-size: 16px; }
-        .ps-form-card { padding: 0; }
-        .ps-form-input { font-size: 14px; }
-    }
-</style>

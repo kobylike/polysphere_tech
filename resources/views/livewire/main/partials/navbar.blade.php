@@ -5,7 +5,7 @@
         <div class="header-top">
             <div class="header-top-contact-info">
                 <span class="email p-relative"><a
-                        href="mailto:info@polyspheretech.com">info@polyspheretech.com</a></span>
+                        href="mailto:info@polyspheretech.com">contact@polyspheretech.com</a></span>
                 <span class="time p-relative">Hours: Mon - Fri: 9.00 AM - 6.00 PM</span>
             </div>
             <div class="header-top-socials">

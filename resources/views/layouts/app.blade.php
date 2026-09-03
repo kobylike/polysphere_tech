@@ -261,7 +261,7 @@
     @livewire('main.partials.footer')
 
     @livewireScripts
-
+    @vite('resources/js/app.js')
     <!-- ============================================ -->
     <!-- JAVASCRIPT                                  -->
     <!-- ============================================ -->
