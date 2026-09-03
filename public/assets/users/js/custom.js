@@ -1,7 +1,6 @@
 var W3Crm = function(){
 	"use strict"
 
-	/* Search Bar ============ */
 	var screenWidth = $( window ).width();
 	var screenHeight = $( window ).height();
 
@@ -30,9 +29,18 @@ var W3Crm = function(){
 		$_SELECT_PICKER.selectpicker();
 	}
 
-    var handleMetisMenu = function() {
-		if(jQuery('#menu').length > 0 ){
-			$("#menu").metisMenu();
+	var handleMetisMenu = function() {
+		var $menu = jQuery('#menu');
+		if ($menu.length > 0) {
+			if ($menu.data('mm-initialized')) {
+				try {
+					$menu.metisMenu('dispose');
+				} catch (e) {
+					console.warn('metisMenu dispose failed, continuing:', e);
+				}
+			}
+			$menu.metisMenu();
+			$menu.data('mm-initialized', true);
 		}
 		jQuery('.metismenu > .mm-active ').each(function(){
 			if(!jQuery(this).children('ul').length > 0)
@@ -54,29 +62,22 @@ var W3Crm = function(){
 		});
 	}
 
-	/*
-	FIXED: was bound directly to `.nav-control` with $(".nav-control").on('click', ...).
-	`.nav-control` lives inside @livewire('admin.partials.navbar'), which gets
-	fully re-rendered (new DOM node) on every wire:navigate. A direct binding
-	attaches to the OLD node and is lost the moment Livewire swaps it in,
-	which is why the sidebar collapse toggle stopped responding after
-	navigating and only worked again after a hard refresh (which re-runs
-	W3Crm.init() and rebinds to the then-current node).
-
-	Delegating the handler to `document` fixes this permanently: the
-	listener stays on `document` and is re-evaluated against whatever
-	`.nav-control` element currently exists in the DOM at click time, so it
-	keeps working across any number of wire:navigate swaps with no
-	re-init needed.
-	*/
 	var handleNavigation = function() {
-		$(document).on('click', '.nav-control', function() {
+		console.log('handleNavigation: binding click.navControl now');
+		$(document).off('click.navControl').on('click.navControl', '.nav-control', function() {
+			console.log('hamburger clicked');
 			$('#main-wrapper').toggleClass("menu-toggle");
 			$(".hamburger").toggleClass("is-active");
 		});
+		console.log('handleNavigation: binding complete, current count =',
+			$._data(document, 'events')?.click?.filter(h => h.namespace === 'navControl').length ?? 'unknown');
 	}
 
 	var handleCurrentActive = function() {
+		jQuery('ul#menu a').removeClass('mm-active');
+		jQuery('ul#menu li').removeClass('mm-active');
+		jQuery('ul#menu ul').removeClass('mm-show');
+
 		for (var nk = window.location,
 			o = $("ul#menu a").filter(function() {
 				return this.href == nk;
@@ -172,7 +173,6 @@ var W3Crm = function(){
 	}
 
 	var headerFix = function(){
-		/* Main navigation fixed on top  when scroll down function custom */
 		jQuery(window).on('scroll', function () {
 
 			if(jQuery('.header').length > 0){
@@ -189,7 +189,6 @@ var W3Crm = function(){
 				});
 			}
 		});
-		/* Main navigation fixed on top  when scroll down function custom end*/
 	}
 
 	var handleChatbox = function() {
@@ -239,18 +238,17 @@ var W3Crm = function(){
 	var handleDzFullScreen = function() {
 		jQuery('.dz-fullscreen').on('click',function(e){
 			if(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement) {
-				/* Enter fullscreen */
 				if(document.exitFullscreen) {
 					document.exitFullscreen();
 				} else if(document.msExitFullscreen) {
-					document.msExitFullscreen(); /* IE/Edge */
+					document.msExitFullscreen();
 				} else if(document.mozCancelFullScreen) {
-					document.mozCancelFullScreen(); /* Firefox */
+					document.mozCancelFullScreen();
 				} else if(document.webkitExitFullscreen) {
-					document.webkitExitFullscreen(); /* Chrome, Safari & Opera */
+					document.webkitExitFullscreen();
 				}
 			}
-			else { /* exit fullscreen */
+			else {
 				if(document.documentElement.requestFullscreen) {
 					document.documentElement.requestFullscreen();
 				} else if(document.documentElement.webkitRequestFullscreen) {
@@ -523,11 +521,7 @@ var W3Crm = function(){
 
 	var tagify = function(){
 		if(jQuery('input[name=tagify]').length > 0){
-
-			// The DOM element you wish to replace with Tagify
 			var input = document.querySelector('input[name=tagify]');
-
-			// initialize Tagify on the above input node reference
 			new Tagify(input);
 		}
 	}
@@ -557,12 +551,14 @@ var W3Crm = function(){
 	}
 
 
-	/* Function ============ */
 	return {
 		init:function(){
+			console.log('init: start');
 			handleMetisMenu();
+			console.log('init: after handleMetisMenu');
 			handleAllChecked();
 			handleNavigation();
+			console.log('init: after handleNavigation');
 			handleCurrentActive();
 			handleMiniSidebar();
 			handleMinHeight();
@@ -592,8 +588,8 @@ var W3Crm = function(){
 			tagify();
 			handleSelectText();
 			setCurrentYear();
+			console.log('init: complete');
 		},
-
 
 		load:function(){
 			handlePreloader();
@@ -606,13 +602,26 @@ var W3Crm = function(){
 		handleMenuPosition:function(){
 			handleMenuPosition();
 		},
+
+		refresh:function(){
+			handleMetisMenu();
+			handleCurrentActive();
+			handleNavigation();
+		},
 	}
 
 }();
 
 /* Document.ready Start */
 jQuery(document).ready(function() {
-	$('[data-bs-toggle="popover"]').popover();
+	console.log('document ready fired');
+
+	try {
+		$('[data-bs-toggle="popover"]').popover();
+		console.log('popover: ok');
+	} catch (e) {
+		console.error('popover threw, continuing anyway:', e);
+	}
 
 	W3Crm.init();
 
@@ -631,7 +640,6 @@ jQuery(document).ready(function() {
 });
 /* Document.ready END */
 
-/* Window Load START */
 jQuery(window).on('load',function () {
 	W3Crm.load();
 
@@ -640,9 +648,7 @@ jQuery(window).on('load',function () {
 	}, 500);
 
 });
-/*  Window Load END */
 
-/* Window Resize START */
 jQuery(window).on('resize',function () {
 	W3Crm.resize();
 
@@ -651,4 +657,8 @@ jQuery(window).on('resize',function () {
 	}, 500);
 
 });
-/*  Window Resize END */
+
+document.addEventListener('livewire:navigated', function () {
+	console.log('livewire:navigated fired, calling refresh()');
+	W3Crm.refresh();
+});

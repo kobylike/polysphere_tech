@@ -635,9 +635,51 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Roles (conditional on assignRole permission) --}}
+                            {{-- 🔥 Roles – with self‑edit protection (Super Admin exempt) --}}
                             @php $targetUser = $isEditing ? App\Models\User::find($selectedUserId) : new App\Models\User(); @endphp
-                            @if(auth()->user()->can('assignRole', $targetUser))
+
+                            @if($isSelf)
+                                @if(auth()->user()->hasRole('Super Admin'))
+                                    {{-- Super Admin editing themselves – show roles and allow editing --}}
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Roles</label>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach($assignableRoles as $roleOption)
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox" value="{{ $roleOption }}"
+                                                        wire:model="selectedRoles" id="role_{{ $roleOption }}">
+                                                    <label class="form-check-label" for="role_{{ $roleOption }}">
+                                                        <span class="badge badge-secondary light border-0">
+                                                            <i class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
+                                                            {{ $roleOption }}
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        @error('selectedRoles')
+                                        <div class="text-danger small">{{ $message }}</div> @enderror
+                                        <small class="text-muted d-block mt-1">Every user gets the <strong>User</strong> role
+                                            automatically; the <strong>{{ $protectedRole }}</strong> role can't be assigned
+                                            here.</small>
+                                    </div>
+                                @else
+                                    {{-- Non‑Super Admin editing themselves – cannot change roles --}}
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold small">Roles</label>
+                                        <div class="alert alert-info">
+                                            <i class="fa-regular fa-circle-info me-2"></i>
+                                            You cannot change your own roles.
+                                        </div>
+                                        <div class="text-muted small">
+                                            @foreach($selectedRoles as $role)
+                                                <span class="badge bg-secondary light border-0 me-1">{{ $role }}</span>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
+                            @elseif(auth()->user()->can('assignRole', $targetUser))
+                                {{-- Editing another user and have permission --}}
                                 <div class="mb-3">
                                     <label class="form-label fw-bold small">Roles</label>
                                     <div class="d-flex flex-wrap gap-2">
@@ -647,8 +689,7 @@
                                                     wire:model="selectedRoles" id="role_{{ $roleOption }}">
                                                 <label class="form-check-label" for="role_{{ $roleOption }}">
                                                     <span class="badge badge-secondary light border-0">
-                                                        <i
-                                                            class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
+                                                        <i class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
                                                         {{ $roleOption }}
                                                     </span>
                                                 </label>

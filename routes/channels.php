@@ -38,6 +38,6 @@ Broadcast::channel('presence-online', function ($user) {
     return [
         'id'     => $user->id,
         'name'   => $user->name,
-        'avatar' => $user->avatar_url, // make sure this attribute exists
+        'avatar' => $user->avatar_url,
     ];
 });

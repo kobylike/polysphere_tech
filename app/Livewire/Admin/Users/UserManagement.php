@@ -115,6 +115,9 @@ class UserManagement extends Component
     public bool $is_featured_team = false;
     public bool $is_spotlight = false;
 
+    // ─── NEW: flag for editing self ────────────────────────────────────
+    public bool $isSelf = false;
+
     // ─── Generated password ──────────────────────────────────────────────
     public ?string $generatedPassword = null;
 
@@ -230,7 +233,7 @@ class UserManagement extends Component
         return 'EMP-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
-    // ─── Country / Phone logic (mirroring HrDashboard) ──────────────────
+    // ─── Country / Phone logic ──────────────────────────────────────────
     private function loadCountries()
     {
         $path = public_path('countries-full.json');
@@ -472,7 +475,8 @@ class UserManagement extends Component
             'position',
             'is_featured_team',
             'is_spotlight',
-            'generatedPassword'
+            'generatedPassword',
+            'isSelf'
         ]);
         $this->isEditing = false;
         $this->formStatus = 'active';
@@ -486,6 +490,8 @@ class UserManagement extends Component
         $this->authorize('update', $user);
 
         $this->selectedUserId = $user->id;
+        $this->isSelf = ($user->id === Auth::id());
+
         $nameParts = explode(' ', $user->name, 2);
         $this->first_name = $nameParts[0] ?? '';
         $this->last_name = $nameParts[1] ?? '';
@@ -577,13 +583,23 @@ class UserManagement extends Component
         try {
             if ($this->isEditing) {
                 $user = User::findOrFail($this->selectedUserId);
-                // Check assignRole permission if roles changed
+
+                // 🔒 Prevent changing your own roles (unless you are Super Admin)
+                if ($this->isSelf && !$user->hasRole('Super Admin')) {
+                    $currentRoles = $user->roles->pluck('name')->toArray();
+                    if ($currentRoles != $roleNames) {
+                        $this->addError('selectedRoles', 'You cannot change your own roles.');
+                        return;
+                    }
+                }
+
+                // Check assignRole permission if roles changed (and not self, or self is Super Admin)
                 $currentRoles = $user->roles->pluck('name')->toArray();
-                if ($currentRoles != $roleNames) {
+                if ($currentRoles != $roleNames && !$this->isSelf) {
                     $this->authorize('assignRole', $user);
                 }
 
-                // Also ensure update permission (already checked in openEdit, but double-check)
+                // Also ensure update permission
                 $this->authorize('update', $user);
 
                 $password = $this->password ? Hash::make($this->password) : null;
@@ -599,9 +615,12 @@ class UserManagement extends Component
                 }
 
                 $user->update($data);
-                $user->syncRoles($roleNames);
-                $user->broadcastPermissions();
 
+                // Only sync roles if allowed (already handled above)
+                if (!($this->isSelf && !$user->hasRole('Super Admin'))) {
+                    $user->syncRoles($roleNames);
+                    $user->broadcastPermissions();
+                }
 
                 $profile = $user->profile ?: $user->profile()->create([]);
                 $profile->position = $this->position;
@@ -688,7 +707,8 @@ class UserManagement extends Component
             'selectedUserId',
             'position',
             'is_featured_team',
-            'is_spotlight'
+            'is_spotlight',
+            'isSelf'
         ]);
     }
 
@@ -767,7 +787,6 @@ class UserManagement extends Component
         ]);
 
         $user = User::findOrFail($this->convertUserId);
-        // Re-check permission inside the save method as well
         $this->authorize('update', $user);
 
         $profile = $user->profile ?: $user->profile()->create([]);

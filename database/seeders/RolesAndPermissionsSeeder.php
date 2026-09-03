@@ -50,6 +50,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'Create Services',
             'Edit Services',
             'Delete Services',
+
+            // 🔥 NEW: Notifications
+            'Send Notifications',
         ];
 
         foreach ($permissions as $perm) {
@@ -87,11 +90,8 @@ class RolesAndPermissionsSeeder extends Seeder
             'Create Services',
             'Edit Services',
             'Delete Services',
+            'Send Notifications',
         ]);
-
-        // Agent is removed – you said you won't use it
-        // $agent = Role::firstOrCreate(['name' => 'Agent', 'guard_name' => 'web']);
-        // $agent->syncPermissions(['View Users']);
 
         $userRole = Role::firstOrCreate(['name' => 'User', 'guard_name' => 'web']);
         $userRole->syncPermissions([]); // No permissions

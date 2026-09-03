@@ -141,7 +141,7 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
 
         // ─── Public (for all authenticated users) ──────────────────────────
         Route::get('/account/{tab?}', AccountSettings::class)
-            ->where('tab', 'overview|profile|security|activity')
+            ->where('tab', 'overview|profile|security|activity|notifications')
             ->name('account');
 
         Route::get('/dashboard', DashboardComponent::class)->name('dashboard');
@@ -228,5 +228,8 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
                 ->middleware('can:Edit Services')
                 ->name('admin.services.edit');
         });
+        Route::get('/notifications/send', \App\Livewire\Admin\Notifications\SendNotification::class)
+            ->middleware('can:Send Notifications')
+            ->name('notifications.send');
     });
 });

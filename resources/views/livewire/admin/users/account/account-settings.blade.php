@@ -21,7 +21,6 @@
 
     {{-- ─── PROFILE HERO ───────────────────────────────────────────────────── --}}
     @php
-        // ✅ NOW USING $user PASSED FROM THE COMPONENT – NOT auth()->user()
         $roles = $user->roles->pluck('name')->map(fn($r) => ucfirst($r))->implode(', ');
         $statusClass = $user->status === 'active' ? 'success' : 'danger';
         $position = $user->position ?? '—';
@@ -124,6 +123,10 @@
                         <a href="{{ route('account', ['tab' => 'activity']) }}" wire:navigate
                            class="nav-link py-3 border-3 text-dark {{ $tab === 'activity' ? 'active' : '' }}">Activity</a>
                     </li>
+                    <li class="nav-item" role="presentation">
+                        <a href="{{ route('account', ['tab' => 'notifications']) }}" wire:navigate
+                           class="nav-link py-3 border-3 text-dark {{ $tab === 'notifications' ? 'active' : '' }}">Notifications</a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -143,12 +146,14 @@
                 @case('activity')
                     @livewire('admin.users.account.tabs.activity-tab', key('activity'))
                     @break
+                @case('notifications')
+                    @livewire('admin.users.account.tabs.notification-tab', key('notifications'))
+                    @break
                 @default
                     @livewire('admin.users.account.tabs.overview-tab', key('overview'))
             @endswitch
         </div>
     </div>
-    {{-- ─── STYLES ─────────────────────────────────────────────────────────── --}}
     <style>
         /* ── Profile Hero Wrapper ──────────────────────────────────────────── */
         .profile-hero-wrapper {

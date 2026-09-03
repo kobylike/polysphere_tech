@@ -62,7 +62,10 @@ class User extends Authenticatable implements MustVerifyEmail
         ];
     }
 
-
+    public function notifications()
+    {
+        return $this->morphMany(Notification::class, 'notifiable')->latest();
+    }
     public function broadcastPermissions(): void
     {
         broadcast(new PermissionsUpdated(

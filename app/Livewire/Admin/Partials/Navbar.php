@@ -14,7 +14,7 @@ class Navbar extends Component
     {
         return [
             'own-profile-updated' => 'syncProfile',
-            'permissions-updated' => 'syncPermissions', // new
+            'permissions-updated' => 'syncPermissions',
         ];
     }
 
@@ -26,11 +26,13 @@ class Navbar extends Component
     public function syncProfile($payload = null): void
     {
         $this->user = Auth::user();
+        $this->dispatch('$refresh');
     }
 
     public function syncPermissions($payload = null): void
     {
         $this->user = Auth::user();
+        $this->dispatch('$refresh');
     }
 
     public function logout()

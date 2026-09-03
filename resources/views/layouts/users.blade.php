@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{{ $title ?? 'Polysphere Tech - IT Solutions & Software Development' }}</title>
@@ -59,7 +60,8 @@
     <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.min.js') }}" defer></script>
     <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.world.js') }}" defer></script>
     <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.usa.js') }}" defer></script>
-    <script src="{{ asset('assets/users/js/custom.js') }}" defer></script>
+    <script src="{{ asset('assets/users/js/custom.js') }}?v={{ filemtime(public_path('assets/users/js/custom.js')) }}"
+        defer></script>
     <script src="{{ asset('assets/users/js/deznav-init.js') }}" defer></script>
     <script src="{{ asset('assets/users/js/demo.js') }}" defer></script>
     <script src="{{ asset('assets/users/js/styleSwitcher.js') }}" defer></script>
@@ -137,15 +139,56 @@
     @livewireScripts
     @vite('resources/js/app.js')
 
+    {{-- ─── Direct Echo Listener for Permissions & Profile ─── --}}
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const userId = {{ Auth::id() ?? 'null' }};
+            if (!userId) return;
+
+            // Wait for Echo to be ready
+            const checkEcho = setInterval(() => {
+                if (typeof window.Echo !== 'undefined') {
+                    clearInterval(checkEcho);
+
+                    console.log('✅ Setting up listeners for user:', userId);
+
+                    // ─── Permissions updated ──────────────────────────────────────
+                    window.Echo.private(`App.Models.User.${userId}`)
+                        .listen('permissions.updated', (e) => {
+                            console.log('✅ permissions.updated received', e);
+                            Livewire.dispatch('permissions-updated', {
+                                userId: e.user_id,
+                                roles: e.roles,
+                                permissions: e.permissions,
+                            });
+                            Livewire.dispatch('$refresh');
+                        });
+
+                    // ─── Profile updated ──────────────────────────────────────────
+                    window.Echo.private(`App.Models.User.${userId}`)
+                        .listen('.profile.updated', (e) => {
+                            console.log('✅ profile.updated received', e);
+                            Livewire.dispatch('own-profile-updated', {
+                                userId: e.user?.id,
+                                name: e.user?.name,
+                                avatarUrl: e.user?.avatar_url,
+                                profile: e.profile,
+                                profileData: e.profile_data,
+                            });
+                        });
+                }
+            }, 300);
+        });
+    </script>
+
     {{-- ═══════════════════════════════════════════════════════════════════════════
-    ChatBridge — Central Echo manager for Chat, Notifications, Profile & Permissions
+    ChatBridge — Central Echo manager for Chat, System Notifications & Friend Profile updates
     ═══════════════════════════════════════════════════════════════════════════ --}}
     <script>
         window.ChatBridge = window.ChatBridge || (function () {
             const userId = {{ Auth::id() ?? 'null' }};
 
             let notificationChannel = null;
-            let ownProfileChannel = null;
             const chatChannels = {};
             const profileChannels = {};
 
@@ -157,7 +200,7 @@
                 return true;
             }
 
-            // ─── Notifications (messages + new notifications) ──────────────────
+            // ─── Notifications (chat messages + system/bell notifications) ─────
             function subscribeToNotifications() {
                 if (!userId) return;
                 if (!ensureEcho(subscribeToNotifications)) return;
@@ -170,47 +213,10 @@
                     window.Livewire?.dispatch('friend-list-refresh-needed');
                 });
 
-                // New notification (bell icon update)
+                // New system/bell notification
                 notificationChannel.listen('.new.notification', (data) => {
                     window.Livewire?.dispatch('notification-received', {
                         notification: data.notification ?? data
-                    });
-                });
-            }
-
-            // ─── Own profile (avatar, name, permissions) ──────────────────────
-            function subscribeToOwnProfile() {
-                if (!userId) return;
-                if (!ensureEcho(subscribeToOwnProfile)) return;
-                if (ownProfileChannel) return;
-
-                const channelName = `App.Models.User.${userId}`;
-                ownProfileChannel = window.Echo.private(channelName);
-
-                // 👤 Profile updated (name, avatar, etc.)
-                ownProfileChannel.listen('.profile.updated', (e) => {
-                    window.Livewire?.dispatch('own-profile-updated', {
-                        userId: e.user?.id,
-                        name: e.user?.name,
-                        avatarUrl: e.user?.avatar_url,
-                        profile: e.profile,
-                        profileData: e.profile_data,
-                    });
-                });
-
-                // 🔐 Permissions updated (roles, permissions)
-                ownProfileChannel.listen('permissions.updated', (e) => {
-                    window.Livewire?.dispatch('permissions-updated', {
-                        userId: e.user_id,
-                        roles: e.roles,
-                        permissions: e.permissions,
-                    });
-
-                    // Optional toast notification
-                    window.Livewire?.dispatch('notify', {
-                        type: 'info',
-                        title: 'Permissions Updated',
-                        message: 'Your permissions have been updated. The interface will now adjust.',
                     });
                 });
             }
@@ -267,7 +273,6 @@
 
             return {
                 subscribeToNotifications,
-                subscribeToOwnProfile,
                 subscribeToChat,
                 subscribeToProfileUpdates,
             };
@@ -276,11 +281,9 @@
         // ─── Initialise ChatBridge ──────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', () => {
             window.ChatBridge.subscribeToNotifications();
-            window.ChatBridge.subscribeToOwnProfile();
         });
         document.addEventListener('livewire:navigated', () => {
             window.ChatBridge.subscribeToNotifications();
-            window.ChatBridge.subscribeToOwnProfile();
         });
     </script>
 
@@ -292,7 +295,7 @@
         }
     </style>
 
-    {{-- ─── Datepicker & image preview (unchanged) ────────────────────────── --}}
+    {{-- ─── Datepicker & image preview ────────────────────────────────────────── --}}
     <script>
         function initDatepicker() {
             if (typeof $.fn.datepicker === 'function') {
@@ -327,6 +330,24 @@
                 $('#imagePreview').css('background-image', 'url(' + imageUrl + ')');
             });
         });
+    </script>
+
+    <script>
+        (function () {
+            function bindHamburger() {
+                jQuery(document).off('click.hamburgerFix').on('click.hamburgerFix', '.nav-control', function () {
+                    jQuery('#main-wrapper').toggleClass('menu-toggle');
+                    jQuery('.hamburger').toggleClass('is-active');
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', bindHamburger);
+            document.addEventListener('livewire:navigated', bindHamburger);
+
+            if (document.readyState !== 'loading') {
+                bindHamburger();
+            }
+        })();
     </script>
 
 </body>

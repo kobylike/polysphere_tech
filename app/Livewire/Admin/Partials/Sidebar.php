@@ -23,6 +23,7 @@ class Sidebar extends Component
 
     public function syncPermissions($payload = null): void
     {
+        \Illuminate\Support\Facades\Log::info('Sidebar syncPermissions called');
         $this->user = Auth::user();
     }
 
