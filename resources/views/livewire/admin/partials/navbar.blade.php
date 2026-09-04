@@ -92,8 +92,19 @@
         }
     </style>
 
-    <!-- Chat box -->
-    @livewire('admin.messenger.chat-messenger-component')
+    {{--
+    ═══ CHAT WIDGET — now persisted independently of the navbar ═══
+    The navbar itself is rebuilt on every wire:navigate, which used to
+    tear down and remount this nested Livewire component (and its
+    Alpine chatState instance) on every single navigation. Wrapping it
+    in its own @persist keeps it alive across page swaps, exactly like
+    the sidebar below — no more remount race, no more missed listeners.
+    --}}
+    @persist('chat-widget')
+    @auth
+        @livewire('admin.messenger.chat-messenger-component')
+    @endauth
+    @endpersist
 
     <!-- Header -->
     <div class="header">
@@ -132,15 +143,15 @@
                                         stroke-linejoin="round" />
                                 </svg>
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end" wire:ignore>
+                            <div class="dropdown-menu dropdown-menu-end">
                                 <div id="DZ_W_TimeLine02" class="widget-timeline dz-scroll style-1 p-3 height370">
                                     <ul class="timeline">
                                         <li>
-                                            <div class="timeline-badge primary"></div><a
-                                                class="timeline-panel text-muted" href="javascript:void(0);"><span>10
-                                                    minutes ago</span>
-                                                <h6 class="mb-0">Youtube, a video-sharing website, goes live <strong
-                                                        class="text-primary">$500</strong>.</h6>
+                                            <div class="timeline-badge primary"></div>
+                                            class="timeline-panel text-muted" href="javascript:void(0);"><span>10
+                                                minutes ago</span>
+                                            <h6 class="mb-0">Youtube, a video-sharing website, goes live <strong
+                                                    class="text-primary">$500</strong>.</h6>
                                             </a>
                                         </li>
                                         <li>
@@ -153,25 +164,25 @@
                                             </a>
                                         </li>
                                         <li>
-                                            <div class="timeline-badge danger"></div><a
-                                                class="timeline-panel text-muted" href="javascript:void(0);"><span>30
-                                                    minutes ago</span>
-                                                <h6 class="mb-0">john just buy your product <strong
-                                                        class="text-warning">Sell $250</strong></h6>
+                                            <div class="timeline-badge danger"></div>
+                                            class="timeline-panel text-muted" href="javascript:void(0);"><span>30
+                                                minutes ago</span>
+                                            <h6 class="mb-0">john just buy your product <strong
+                                                    class="text-warning">Sell $250</strong></h6>
                                             </a>
                                         </li>
                                         <li>
-                                            <div class="timeline-badge success"></div><a
-                                                class="timeline-panel text-muted" href="javascript:void(0);"><span>15
-                                                    minutes ago</span>
-                                                <h6 class="mb-0">StumbleUpon is acquired by eBay.</h6>
+                                            <div class="timeline-badge success"></div>
+                                            class="timeline-panel text-muted" href="javascript:void(0);"><span>15
+                                                minutes ago</span>
+                                            <h6 class="mb-0">StumbleUpon is acquired by eBay.</h6>
                                             </a>
                                         </li>
                                         <li>
-                                            <div class="timeline-badge warning"></div><a
-                                                class="timeline-panel text-muted" href="javascript:void(0);"><span>20
-                                                    minutes ago</span>
-                                                <h6 class="mb-0">Mashable, a news website and blog, goes live.</h6>
+                                            <div class="timeline-badge warning"></div>
+                                            class="timeline-panel text-muted" href="javascript:void(0);"><span>20
+                                                minutes ago</span>
+                                            <h6 class="mb-0">Mashable, a news website and blog, goes live.</h6>
                                             </a>
                                         </li>
                                         <li>
@@ -185,13 +196,16 @@
                             </div>
                         </li>
 
-                        {{-- ═══ NOTIFICATION BELL – REPLACED WITH LIVEWIRE COMPONENT ═══ --}}
-                        @livewire('admin.partials.notification-bell')
+                        {{-- ═══ NOTIFICATION BELL--}}
 
-                        {{-- ═══ MESSAGE ICON (with green badge) ═══ --}}
+                        @auth
+                            @livewire('admin.partials.notification-bell')
+                        @endauth
+
+
                         <li class="nav-item dropdown notification_dropdown">
                             <a class="nav-link bell-link" href="javascript:void(0);"
-                                onclick="window.dispatchEvent(new Event('open-chatbox'))">
+                                onclick="Alpine.store('chat').open = true">
                                 <svg width="20" height="22" viewBox="0 0 22 20" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path
@@ -236,119 +250,121 @@
                                 </svg>
                             </a>
                         </li>
+                        @auth
+                            <!-- Profile dropdown (UPDATED with dynamic user data) -->
+                            <li class="nav-item ps-3">
 
-                        <!-- Profile dropdown (UPDATED with dynamic user data) -->
-                        <li class="nav-item ps-3">
-                            <div class="dropdown header-profile2">
-                                <a class="nav-link" href="javascript:void(0);" role="button" data-bs-toggle="dropdown"
-                                    aria-expanded="false">
-                                    <div class="header-info2 d-flex align-items-center">
-                                        <div class="header-media">
-                                            <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}">
-                                        </div>
-                                        <div class="header-info">
-                                            <h6>{{ $user->name }}</h6>
-                                            <p>{{ $user->email }}</p>
-                                        </div>
-                                    </div>
-                                </a>
-                                <div class="dropdown-menu dropdown-menu-end" wire:ignore style="">
-                                    <div class="card border-0 mb-0">
-                                        <div class="card-header py-2">
-                                            <div class="products">
-                                                <img src="{{ $user->avatar_url }}" class="avatar avatar-md"
-                                                    alt="{{ $user->name }}">
-                                                <div>
-                                                    <h6>{{ $user->name }}</h6>
-                                                    <span>{{ $user->position ?? 'Member' }}</span>
-                                                </div>
+                                <div class="dropdown header-profile2">
+                                    <a class="nav-link" href="javascript:void(0);" role="button" data-bs-toggle="dropdown"
+                                        aria-expanded="false">
+                                        <div class="header-info2 d-flex align-items-center">
+                                            <div class="header-media">
+                                                <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}">
+                                            </div>
+                                            <div class="header-info">
+                                                <h6>{{ $user->name }}</h6>
+                                                <p>{{ $user->email }}</p>
                                             </div>
                                         </div>
-                                        <div class="card-body px-0 py-2">
-                                            <a href="{{ route('account', ['tab' => 'overview']) }}" wire:navigate
-                                                class="dropdown-item ai-icon ">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                                        d="M11.9848 15.3462C8.11714 15.3462 4.81429 15.931 4.81429 18.2729C4.81429 20.6148 8.09619 21.2205 11.9848 21.2205C15.8524 21.2205 19.1543 20.6348 19.1543 18.2938C19.1543 15.9529 15.8733 15.3462 11.9848 15.3462Z"
-                                                        stroke="var(--primary)" stroke-width="1.5"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                                        d="M11.9848 12.0059C14.5229 12.0059 16.58 9.94779 16.58 7.40969C16.58 4.8716 14.5229 2.81445 11.9848 2.81445C9.44667 2.81445 7.38857 4.8716 7.38857 7.40969C7.38 9.93922 9.42381 11.9973 11.9524 12.0059H11.9848Z"
-                                                        stroke="var(--primary)" stroke-width="1.42857"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                                <span class="ms-2">Profile </span>
-                                            </a>
-                                            <a href="app-profile.html" class="dropdown-item ai-icon ">
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19"
-                                                    viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                                                    class="feather feather-pie-chart">
-                                                    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
-                                                    <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
-                                                </svg>
-                                                <span class="ms-2">My Project</span><span
-                                                    class="badge badge-sm badge-secondary light rounded-circle text-white ms-2">4</span>
-                                            </a>
-                                            <a href="javascript:void(0);" class="dropdown-item ai-icon ">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <path
-                                                        d="M17.9026 8.85114L13.4593 12.4642C12.6198 13.1302 11.4387 13.1302 10.5992 12.4642L6.11844 8.85114"
-                                                        stroke="var(--primary)" stroke-width="1.5"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                                        d="M16.9089 21C19.9502 21.0084 22 18.5095 22 15.4384V8.57001C22 5.49883 19.9502 3 16.9089 3H7.09114C4.04979 3 2 5.49883 2 8.57001V15.4384C2 18.5095 4.04979 21.0084 7.09114 21H16.9089Z"
-                                                        stroke="var(--primary)" stroke-width="1.5"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                                <span class="ms-2">Message </span>
-                                            </a>
-                                            <a href="email-inbox.html" class="dropdown-item ai-icon ">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                                        d="M12 17.8476C17.6392 17.8476 20.2481 17.1242 20.5 14.2205C20.5 11.3188 18.6812 11.5054 18.6812 7.94511C18.6812 5.16414 16.0452 2 12 2C7.95477 2 5.31885 5.16414 5.31885 7.94511C5.31885 11.5054 3.5 11.3188 3.5 14.2205C3.75295 17.1352 6.36177 17.8476 12 17.8476Z"
-                                                        stroke="var(--primary)" stroke-width="1.5"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                    <path
-                                                        d="M14.3888 20.8572C13.0247 22.372 10.8967 22.3899 9.51947 20.8572"
-                                                        stroke="var(--primary)" stroke-width="1.5"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                                <span class="ms-2">Notification </span>
-                                            </a>
-                                        </div>
-                                        <div class="card-footer px-0 py-2">
-                                            <a href="javascript:void(0);" class="dropdown-item ai-icon ">
-                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <path fill-rule="evenodd" clip-rule="evenodd"
-                                                        d="M20.8066 7.62355L18.1842 5.54346C17.6576 4.62954 16.4907 4.31426 15.5755 4.83866V4.83866C15.1399 5.09528 14.6201 5.16809 14.1307 5.04103C13.6413 4.91396 13.2226 4.59746 12.9668 4.16131C12.8023 3.88409 12.7139 3.56833 12.7105 3.24598V3.24598C12.7254 2.72916 12.5304 2.22834 12.17 1.85761C11.8096 1.48688 11.3145 1.2778 10.7975 1.27802H9.5435C9.0369 1.27801 8.5513 1.47985 8.194 1.83888C7.83666 2.19791 7.63714 2.68453 7.63958 3.19106V3.19106C7.62457 4.23686 6.77245 5.07675 5.72654 5.07664C5.40418 5.07329 5.08843 4.98488 4.8112 4.82035V4.82035C3.89603 4.29595 2.72908 4.61123 2.20251 5.52516L1.53432 6.62355C1.00838 7.53633 1.31937 8.70255 2.22997 9.2322V9.2322C2.82187 9.574 3.1865 10.2055 3.1865 10.889C3.1865 11.5725 2.82187 12.204 2.22997 12.5457V12.5457C1.32053 13.0719 1.0092 14.2353 1.53432 15.1453V15.1453L2.16589 16.2345C2.41262 16.6797 2.82657 17.0082 3.31616 17.1474C3.80575 17.2865 4.33061 17.2248 4.77459 16.976V16.976C5.21105 16.7213 5.73116 16.6515 6.21931 16.7821C6.70746 16.9128 7.12321 17.233 7.37413 17.6716C7.53867 17.9488 7.62708 18.2646 7.63043 18.5869V18.5869C7.63043 19.6435 8.4869 20.5 9.5435 20.5H10.7975C11.8505 20.5 12.7055 19.6491 12.7105 18.5961V18.5961C12.7081 18.088 12.9088 17.6 13.2681 17.2407C13.6274 16.8814 14.1154 16.6806 14.6236 16.6831C14.9451 16.6917 15.2596 16.7797 15.5389 16.9393V16.9393C16.4517 17.4653 17.6179 17.1543 18.1476 16.2437V16.2437L18.8066 15.1453C19.0617 14.7074 19.1317 14.1859 19.0012 13.6963C18.8706 13.2067 18.5502 12.7893 18.111 12.5366V12.5366C17.6717 12.2839 17.3514 11.8665 17.2208 11.3769C17.0902 10.8872 17.1602 10.3658 17.4153 9.9279C17.5812 9.6383 17.8213 9.3981 18.111 9.2322V9.2322C19.0161 8.70283 19.3264 7.54343 18.8066 6.63271V6.63271V6.62355Z"
-                                                        stroke="var(--primary)" stroke-width="1.5"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                    <circle cx="12.175" cy="11.889" r="2.63616" stroke="var(--primary)"
-                                                        stroke-width="1.5" stroke-linecap="round"
-                                                        stroke-linejoin="round" />
-                                                </svg>
-                                                <span class="ms-2">Settings </span>
-                                            </a>
-                                            <a href="#" wire:click='logout' class="dropdown-item ai-icon">
-                                                <svg class="profle-logout" xmlns="http://www.w3.org/2000/svg" width="18"
-                                                    height="18" viewBox="0 0 24 24" fill="none" stroke="#ff7979"
-                                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                                    <polyline points="16 17 21 12 16 7"></polyline>
-                                                    <line x1="21" y1="12" x2="9" y2="12"></line>
-                                                </svg>
-                                                <span class="ms-2 text-danger">Logout </span>
-                                            </a>
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end" wire:ignore style="">
+                                        <div class="card border-0 mb-0">
+                                            <div class="card-header py-2">
+                                                <div class="products">
+                                                    <img src="{{ $user->avatar_url }}" class="avatar avatar-md"
+                                                        alt="{{ $user->name }}">
+                                                    <div>
+                                                        <h6>{{ $user->name }}</h6>
+                                                        <span>{{ $user->position ?? 'Member' }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="card-body px-0 py-2">
+                                                <a href="{{ route('account', ['tab' => 'overview']) }}" wire:navigate
+                                                    class="dropdown-item ai-icon ">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                                            d="M11.9848 15.3462C8.11714 15.3462 4.81429 15.931 4.81429 18.2729C4.81429 20.6148 8.09619 21.2205 11.9848 21.2205C15.8524 21.2205 19.1543 20.6348 19.1543 18.2938C19.1543 15.9529 15.8733 15.3462 11.9848 15.3462Z"
+                                                            stroke="var(--primary)" stroke-width="1.5"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                                            d="M11.9848 12.0059C14.5229 12.0059 16.58 9.94779 16.58 7.40969C16.58 4.8716 14.5229 2.81445 11.9848 2.81445C9.44667 2.81445 7.38857 4.8716 7.38857 7.40969C7.38 9.93922 9.42381 11.9973 11.9524 12.0059H11.9848Z"
+                                                            stroke="var(--primary)" stroke-width="1.42857"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                    <span class="ms-2">Profile </span>
+                                                </a>
+                                                <a href="app-profile.html" class="dropdown-item ai-icon ">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="19" height="19"
+                                                        viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                                        class="feather feather-pie-chart">
+                                                        <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                                                        <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                                                    </svg>
+                                                    <span class="ms-2">My Project</span><span
+                                                        class="badge badge-sm badge-secondary light rounded-circle text-white ms-2">4</span>
+                                                </a>
+                                                <a href="javascript:void(0);" class="dropdown-item ai-icon ">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg">
+                                                        <path
+                                                            d="M17.9026 8.85114L13.4593 12.4642C12.6198 13.1302 11.4387 13.1302 10.5992 12.4642L6.11844 8.85114"
+                                                            stroke="var(--primary)" stroke-width="1.5"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                                            d="M16.9089 21C19.9502 21.0084 22 18.5095 22 15.4384V8.57001C22 5.49883 19.9502 3 16.9089 3H7.09114C4.04979 3 2 5.49883 2 8.57001V15.4384C2 18.5095 4.04979 21.0084 7.09114 21H16.9089Z"
+                                                            stroke="var(--primary)" stroke-width="1.5"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                    <span class="ms-2">Message </span>
+                                                </a>
+                                                <a href="email-inbox.html" class="dropdown-item ai-icon ">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                                            d="M12 17.8476C17.6392 17.8476 20.2481 17.1242 20.5 14.2205C20.5 11.3188 18.6812 11.5054 18.6812 7.94511C18.6812 5.16414 16.0452 2 12 2C7.95477 2 5.31885 5.16414 5.31885 7.94511C5.31885 11.5054 3.5 11.3188 3.5 14.2205C3.75295 17.1352 6.36177 17.8476 12 17.8476Z"
+                                                            stroke="var(--primary)" stroke-width="1.5"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                        <path
+                                                            d="M14.3888 20.8572C13.0247 22.372 10.8967 22.3899 9.51947 20.8572"
+                                                            stroke="var(--primary)" stroke-width="1.5"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                    </svg>
+                                                    <span class="ms-2">Notification </span>
+                                                </a>
+                                            </div>
+                                            <div class="card-footer px-0 py-2">
+                                                <a href="javascript:void(0);" class="dropdown-item ai-icon ">
+                                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                        xmlns="http://www.w3.org/2000/svg">
+                                                        <path fill-rule="evenodd" clip-rule="evenodd"
+                                                            d="M20.8066 7.62355L18.1842 5.54346C17.6576 4.62954 16.4907 4.31426 15.5755 4.83866V4.83866C15.1399 5.09528 14.6201 5.16809 14.1307 5.04103C13.6413 4.91396 13.2226 4.59746 12.9668 4.16131C12.8023 3.88409 12.7139 3.56833 12.7105 3.24598V3.24598C12.7254 2.72916 12.5304 2.22834 12.17 1.85761C11.8096 1.48688 11.3145 1.2778 10.7975 1.27802H9.5435C9.0369 1.27801 8.5513 1.47985 8.194 1.83888C7.83666 2.19791 7.63714 2.68453 7.63958 3.19106V3.19106C7.62457 4.23686 6.77245 5.07675 5.72654 5.07664C5.40418 5.07329 5.08843 4.98488 4.8112 4.82035V4.82035C3.89603 4.29595 2.72908 4.61123 2.20251 5.52516L1.53432 6.62355C1.00838 7.53633 1.31937 8.70255 2.22997 9.2322V9.2322C2.82187 9.574 3.1865 10.2055 3.1865 10.889C3.1865 11.5725 2.82187 12.204 2.22997 12.5457V12.5457C1.32053 13.0719 1.0092 14.2353 1.53432 15.1453V15.1453L2.16589 16.2345C2.41262 16.6797 2.82657 17.0082 3.31616 17.1474C3.80575 17.2865 4.33061 17.2248 4.77459 16.976V16.976C5.21105 16.7213 5.73116 16.6515 6.21931 16.7821C6.70746 16.9128 7.12321 17.233 7.37413 17.6716C7.53867 17.9488 7.62708 18.2646 7.63043 18.5869V18.5869C7.63043 19.6435 8.4869 20.5 9.5435 20.5H10.7975C11.8505 20.5 12.7055 19.6491 12.7105 18.5961V18.5961C12.7081 18.088 12.9088 17.6 13.2681 17.2407C13.6274 16.8814 14.1154 16.6806 14.6236 16.6831C14.9451 16.6917 15.2596 16.7797 15.5389 16.9393V16.9393C16.4517 17.4653 17.6179 17.1543 18.1476 16.2437V16.2437L18.8066 15.1453C19.0617 14.7074 19.1317 14.1859 19.0012 13.6963C18.8706 13.2067 18.5502 12.7893 18.111 12.5366V12.5366C17.6717 12.2839 17.3514 11.8665 17.2208 11.3769C17.0902 10.8872 17.1602 10.3658 17.4153 9.9279C17.5812 9.6383 17.8213 9.3981 18.111 9.2322V9.2322C19.0161 8.70283 19.3264 7.54343 18.8066 6.63271V6.63271V6.62355Z"
+                                                            stroke="var(--primary)" stroke-width="1.5"
+                                                            stroke-linecap="round" stroke-linejoin="round" />
+                                                        <circle cx="12.175" cy="11.889" r="2.63616" stroke="var(--primary)"
+                                                            stroke-width="1.5" stroke-linecap="round"
+                                                            stroke-linejoin="round" />
+                                                    </svg>
+                                                    <span class="ms-2">Settings </span>
+                                                </a>
+                                                <a href="#" wire:click='logout' class="dropdown-item ai-icon">
+                                                    <svg class="profle-logout" xmlns="http://www.w3.org/2000/svg" width="18"
+                                                        height="18" viewBox="0 0 24 24" fill="none" stroke="#ff7979"
+                                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                                        <polyline points="16 17 21 12 16 7"></polyline>
+                                                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                                                    </svg>
+                                                    <span class="ms-2 text-danger">Logout </span>
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </li>
+                            </li>
+                        @endauth
                     </ul>
                 </div>
             </nav>

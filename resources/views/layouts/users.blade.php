@@ -74,9 +74,12 @@
     data-sidebar-style="full" data-sidebar-position="fixed" data-header-position="fixed" data-container="full">
 
     <div id="main-wrapper">
-        @livewire('admin.partials.navbar')
-        @livewire('admin.partials.sidebar')
+        @auth
 
+
+            @livewire('admin.partials.navbar')
+            @livewire('admin.partials.sidebar')
+        @endauth
         <div class="content-body">
             @if(isset($slot))
                 {{ $slot }}

@@ -191,14 +191,22 @@ var W3Crm = function(){
 		});
 	}
 
-	var handleChatbox = function() {
-		jQuery('.bell-link').on('click',function(){
-			jQuery('.chatbox').addClass('active');
-		});
-		jQuery('.chatbox-close').on('click',function(){
-			jQuery('.chatbox').removeClass('active');
-		});
-	}
+	// REMOVED: handleChatbox()
+	// This was the source of the "chat notification icon needs a manual
+	// refresh after wire:navigate" bug. It bound a plain (non-delegated)
+	// jQuery click handler directly to the `.bell-link` node found at the
+	// time W3Crm.init() first ran on full page load. Since `.bell-link`
+	// lives in the navbar (not @persist'd) it gets destroyed and rebuilt
+	// by every wire:navigate — orphaning this handler — while `.chatbox`
+	// itself lives inside a @persist'd component and never gets
+	// rebound. The bell's `onclick="Alpine.store('chat').open = true"`
+	// already flips the Alpine store correctly on every navigation; the
+	// chat widget's root `.chatbox` element now also binds
+	// `:class="{ active: $store.chat.open }"` directly to that same
+	// store, so Alpine is the single, always-live source of truth for
+	// both opening (`.active` class + x-show) and closing (the
+	// `.chatbox-close` button's `@click="$store.chat.open = false"`).
+	// No jQuery rebind step is needed anymore.
 
 	var handleBtnNumber = function() {
 		$('.btn-number').on('click', function(e) {
@@ -219,6 +227,16 @@ var W3Crm = function(){
 		});
 	}
 
+	// FIXED: was bound directly to `.dz-chat-user` / `.dz-fullscreen` nodes,
+	// which live in the navbar and get destroyed/rebuilt on every
+	// wire:navigate (navbar is not @persist'd). A plain .on('click', ...)
+	// binding only ever attaches to the node that existed at the moment
+	// W3Crm.init() first ran, so after the first navigation the fresh
+	// `.dz-fullscreen` icon had no handler left on it at all — clicking it
+	// did nothing. Delegating from `document` (same pattern already used
+	// for the hamburger in handleNavigation) means the handler is attached
+	// once, to a node that never gets swapped out, and still matches any
+	// new `.dz-fullscreen` element that shows up after each navigation.
 	var handleDzChatUser = function() {
 		jQuery('.dz-chat-user-box .dz-chat-user').on('click',function(){
 			jQuery('.dz-chat-user-box').addClass('d-none');
@@ -230,13 +248,17 @@ var W3Crm = function(){
 			jQuery('.dz-chat-history-box').addClass('d-none');
 		});
 
-		jQuery('.dz-fullscreen').on('click',function(){
+		jQuery(document).off('click.dzFullscreenActive').on('click.dzFullscreenActive', '.dz-fullscreen', function(){
 			jQuery('.dz-fullscreen').toggleClass('active');
 		});
 	}
 
+	// FIXED: same root cause as handleDzChatUser above — delegated off
+	// `document` instead of bound directly to `.dz-fullscreen`, so the
+	// actual Fullscreen API toggle keeps working after wire:navigate
+	// rebuilds the navbar.
 	var handleDzFullScreen = function() {
-		jQuery('.dz-fullscreen').on('click',function(e){
+		jQuery(document).off('click.dzFullscreenToggle').on('click.dzFullscreenToggle', '.dz-fullscreen', function(e){
 			if(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement) {
 				if(document.exitFullscreen) {
 					document.exitFullscreen();
@@ -565,7 +587,6 @@ var W3Crm = function(){
 			handleDataAction();
 			handleHeaderHight();
 			handleMenuTabs();
-			handleChatbox();
 			handleBtnNumber();
 			handleDzChatUser();
 			handleDzFullScreen();

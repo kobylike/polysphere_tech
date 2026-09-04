@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
+#[On('echo-private:notifications.{userId},.new.notification')]
 class NotificationBell extends Component
 {
     public $userId;
@@ -32,7 +33,12 @@ class NotificationBell extends Component
 
         logger('NotificationBell mounted for user: ' . $this->userId);
 
-        $this->refreshNotifications();
+        // Guard: this component can mount on a guest page (e.g. right after
+        // logout/account deactivation redirects to "/"), in which case
+        // there's no authenticated user to load notifications for.
+        if (Auth::check()) {
+            $this->refreshNotifications();
+        }
     }
 
     /**
@@ -43,6 +49,10 @@ class NotificationBell extends Component
     #[On('echo-private:notifications.{userId},.new.notification')]
     public function handleNewNotification($notification)
     {
+        if (! Auth::check()) {
+            return;
+        }
+
         logger('NotificationBell received live event for user: ' . $this->userId);
 
         $this->refreshNotifications();
@@ -51,8 +61,14 @@ class NotificationBell extends Component
 
     public function refreshNotifications()
     {
-        /** @var User $user */
+        /** @var User|null $user */
         $user = Auth::user();
+
+        if (! $user) {
+            $this->unreadCount   = 0;
+            $this->notifications = [];
+            return;
+        }
 
         $this->unreadCount = $user->notifications()->unread()->count();
 
@@ -76,6 +92,10 @@ class NotificationBell extends Component
 
     public function markAsRead($id)
     {
+        if (! Auth::check()) {
+            return;
+        }
+
         $notification = Notification::where('notifiable_type', User::class)
             ->where('notifiable_id', Auth::id())
             ->findOrFail($id);
@@ -88,6 +108,10 @@ class NotificationBell extends Component
 
     public function markAllRead()
     {
+        if (! Auth::check()) {
+            return;
+        }
+
         Notification::where('notifiable_type', User::class)
             ->where('notifiable_id', Auth::id())
             ->unread()
@@ -100,7 +124,10 @@ class NotificationBell extends Component
     public function loadMore()
     {
         $this->limit += 5;
-        $this->refreshNotifications();
+
+        if (Auth::check()) {
+            $this->refreshNotifications();
+        }
     }
 
     public function render()

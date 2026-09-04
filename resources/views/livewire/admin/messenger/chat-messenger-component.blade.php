@@ -1,4 +1,4 @@
-<div x-data="chatState(@js($friendIds), @js($friends->pluck('name', 'id')->toArray()))" x-init="init()"
+<div x-data="chatState(@js($friendIds), @js(($friends ?? collect())->pluck('name', 'id')->toArray()))" x-init="init()"
     wire:ignore.self>
 
     {{-- ═══ Styles ═══ --}}
@@ -80,8 +80,19 @@
         }
     </style>
 
-    {{-- The main chatbox container – always visible unless closed manually --}}
-    <div class="chatbox" x-show="$store.chat.open" wire:ignore.self x-transition:enter.duration.300ms>
+    {{--
+    FIX: added :class="{ active: $store.chat.open }" alongside the existing
+    x-show. The theme's CSS toggles visibility off the `.active` class
+    (opacity/visibility transitions), while x-show only toggles inline
+    `display`. Previously only a stale, non-delegated jQuery handler in
+    w3crm.js (`handleChatbox()`) added/removed `.active`, and that handler
+    died on every wire:navigate because it was bound directly to the old
+    `.bell-link` node instead of delegated. Now Alpine is the single
+    source of truth for both `display` and `.active`, so this persisted
+    widget reacts correctly regardless of navigation state.
+    --}}
+    <div class="chatbox" :class="{ active: $store.chat.open }" x-show="$store.chat.open" wire:ignore.self
+        x-transition:enter.duration.300ms>
         <div class="chatbox-close" @click="$store.chat.open = false"></div>
 
         <div class="custom-tab-1">
@@ -579,14 +590,18 @@
     </div>
 
     {{-- Include call overlays --}}
-    @livewire('admin.messenger.call-overlays')
+    @auth
+        @livewire('admin.messenger.call-overlays')
+    @endauth
 
     {{-- ═══ ALPINE / ECHO / CALL MANAGER SCRIPTS ═══ --}}
     @push('scripts')
         <script>
             document.addEventListener('alpine:init', () => {
                 if (!Alpine.store('chat')) {
-                    Alpine.store('chat', { open: true });
+                    // Defaults closed now that this widget is persisted across
+                    // wire:navigate — it no longer needs to render pre-emptively.
+                    Alpine.store('chat', { open: false });
                 }
                 window.chatState = chatState;
             });
@@ -663,9 +678,12 @@
                             }
                         });
 
-                        window.addEventListener('open-chatbox', () => {
-                            Alpine.store('chat').open = true;
-                        });
+                        // NOTE: the old 'open-chatbox' window-event listener has been
+                        // removed. The navbar's message icon now sets
+                        // Alpine.store('chat').open = true directly, so this widget
+                        // no longer needs to relay that event to itself — which
+                        // also removes the dependency on this init() having already
+                        // run by the time the icon is clicked.
 
                         this.$nextTick(() => window.forceBot());
                     },

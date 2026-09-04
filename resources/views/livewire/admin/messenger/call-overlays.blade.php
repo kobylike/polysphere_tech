@@ -534,8 +534,8 @@
                             .catch(function (e) { console.error('[CallManager] initiate:', e); });
                         sendSignal('call-request', {
                             callType: type,
-                            callerName: '{{ addslashes(auth()->user()->name) }}',
-                            callerAvatar: '{{ auth()->user()->getAvatarUrlAttribute() }}'
+                            callerName: '{{ addslashes(auth()->user()?->name ?? "Unknown") }}',
+                            callerAvatar: '{{ auth()->user()?->getAvatarUrlAttribute() ?? "" }}'
                         });
                     } finally {
                         setTimeout(function () { startingCall = false; }, 1500);

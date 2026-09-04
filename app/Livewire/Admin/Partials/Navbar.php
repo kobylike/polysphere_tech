@@ -4,8 +4,12 @@ namespace App\Livewire\Admin\Partials;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Livewire\Attributes\Layout;
+
 use Livewire\Component;
 
+
+#[Layout('layouts.users')]
 class Navbar extends Component
 {
     public $user;

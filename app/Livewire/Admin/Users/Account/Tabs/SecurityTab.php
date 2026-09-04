@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users\Account\Tabs;
 
+use App\Helpers\NotificationHelper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -70,6 +71,15 @@ class SecurityTab extends Component
         $user->password = Hash::make($this->new_password);
         $user->save();
 
+        // 🔥 Send notification
+        NotificationHelper::sendToUser($user, [
+            'title' => 'Password Changed',
+            'body' => 'Your password was successfully changed.',
+            'type' => 'info',
+            'icon' => 'fa-key',
+            'link' => route('account', ['tab' => 'security']),
+        ]);
+
         $this->reset(['current_password', 'new_password', 'new_password_confirmation']);
 
         $this->dispatch(
@@ -82,11 +92,6 @@ class SecurityTab extends Component
 
     // ─── Two-Factor Authentication ──────────────────────────────────
 
-    /**
-     * Called from the "Show QR" button once 2FA is already enabled.
-     * Distinct from enableTwoFactor(): it never touches the secret,
-     * it just (re)loads the existing one so it can be rendered.
-     */
     public function showQrCode()
     {
         $this->showingQrCode = true;
@@ -226,15 +231,19 @@ class SecurityTab extends Component
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // debugMode widens the TOTP acceptance window to ~8 minutes and is
-        // only ever active outside production — it compensates for local
-        // machine clock drift (a common Windows dev-environment issue)
-        // without loosening verification in production, where the window
-        // stays at the strict ~90s default.
         $debugMode = app()->environment('local');
 
         if ($user->verifyTwoFactorCode($this->code, $debugMode)) {
             $user->confirmTwoFactor();
+
+            // 🔥 Send notification (2FA enabled)
+            NotificationHelper::sendToUser($user, [
+                'title' => 'Two-Factor Authentication Enabled',
+                'body' => 'Two-factor authentication has been successfully enabled on your account.',
+                'type' => 'success',
+                'icon' => 'fa-shield-alt',
+                'link' => route('account', ['tab' => 'security']),
+            ]);
 
             $this->showingQrCode = false;
             $this->showingRecoveryCodes = true;
@@ -258,6 +267,16 @@ class SecurityTab extends Component
 
         try {
             $user->disableTwoFactorAuthentication();
+
+            // 🔥 Send notification (2FA disabled)
+            NotificationHelper::sendToUser($user, [
+                'title' => 'Two-Factor Authentication Disabled',
+                'body' => 'Two-factor authentication has been disabled on your account.',
+                'type' => 'warning',
+                'icon' => 'fa-shield-halved',
+                'link' => route('account', ['tab' => 'security']),
+            ]);
+
             $this->showingQrCode = false;
             $this->showingRecoveryCodes = false;
             $this->qrCodeSvg = '';
@@ -286,6 +305,16 @@ class SecurityTab extends Component
 
         try {
             $user->generateNewRecoveryCodes();
+
+            // 🔥 Send notification
+            NotificationHelper::sendToUser($user, [
+                'title' => 'Recovery Codes Regenerated',
+                'body' => 'Your two-factor authentication recovery codes have been regenerated.',
+                'type' => 'info',
+                'icon' => 'fa-key',
+                'link' => route('account', ['tab' => 'security']),
+            ]);
+
             $this->dispatch(
                 'notify',
                 type: 'success',
@@ -321,6 +350,16 @@ class SecurityTab extends Component
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // 🔥 Send notification before logout
+        NotificationHelper::sendToUser($user, [
+            'title' => 'Account Deactivated',
+            'body' => 'Your account has been deactivated. You can reactivate it by contacting support.',
+            'type' => 'warning',
+            'icon' => 'fa-user-slash',
+            'link' => url('/'),
+        ]);
+
         $user->status = 'suspended';
         $user->save();
 
@@ -328,7 +367,7 @@ class SecurityTab extends Component
         session()->invalidate();
         session()->regenerateToken();
 
-        return redirect('/');
+        return redirect('/login');
     }
 
     // ─── Computed Properties ────────────────────────────────────────

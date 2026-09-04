@@ -5,13 +5,15 @@ namespace App\Livewire\Admin\Messenger;
 use App\Events\MessageSent;
 use App\Models\Message;
 use App\Models\User;
-use Livewire\Component;
-use Livewire\WithFileUploads;
-use Livewire\Attributes\On;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
+use Livewire\Component;
+use Livewire\WithFileUploads;
 
+#[Layout('layouts.users')]
 class ChatMessengerComponent extends Component
 {
     use WithFileUploads;
@@ -41,10 +43,13 @@ class ChatMessengerComponent extends Component
 
     public function mount(): void
     {
+
+        $this->friends = collect();
+
         if (Auth::check()) {
             $this->updateUserOnlineStatus();
             $this->loadFriends();
-            // Tell the front-end to subscribe to the presence channel
+
             $this->dispatch('subscribe-to-presence');
         }
     }
