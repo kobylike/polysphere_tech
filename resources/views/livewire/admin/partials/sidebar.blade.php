@@ -118,6 +118,21 @@ Sidebar start
                 </li>
             @endcan
 
+            {{-- Activity Logs --}}
+            @can('View Activity Logs', $user)
+                <li>
+                    <a href="{{ route('admin.logs') }}" wire:navigate.hover
+                        class="{{ request()->routeIs('admin.logs') ? 'mm-active' : '' }}">
+                        <div class="menu-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 4V20H20V4H4ZM6 6H18V18H6V6ZM8 8V10H16V8H8ZM8 12V14H14V12H8ZM8 16V18H12V16H8Z"
+                                    fill="#888888" />
+                            </svg>
+                        </div>
+                        <span class="nav-text">Activity Logs</span>
+                    </a>
+                </li>
+            @endcan
             {{-- Projects --}}
             @canany(['View Projects', 'Create Projects'], $user)
                 <li>

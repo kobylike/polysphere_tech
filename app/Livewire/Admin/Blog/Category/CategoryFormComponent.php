@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Blog\Category;
 
+use App\Helpers\ActivityLogger;
 use App\Models\Category;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
@@ -17,8 +18,6 @@ class CategoryFormComponent extends Component
     public $slug = '';
     public $description = '';
     public $editingId = null;
-
-    // ─── Dynamic validation ──────────────────────────────────────
 
     protected function rules()
     {
@@ -43,17 +42,13 @@ class CategoryFormComponent extends Component
         ];
     }
 
-    // ─── Mount ────────────────────────────────────────────────────
-
     public function mount($id = null)
     {
-        // Authorization: check viewAny (or view) on Category
         $this->authorize('viewAny', Category::class);
 
         if ($id) {
             $this->categoryId = $id;
             $category = Category::findOrFail($id);
-            // Check update permission for this specific category
             $this->authorize('update', $category);
 
             $this->name = $category->name;
@@ -65,8 +60,6 @@ class CategoryFormComponent extends Component
             $this->slug = $this->generateUniqueSlug(Str::slug($this->name));
         }
     }
-
-    // ─── Helper: generate unique slug ─────────────────────────────
 
     protected function generateUniqueSlug($baseSlug)
     {
@@ -80,16 +73,12 @@ class CategoryFormComponent extends Component
         return $slug;
     }
 
-    // ─── Update slug when name changes ────────────────────────────
-
     public function updatedName($value)
     {
         if (empty($this->slug) || $this->slug === Str::slug($value)) {
             $this->slug = $this->generateUniqueSlug(Str::slug($value));
         }
     }
-
-    // ─── Save ──────────────────────────────────────────────────────
 
     public function save()
     {
@@ -106,20 +95,29 @@ class CategoryFormComponent extends Component
             $this->authorize('update', $category);
             $category->update($data);
             $message = 'Category updated successfully!';
+            ActivityLogger::log('Category updated', [
+                'category_id' => $category->id,
+                'name'        => $category->name,
+                'slug'        => $category->slug,
+                'previous'    => $category->getOriginal(),
+            ], 'category');
         } else {
             $this->authorize('create', Category::class);
             $maxOrder = Category::max('order') ?? 0;
             $data['order'] = $maxOrder + 1;
-            Category::create($data);
+            $category = Category::create($data);
             $message = 'Category created successfully!';
+            ActivityLogger::log('Category created', [
+                'category_id' => $category->id,
+                'name'        => $category->name,
+                'slug'        => $category->slug,
+            ], 'category');
         }
 
         $this->reset(['name', 'slug', 'description', 'categoryId']);
         $this->editingId = null;
         session()->flash('success', $message);
     }
-
-    // ─── Edit (inline) ────────────────────────────────────────────
 
     public function edit($id)
     {
@@ -133,8 +131,6 @@ class CategoryFormComponent extends Component
         $this->categoryId = $id;
     }
 
-    // ─── Cancel edit ──────────────────────────────────────────────
-
     public function cancelEdit()
     {
         $this->reset(['name', 'slug', 'description', 'categoryId', 'editingId']);
@@ -142,8 +138,6 @@ class CategoryFormComponent extends Component
             $this->slug = $this->generateUniqueSlug(Str::slug($this->name));
         }
     }
-
-    // ─── Delete ──────────────────────────────────────────────────
 
     public function delete($id)
     {
@@ -155,11 +149,14 @@ class CategoryFormComponent extends Component
             return;
         }
         $category->delete();
+        ActivityLogger::log('Category deleted', [
+            'category_id' => $category->id,
+            'name'        => $category->name,
+        ], 'category');
+
         session()->flash('success', 'Category deleted successfully.');
         $this->reset(['name', 'slug', 'description', 'categoryId', 'editingId']);
     }
-
-    // ─── Move Up/Down ─────────────────────────────────────────────
 
     public function moveUp($id)
     {
@@ -175,6 +172,12 @@ class CategoryFormComponent extends Component
             $previous->order = $temp;
             $category->save();
             $previous->save();
+
+            ActivityLogger::log('Category order changed (move up)', [
+                'category_id' => $category->id,
+                'name'        => $category->name,
+                'new_order'   => $category->order,
+            ], 'category');
         }
     }
 
@@ -192,17 +195,19 @@ class CategoryFormComponent extends Component
             $next->order = $temp;
             $category->save();
             $next->save();
+
+            ActivityLogger::log('Category order changed (move down)', [
+                'category_id' => $category->id,
+                'name'        => $category->name,
+                'new_order'   => $category->order,
+            ], 'category');
         }
     }
-
-    // ─── Computed property ────────────────────────────────────────
 
     public function getCategoriesProperty()
     {
         return Category::ordered()->get();
     }
-
-    // ─── Render ────────────────────────────────────────────────────
 
     public function render()
     {

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Blog\Post;
 
+use App\Helpers\ActivityLogger;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\User;
@@ -16,8 +17,6 @@ class PostManagement extends Component
 {
     use WithPagination;
 
-    // ─── Filters ────────────────────────────────────────────────────
-
     public $search = '';
     public $status = '';
     public $category = '';
@@ -25,25 +24,17 @@ class PostManagement extends Component
     public $date_to = '';
     public $perPage = 10;
 
-    // ─── Bulk actions ──────────────────────────────────────────────
-
     public $selectedPosts = [];
     public $selectAll = false;
     public $bulkAction = '';
 
-    // ─── Sorting ────────────────────────────────────────────────────
-
     public $sortField = 'created_at';
     public $sortDirection = 'desc';
-
-    // ─── Mount ──────────────────────────────────────────────────────
 
     public function mount()
     {
         $this->authorize('viewAny', Post::class);
     }
-
-    // ─── Reset pagination when filters change ─────────────────────
 
     public function updatingSearch()
     {
@@ -70,8 +61,6 @@ class PostManagement extends Component
         $this->resetPage();
     }
 
-    // ─── Sort ──────────────────────────────────────────────────────
-
     public function sortBy($field)
     {
         if ($this->sortField === $field) {
@@ -82,8 +71,6 @@ class PostManagement extends Component
         }
     }
 
-    // ─── Select all / deselect all ────────────────────────────────
-
     public function updatedSelectAll($value)
     {
         if ($value) {
@@ -93,8 +80,6 @@ class PostManagement extends Component
         }
     }
 
-    // ─── Bulk action handler ──────────────────────────────────────
-
     public function applyBulkAction()
     {
         if (empty($this->selectedPosts)) {
@@ -102,9 +87,10 @@ class PostManagement extends Component
             return;
         }
 
+        $count = count($this->selectedPosts);
+
         switch ($this->bulkAction) {
             case 'delete':
-                // Check delete permission for each selected post
                 foreach ($this->selectedPosts as $id) {
                     $post = Post::find($id);
                     if ($post) {
@@ -112,11 +98,14 @@ class PostManagement extends Component
                     }
                 }
                 Post::whereIn('id', $this->selectedPosts)->delete();
+                ActivityLogger::log('Bulk delete posts', [
+                    'post_ids' => $this->selectedPosts,
+                    'count'    => $count,
+                ], 'post');
                 session()->flash('success', 'Selected posts deleted successfully.');
                 break;
 
             case 'publish':
-                // Check update permission for each selected post
                 foreach ($this->selectedPosts as $id) {
                     $post = Post::find($id);
                     if ($post) {
@@ -124,6 +113,10 @@ class PostManagement extends Component
                     }
                 }
                 Post::whereIn('id', $this->selectedPosts)->update(['status' => 'published', 'published_at' => now()]);
+                ActivityLogger::log('Bulk publish posts', [
+                    'post_ids' => $this->selectedPosts,
+                    'count'    => $count,
+                ], 'post');
                 session()->flash('success', 'Selected posts published.');
                 break;
 
@@ -135,6 +128,10 @@ class PostManagement extends Component
                     }
                 }
                 Post::whereIn('id', $this->selectedPosts)->update(['status' => 'draft']);
+                ActivityLogger::log('Bulk move posts to draft', [
+                    'post_ids' => $this->selectedPosts,
+                    'count'    => $count,
+                ], 'post');
                 session()->flash('success', 'Selected posts moved to draft.');
                 break;
 
@@ -146,6 +143,10 @@ class PostManagement extends Component
                     }
                 }
                 Post::whereIn('id', $this->selectedPosts)->update(['status' => 'trash']);
+                ActivityLogger::log('Bulk move posts to trash', [
+                    'post_ids' => $this->selectedPosts,
+                    'count'    => $count,
+                ], 'post');
                 session()->flash('success', 'Selected posts moved to trash.');
                 break;
 
@@ -159,23 +160,24 @@ class PostManagement extends Component
         $this->bulkAction = '';
     }
 
-    // ─── Delete a single post ─────────────────────────────────────
-
     public function deleteSingle($id)
     {
         $post = Post::findOrFail($id);
         $this->authorize('delete', $post);
         $post->delete();
+
+        ActivityLogger::log('Post deleted', [
+            'post_id' => $post->id,
+            'title'   => $post->title,
+        ], 'post');
+
         session()->flash('success', 'Post deleted successfully.');
     }
-
-    // ─── Get posts with filters ────────────────────────────────────
 
     public function getPosts()
     {
         $query = Post::with(['author', 'categories', 'tags']);
 
-        // Search
         if (!empty($this->search)) {
             $query->where(function ($q) {
                 $q->where('title', 'like', '%' . $this->search . '%')
@@ -184,19 +186,16 @@ class PostManagement extends Component
             });
         }
 
-        // Status filter
         if (!empty($this->status)) {
             $query->where('status', $this->status);
         }
 
-        // Category filter
         if (!empty($this->category)) {
             $query->whereHas('categories', function ($q) {
                 $q->where('categories.id', $this->category);
             });
         }
 
-        // Date range
         if (!empty($this->date_from)) {
             $query->whereDate('created_at', '>=', $this->date_from);
         }
@@ -204,13 +203,10 @@ class PostManagement extends Component
             $query->whereDate('created_at', '<=', $this->date_to);
         }
 
-        // Sorting
         $query->orderBy($this->sortField, $this->sortDirection);
 
         return $query->paginate($this->perPage);
     }
-
-    // ─── Render ────────────────────────────────────────────────────
 
     public function render()
     {

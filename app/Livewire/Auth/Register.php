@@ -2,6 +2,8 @@
 
 namespace App\Livewire\Auth;
 
+use App\Helpers\ActivityLogger;
+use App\Helpers\NotificationHelper;
 use App\Models\Invitation;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
@@ -54,7 +56,6 @@ class Register extends Component
 
     public function mount($token = null)
     {
-        // If no token, redirect to login (public sign‑up disabled)
         if (!$token) {
             return redirect()->route('login')->with('error', 'Public registration is disabled.');
         }
@@ -72,10 +73,7 @@ class Register extends Component
             return redirect()->route('login');
         }
 
-        // Pre‑fill email from invitation
         $this->email = $this->invitation->email;
-
-        // Load country data
         $this->loadCountries();
         $this->updateCountryInfo();
         $this->passwordStrength = $this->calculatePasswordStrength('');
@@ -104,7 +102,6 @@ class Register extends Component
             }
         }
 
-        // Fallback
         $this->countries = $this->filteredCountries = [
             ['code' => '+233', 'name' => 'Ghana',          'flag' => 'gh.png', 'pattern' => '^[0-9]{9}$',    'minLength' => 9,  'maxLength' => 9,  'example' => '201234567'],
             ['code' => '+1',   'name' => 'United States',  'flag' => 'us.png', 'pattern' => '^[0-9]{10}$',   'minLength' => 10, 'maxLength' => 10, 'example' => '2025550123'],
@@ -391,14 +388,12 @@ class Register extends Component
 
     public function register()
     {
-        // Rate limiting
         $rateLimitKey = 'register:' . request()->ip();
         if (RateLimiter::tooManyAttempts($rateLimitKey, 5)) {
             $this->addError('email', 'Too many registration attempts. Please try again later.');
             return;
         }
 
-        // Extra: ensure the invitation hasn't been used or expired in the meantime
         if (!$this->invitation || $this->invitation->accepted_at) {
             $this->addError('email', 'This invitation has already been used.');
             return;
@@ -409,27 +404,24 @@ class Register extends Component
             return;
         }
 
-        // Force the email to match the invitation, regardless of what was submitted
         $this->email = $this->invitation->email;
 
         $this->validate();
 
-        // Extra email check
         if (User::where('email', $this->email)->exists()) {
             $this->addError('email', 'This email is already registered.');
             return;
         }
 
-        // Extra phone check
         $fullPhone = $this->fullPhone();
         if (User::where('phone', $fullPhone)->exists()) {
             $this->addError('phone', 'This phone number is already registered.');
             return;
         }
 
-        // Concatenate first and last name
         $fullName = trim($this->first_name . ' ' . $this->last_name);
 
+        // ─── Create user ──────────────────────────────────────────────────────────
         $user = User::create([
             'name'     => $fullName,
             'username' => $this->generateUsername($this->first_name, $this->last_name) ?: 'user_' . Str::random(6),
@@ -439,22 +431,52 @@ class Register extends Component
             'email_verified_at' => now(),
         ]);
 
-        // Assign role from invitation
         if ($this->invitation->role_id) {
             $user->assignRole($this->invitation->role_id);
         } else {
             $user->assignRole('User');
         }
 
-        // Carry the position from the invitation onto the new profile
         $user->profile()->create([
             'position' => $this->invitation->position,
         ]);
 
-        // Mark invitation as accepted
         $this->invitation->update(['accepted_at' => now()]);
 
-        // Log
+        // ─── 🎉 Send welcome notification ──────────────────────────────────────
+        NotificationHelper::sendToUser($user, [
+            'title' => 'Welcome to Polysphere Tech!',
+            'body' => 'Your account has been created successfully. We\'re excited to have you on board!',
+            'type' => 'success',
+            'icon' => 'fa-user-check',
+            'link' => route('dashboard'),
+        ]);
+
+        // ─── 🔔 Notify admins ──────────────────────────────────────────────────
+        $admins = User::role(['Super Admin', 'Admin'])
+            ->where('id', '!=', $user->id)
+            ->get();
+        NotificationHelper::sendToUsers($admins, [
+            'title' => 'New User Registered',
+            'body' => $fullName . ' (' . $this->email . ') has just joined.',
+            'type' => 'info',
+            'icon' => 'fa-user-plus',
+            'link' => route('users'),
+        ]);
+
+        // ─── 📝 Log the registration with full details ─────────────────────────
+        ActivityLogger::log('User registered successfully', [
+            'user_id'     => $user->id,
+            'email'       => $user->email,
+            'name'        => $user->name,
+            'ip'          => request()->ip(),
+            'user_agent'  => request()->userAgent(),
+            'role'        => $this->invitation->role_id ? $this->invitation->role->name : 'User',
+            'invitation_id' => $this->invitation->id,
+            'invited_by'  => $this->invitation->invited_by,
+        ], 'auth');
+
+        // ─── Update last login ─────────────────────────────────────────────────
         try {
             if (method_exists($user, 'updateLastLogin')) {
                 $user->updateLastLogin();

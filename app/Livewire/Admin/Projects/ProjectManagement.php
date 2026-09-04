@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Projects;
 
+use App\Helpers\ActivityLogger;
 use App\Models\Project;
 use App\Models\Service;
 use Livewire\Attributes\Layout;
@@ -95,23 +96,52 @@ class ProjectManagement extends Component
                 return;
         }
 
+        $projectNames = [];
+        $projectIds = $this->selectedProjects;
+
         switch ($this->bulkAction) {
             case 'delete':
-                Project::whereIn('id', $this->selectedProjects)->delete();
+                $projects = Project::whereIn('id', $projectIds)->get();
+                $projectNames = $projects->pluck('title')->toArray();
+                Project::whereIn('id', $projectIds)->delete();
+
+                // ─── Log bulk delete ──────────────────────────────────────────
+                ActivityLogger::log('Bulk projects deleted', [
+                    'project_ids' => $projectIds,
+                    'project_names' => $projectNames,
+                    'count' => count($projectIds),
+                ], 'project');
+
                 session()->flash('success', 'Selected projects deleted.');
                 break;
+
             case 'publish':
-                Project::whereIn('id', $this->selectedProjects)->update(['status' => 'published', 'published_at' => now()]);
+                Project::whereIn('id', $projectIds)->update(['status' => 'published', 'published_at' => now()]);
+                ActivityLogger::log('Bulk projects published', [
+                    'project_ids' => $projectIds,
+                    'count' => count($projectIds),
+                ], 'project');
                 session()->flash('success', 'Selected projects published.');
                 break;
+
             case 'draft':
-                Project::whereIn('id', $this->selectedProjects)->update(['status' => 'draft']);
+                Project::whereIn('id', $projectIds)->update(['status' => 'draft']);
+                ActivityLogger::log('Bulk projects moved to draft', [
+                    'project_ids' => $projectIds,
+                    'count' => count($projectIds),
+                ], 'project');
                 session()->flash('success', 'Selected projects moved to draft.');
                 break;
+
             case 'trash':
-                Project::whereIn('id', $this->selectedProjects)->update(['status' => 'trash']);
+                Project::whereIn('id', $projectIds)->update(['status' => 'trash']);
+                ActivityLogger::log('Bulk projects moved to trash', [
+                    'project_ids' => $projectIds,
+                    'count' => count($projectIds),
+                ], 'project');
                 session()->flash('success', 'Selected projects moved to trash.');
                 break;
+
             default:
                 session()->flash('error', 'Invalid bulk action.');
                 return;
@@ -128,6 +158,16 @@ class ProjectManagement extends Component
     {
         $project = Project::findOrFail($id);
         $this->authorize('delete', $project);
+
+        $projectTitle = $project->title;
+
+        // ─── Log delete ──────────────────────────────────────────────────────
+        ActivityLogger::log('Project deleted', [
+            'project_id' => $project->id,
+            'title' => $projectTitle,
+            'slug' => $project->slug,
+        ], 'project');
+
         $project->delete();
         session()->flash('success', 'Project deleted.');
     }

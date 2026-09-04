@@ -10,6 +10,7 @@ use App\Livewire\Admin\Dashboard\DashboardComponent;
 use App\Livewire\Admin\Hrm\HrDashboard;
 use App\Livewire\Admin\Messenger\ChatMessengerComponent;
 use App\Livewire\Admin\Messenger\ChatMessengerMain;
+use App\Livewire\Admin\Notifications\SendNotification;
 use App\Livewire\Admin\Projects\ProjectFormComponent;
 use App\Livewire\Admin\Projects\ProjectManagement;
 use App\Livewire\Admin\Services\ServiceFormComponent;
@@ -19,6 +20,7 @@ use App\Livewire\Admin\Users\Account\ActivityComponent;
 use App\Livewire\Admin\Users\Account\Overview;
 use App\Livewire\Admin\Users\Account\ProfileComponent;
 use App\Livewire\Admin\Users\Account\SecurityComponent;
+use App\Livewire\Admin\Users\LogManagement;
 use App\Livewire\Admin\Users\PermissionManagement;
 use App\Livewire\Admin\Users\RoleManagement;
 use App\Livewire\Admin\Users\UserManagement;
@@ -228,8 +230,12 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
                 ->middleware('can:Edit Services')
                 ->name('admin.services.edit');
         });
-        Route::get('/notifications/send', \App\Livewire\Admin\Notifications\SendNotification::class)
+        Route::get('/notifications/send', SendNotification::class)
             ->middleware('can:Send Notifications')
             ->name('notifications.send');
+
+        Route::get('/admin/logs', LogManagement::class)
+            ->middleware('can:View Activity Logs')
+            ->name('admin.logs');
     });
 });

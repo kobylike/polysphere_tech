@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users;
 
+use App\Helpers\ActivityLogger; // <-- Added
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
@@ -192,9 +193,27 @@ class PermissionManagement extends Component
             $permission->roles->each(function ($role) {
                 $role->users->each->broadcastPermissions();
             });
+
+            // 🔥 Log permission update
+            ActivityLogger::log('Permission updated', [
+                'permission_id' => $permission->id,
+                'name'          => $permission->name,
+                'guard_name'    => $permission->guard_name,
+                'updated_by'    => Auth::id(),
+            ], 'permission');
+
             session()->flash('success', "Permission '{$permission->name}' updated successfully.");
         } else {
             $permission = Permission::create($data);
+
+            // 🔥 Log permission creation
+            ActivityLogger::log('Permission created', [
+                'permission_id' => $permission->id,
+                'name'          => $permission->name,
+                'guard_name'    => $permission->guard_name,
+                'created_by'    => Auth::id(),
+            ], 'permission');
+
             session()->flash('success', "Permission '{$permission->name}' created successfully.");
         }
 
@@ -214,6 +233,14 @@ class PermissionManagement extends Component
             return;
         }
         $name = $permission->name;
+
+        // 🔥 Log permission deletion
+        ActivityLogger::log('Permission deleted', [
+            'permission_id' => $permission->id,
+            'name'          => $permission->name,
+            'deleted_by'    => Auth::id(),
+        ], 'permission');
+
         $permission->delete();
 
         $this->showDeleteModal = false;
@@ -235,6 +262,18 @@ class PermissionManagement extends Component
             session()->flash('error', 'No deletable permissions selected.');
             $this->showBulkDeleteModal = false;
             return;
+        }
+
+        // Log each deletion
+        foreach ($ids as $id) {
+            $perm = Permission::find($id);
+            if ($perm) {
+                ActivityLogger::log('Permission deleted (bulk)', [
+                    'permission_id' => $perm->id,
+                    'name'          => $perm->name,
+                    'deleted_by'    => Auth::id(),
+                ], 'permission');
+            }
         }
 
         Permission::whereIn('id', $ids)->delete();

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Helpers\ActivityLogger; // <-- Correct import
 use App\Models\User;
 use Livewire\Component;
 use Illuminate\Support\Str;
@@ -17,8 +18,6 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Auth\Events\PasswordReset as PasswordResetEvent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
-
-
 
 #[Layout('layouts.auth')]
 #[Title('Reset Password - Polysphere Tech')]
@@ -60,6 +59,7 @@ class PasswordReset extends Component
         'password.confirmed' => 'Passwords do not match.',
         'password.uncompromised' => 'This password has appeared in a data breach. Choose a safer one.',
     ];
+
     public function mount(Request $request, string $token = null)
     {
         $this->token = $token;
@@ -73,7 +73,6 @@ class PasswordReset extends Component
             if ($record && Hash::check($this->token, $record->token)) {
                 $this->isValidToken = true;
 
-                // Calculate expiry (default: 60 minutes)
                 $createdAt = Carbon::parse($record->created_at);
                 $expiresAt = $createdAt->addMinutes(
                     config('auth.passwords.users.expire', 60)
@@ -83,7 +82,6 @@ class PasswordReset extends Component
             }
         }
 
-        // Rate limit page views
         $key = 'password-reset-view:' . request()->ip();
         if (RateLimiter::tooManyAttempts($key, 10)) {
             abort(429);
@@ -92,10 +90,6 @@ class PasswordReset extends Component
         RateLimiter::hit($key);
     }
 
-
-    /**
-     * Perform password reset
-     */
     public function resetPassword()
     {
         $this->validate();
@@ -137,6 +131,12 @@ class PasswordReset extends Component
                 'ip' => request()->ip(),
             ]);
 
+            // ✅ Log the successful reset
+            ActivityLogger::log('Password reset successfully', [
+                'email' => $this->email,
+                'ip'    => request()->ip(),
+            ], 'auth');
+
             session()->flash('status', 'Your password has been reset successfully.');
             $this->redirectRoute('dashboard', navigate: true);
             return;
@@ -167,9 +167,9 @@ class PasswordReset extends Component
     {
         return redirect()->route('login');
     }
-    /**
-     * Password strength helpers
-     */
+
+    // ─── Password strength helpers ─────────────────────────────────────
+
     public function hasMinLength(): bool
     {
         return strlen($this->password) >= 8;
@@ -202,7 +202,6 @@ class PasswordReset extends Component
         }
 
         $score = 0;
-
         $score += $this->hasMinLength() ? 20 : 0;
         $score += $this->hasUppercase() ? 20 : 0;
         $score += $this->hasLowercase() ? 20 : 0;
@@ -216,9 +215,9 @@ class PasswordReset extends Component
     {
         return match (true) {
             $this->getPasswordStrength() >= 100 => 'Very Strong',
-            $this->getPasswordStrength() >= 80 => 'Strong',
-            $this->getPasswordStrength() >= 60 => 'Good',
-            $this->getPasswordStrength() >= 40 => 'Weak',
+            $this->getPasswordStrength() >= 80  => 'Strong',
+            $this->getPasswordStrength() >= 60  => 'Good',
+            $this->getPasswordStrength() >= 40  => 'Weak',
             default => 'Very Weak',
         };
     }
@@ -227,9 +226,9 @@ class PasswordReset extends Component
     {
         return match (true) {
             $this->getPasswordStrength() >= 100 => 'bg-green-500',
-            $this->getPasswordStrength() >= 80 => 'bg-green-400',
-            $this->getPasswordStrength() >= 60 => 'bg-yellow-400',
-            $this->getPasswordStrength() >= 40 => 'bg-orange-400',
+            $this->getPasswordStrength() >= 80  => 'bg-green-400',
+            $this->getPasswordStrength() >= 60  => 'bg-yellow-400',
+            $this->getPasswordStrength() >= 40  => 'bg-orange-400',
             default => 'bg-red-400',
         };
     }
@@ -238,9 +237,9 @@ class PasswordReset extends Component
     {
         return match (true) {
             $this->getPasswordStrength() >= 100 => 'text-green-600',
-            $this->getPasswordStrength() >= 80 => 'text-green-600',
-            $this->getPasswordStrength() >= 60 => 'text-yellow-600',
-            $this->getPasswordStrength() >= 40 => 'text-orange-600',
+            $this->getPasswordStrength() >= 80  => 'text-green-600',
+            $this->getPasswordStrength() >= 60  => 'text-yellow-600',
+            $this->getPasswordStrength() >= 40  => 'text-orange-600',
             default => 'text-red-600',
         };
     }

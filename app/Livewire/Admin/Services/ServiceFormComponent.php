@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Services;
 
+use App\Helpers\ActivityLogger; // <-- Import
 use App\Models\Service;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -23,7 +24,6 @@ class ServiceFormComponent extends Component
     public $status = 'active';
     public $order = 0;
 
-    // Image uploads
     public $featured_image = null;
     public $existing_featured_image = null;
 
@@ -160,12 +160,32 @@ class ServiceFormComponent extends Component
             $service = Service::findOrFail($this->serviceId);
             $this->authorize('update', $service);
             $service->update($data);
+
+            // ─── Log update ──────────────────────────────────────────────────────
+            ActivityLogger::log('Service updated', [
+                'service_id' => $service->id,
+                'name'       => $this->name,
+                'slug'       => $this->slug,
+                'status'     => $this->status,
+                'order'      => $this->order,
+            ], 'service');
+
             session()->flash('success', 'Service updated successfully!');
         } else {
             $this->authorize('create', Service::class);
             $maxOrder = Service::max('order') ?? 0;
             $data['order'] = $maxOrder + 1;
-            Service::create($data);
+            $service = Service::create($data);
+
+            // ─── Log create ──────────────────────────────────────────────────────
+            ActivityLogger::log('Service created', [
+                'service_id' => $service->id,
+                'name'       => $this->name,
+                'slug'       => $this->slug,
+                'status'     => $this->status,
+                'order'      => $service->order,
+            ], 'service');
+
             session()->flash('success', 'Service created successfully!');
         }
 

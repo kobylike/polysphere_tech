@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users\Account\Tabs;
 
+use App\Helpers\ActivityLogger; // <-- Added
 use App\Helpers\NotificationHelper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -70,6 +71,12 @@ class SecurityTab extends Component
 
         $user->password = Hash::make($this->new_password);
         $user->save();
+
+        // 🔥 Log password change
+        ActivityLogger::log('Password changed', [
+            'user_id' => $user->id,
+            'email'   => $user->email,
+        ], 'security');
 
         // 🔥 Send notification
         NotificationHelper::sendToUser($user, [
@@ -174,6 +181,12 @@ class SecurityTab extends Component
             $user->enableTwoFactorAuthentication();
             $user->refresh();
 
+            // 🔥 Log 2FA setup started
+            ActivityLogger::log('Two‑factor authentication setup started', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+            ], 'security');
+
             $this->showingQrCode = true;
             $this->loadQrCode();
 
@@ -204,6 +217,12 @@ class SecurityTab extends Component
             $user->disableTwoFactorAuthentication();
             $user->enableTwoFactorAuthentication();
             $user->refresh();
+
+            // 🔥 Log secret regeneration
+            ActivityLogger::log('Two‑factor secret regenerated', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+            ], 'security');
 
             $this->loadQrCode();
             $this->showingQrCode = true;
@@ -236,6 +255,12 @@ class SecurityTab extends Component
         if ($user->verifyTwoFactorCode($this->code, $debugMode)) {
             $user->confirmTwoFactor();
 
+            // 🔥 Log 2FA enabled
+            ActivityLogger::log('Two‑factor authentication enabled', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+            ], 'security');
+
             // 🔥 Send notification (2FA enabled)
             NotificationHelper::sendToUser($user, [
                 'title' => 'Two-Factor Authentication Enabled',
@@ -267,6 +292,12 @@ class SecurityTab extends Component
 
         try {
             $user->disableTwoFactorAuthentication();
+
+            // 🔥 Log 2FA disabled
+            ActivityLogger::log('Two‑factor authentication disabled', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+            ], 'security');
 
             // 🔥 Send notification (2FA disabled)
             NotificationHelper::sendToUser($user, [
@@ -305,6 +336,12 @@ class SecurityTab extends Component
 
         try {
             $user->generateNewRecoveryCodes();
+
+            // 🔥 Log recovery codes regenerated
+            ActivityLogger::log('Recovery codes regenerated', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+            ], 'security');
 
             // 🔥 Send notification
             NotificationHelper::sendToUser($user, [
@@ -350,6 +387,12 @@ class SecurityTab extends Component
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // 🔥 Log deactivation
+        ActivityLogger::log('Account deactivated', [
+            'user_id' => $user->id,
+            'email'   => $user->email,
+        ], 'security');
 
         // 🔥 Send notification before logout
         NotificationHelper::sendToUser($user, [

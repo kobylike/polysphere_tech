@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Holiday extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -20,7 +22,21 @@ class Holiday extends Model
         'date'      => 'date',
         'recurring' => 'boolean',
     ];
-
+    public function getActivitylogOptions(): LogOptions
+    {
+        $name = $this->name ?? $this->date ?? "ID: {$this->id}";
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Holiday '{$name}' was created",
+                'updated' => "Holiday '{$name}' was updated",
+                'deleted' => "Holiday '{$name}' was deleted",
+                default   => "Holiday '{$name}' was {$eventName}",
+            })
+            ->useLogName('holiday');
+    }
     /**
      * The date this holiday next falls on, relative to $from.
      * For non-recurring holidays this is just the stored date.

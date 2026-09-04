@@ -3,12 +3,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Models\Role;
 
 class Invitation extends Model
 {
+    use HasFactory, LogsActivity;
     protected $fillable = [
         'email',
         'token',
@@ -23,6 +27,21 @@ class Invitation extends Model
         'expires_at' => 'datetime',
         'accepted_at' => 'datetime',
     ];
+    public function getActivitylogOptions(): LogOptions
+    {
+        $email = $this->email ?? 'unknown email';
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Invitation sent to {$email}",
+                'updated' => "Invitation for {$email} was updated",
+                'deleted' => "Invitation for {$email} was deleted",
+                default   => "Invitation for {$email} was {$eventName}",
+            })
+            ->useLogName('invitation');
+    }
 
     public function invitedBy(): BelongsTo
     {

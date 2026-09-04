@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Projects;
 
+use App\Helpers\ActivityLogger;
 use App\Models\Service;
 use App\Models\Project;
 use Illuminate\Support\Facades\Auth;
@@ -309,9 +310,33 @@ class ProjectFormComponent extends Component
         if ($this->projectId) {
             $project = Project::findOrFail($this->projectId);
             $project->update($data);
+
+            // ─── Log update ──────────────────────────────────────────────────────
+            ActivityLogger::log('Project updated', [
+                'project_id' => $project->id,
+                'title' => $this->title,
+                'slug' => $this->slug,
+                'status' => $this->status,
+                'service_id' => $this->service_id,
+                'client' => $this->client,
+                'company' => $this->company,
+            ], 'project');
+
             session()->flash('success', 'Project updated successfully!');
         } else {
             $project = Project::create($data);
+
+            // ─── Log create ──────────────────────────────────────────────────────
+            ActivityLogger::log('Project created', [
+                'project_id' => $project->id,
+                'title' => $this->title,
+                'slug' => $this->slug,
+                'status' => $this->status,
+                'service_id' => $this->service_id,
+                'client' => $this->client,
+                'company' => $this->company,
+            ], 'project');
+
             session()->flash('success', 'Project created successfully!');
         }
 

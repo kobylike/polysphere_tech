@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Post extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'title',
@@ -33,6 +35,21 @@ class Post extends Model
         'published_at' => 'datetime',
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        $title = $this->title ?? $this->slug ?? "ID: {$this->id}";
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Post '{$title}' was created",
+                'updated' => "Post '{$title}' was updated",
+                'deleted' => "Post '{$title}' was deleted",
+                default   => "Post '{$title}' was {$eventName}",
+            })
+            ->useLogName('post');
+    }
     public function author()
     {
         return $this->belongsTo(User::class, 'author_id');

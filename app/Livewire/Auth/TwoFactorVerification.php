@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Helpers\ActivityLogger; // <-- Correct import
 use Livewire\Component;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
@@ -76,7 +77,6 @@ class TwoFactorVerification extends Component
             return redirect()->route('login');
         }
 
-        // Account locked out from too many failed attempts earlier
         if ($user->isLocked()) {
             Session::forget(['login.id', 'login.remember', 'login.time', '2fa_attempts']);
             Session::flash('error', 'Too many failed attempts. Please try again later.');
@@ -85,7 +85,6 @@ class TwoFactorVerification extends Component
 
         $this->userEmail = $user->email;
         $this->userName = $user->name;
-
         $this->deviceName = $this->getDeviceName($request);
         $this->ipAddress = $request->ip();
 
@@ -330,6 +329,14 @@ class TwoFactorVerification extends Component
         $user->updateLastLogin();
         $user->logLoginActivity($this->ipAddress, true, true);
         $user->resetFailedLoginAttempts();
+
+        // ✅ Log successful 2FA verification
+        ActivityLogger::log('Two-factor authentication verified', [
+            'user_id' => $user->id,
+            'email'   => $user->email,
+            'method'  => $this->mode, // 'totp' or 'recovery'
+            'ip'      => $this->ipAddress,
+        ], 'auth');
 
         Session::forget(['login.id', 'login.remember', 'login.time', '2fa_attempts', 'timer_start']);
 

@@ -5,10 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class UserProfile extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'user_id',
@@ -43,6 +45,22 @@ class UserProfile extends Model
         'hire_date' => 'date',
         'date_of_birth' => 'date',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        $user = $this->user?->name ?? 'User';
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Profile for {$user} was created",
+                'updated' => "Profile for {$user} was updated",
+                'deleted' => "Profile for {$user} was deleted",
+                default   => "Profile for {$user} was {$eventName}",
+            })
+            ->useLogName('user_profile');
+    }
 
     // ─── Relationships ───────────────────────────────────────────────
     // in UserProfile.php

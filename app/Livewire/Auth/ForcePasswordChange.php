@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Auth;
 
+use App\Helpers\ActivityLogger; // <-- Correct import
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -24,7 +25,6 @@ class ForcePasswordChange extends Component
 
     public function mount()
     {
-        // Nothing to do here if this user isn't actually flagged.
         if (!Auth::user()->must_change_password) {
             return $this->redirect(route('dashboard'));
         }
@@ -73,10 +73,18 @@ class ForcePasswordChange extends Component
             'must_change_password' => false,
         ])->save();
 
+        // ✅ Log successful forced password change
+        ActivityLogger::log('Forced password change completed', [
+            'user_id' => $user->id,
+            'email'   => $user->email,
+            'ip'      => request()->ip(),
+        ], 'auth');
+
         session()->flash('status', 'Your password has been updated. Welcome aboard!');
 
         return $this->redirect(route('dashboard'));
     }
+
     public function togglePasswordVisibility(string $field = 'password')
     {
         match ($field) {
@@ -86,7 +94,7 @@ class ForcePasswordChange extends Component
         };
     }
 
-    // ─── Password strength helpers (mirrors PasswordReset) ────────────
+    // ─── Password strength helpers ─────────────────────────────────────
 
     public function hasMinLength(): bool
     {
@@ -133,9 +141,9 @@ class ForcePasswordChange extends Component
     {
         return match (true) {
             $this->getPasswordStrength() >= 100 => 'Very Strong',
-            $this->getPasswordStrength() >= 80 => 'Strong',
-            $this->getPasswordStrength() >= 60 => 'Good',
-            $this->getPasswordStrength() >= 40 => 'Weak',
+            $this->getPasswordStrength() >= 80  => 'Strong',
+            $this->getPasswordStrength() >= 60  => 'Good',
+            $this->getPasswordStrength() >= 40  => 'Weak',
             default => 'Very Weak',
         };
     }
@@ -144,9 +152,9 @@ class ForcePasswordChange extends Component
     {
         return match (true) {
             $this->getPasswordStrength() >= 100 => 'bg-green-500',
-            $this->getPasswordStrength() >= 80 => 'bg-green-400',
-            $this->getPasswordStrength() >= 60 => 'bg-yellow-400',
-            $this->getPasswordStrength() >= 40 => 'bg-orange-400',
+            $this->getPasswordStrength() >= 80  => 'bg-green-400',
+            $this->getPasswordStrength() >= 60  => 'bg-yellow-400',
+            $this->getPasswordStrength() >= 40  => 'bg-orange-400',
             default => 'bg-red-400',
         };
     }
@@ -155,9 +163,9 @@ class ForcePasswordChange extends Component
     {
         return match (true) {
             $this->getPasswordStrength() >= 100 => 'text-green-600',
-            $this->getPasswordStrength() >= 80 => 'text-green-600',
-            $this->getPasswordStrength() >= 60 => 'text-yellow-600',
-            $this->getPasswordStrength() >= 40 => 'text-orange-600',
+            $this->getPasswordStrength() >= 80  => 'text-green-600',
+            $this->getPasswordStrength() >= 60  => 'text-yellow-600',
+            $this->getPasswordStrength() >= 40  => 'text-orange-600',
             default => 'text-red-600',
         };
     }

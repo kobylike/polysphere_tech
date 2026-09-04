@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Blog\Post;
 
+use App\Helpers\ActivityLogger;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
@@ -40,8 +41,6 @@ class PostFormComponent extends Component
     public $newCategoryName = '';
     public $newTagName = '';
 
-    // ─── Dynamic validation rules ────────────────────────────────────
-
     protected function rules()
     {
         $uniqueRule = 'unique:posts,slug';
@@ -68,8 +67,6 @@ class PostFormComponent extends Component
         ];
     }
 
-    // ─── Custom error messages ──────────────────────────────────────
-
     protected function messages()
     {
         return [
@@ -78,8 +75,6 @@ class PostFormComponent extends Component
             'slug.unique'    => 'This slug is already taken. Please use a different one.',
         ];
     }
-
-    // ─── Mount ──────────────────────────────────────────────────────
 
     public function mount($slug = null)
     {
@@ -108,13 +103,10 @@ class PostFormComponent extends Component
             $this->authorize('create', Post::class);
         }
 
-        // Auto-generate slug if empty
         if (empty($this->slug) && !empty($this->title)) {
             $this->slug = $this->generateUniqueSlug(Str::slug($this->title));
         }
     }
-
-    // ─── Helper: generate unique slug ──────────────────────────────
 
     protected function generateUniqueSlug($baseSlug)
     {
@@ -128,16 +120,12 @@ class PostFormComponent extends Component
         return $slug;
     }
 
-    // ─── Update slug when title changes ────────────────────────────
-
     public function updatedTitle($value)
     {
         if (empty($this->slug) || $this->slug === Str::slug($value)) {
             $this->slug = $this->generateUniqueSlug(Str::slug($value));
         }
     }
-
-    // ─── Add category ──────────────────────────────────────────────
 
     public function addCategory()
     {
@@ -150,18 +138,19 @@ class PostFormComponent extends Component
             'name' => $this->newCategoryName,
             'slug' => Str::slug($this->newCategoryName),
         ]);
-
         $this->selectedCategories[] = $category->id;
         $this->newCategoryName = '';
+
+        ActivityLogger::log('Category added from post form', [
+            'category_id' => $category->id,
+            'name'        => $category->name,
+        ], 'category');
+
         session()->flash('message', 'Category added successfully!');
     }
 
-    // ─── Add tag ────────────────────────────────────────────────────
-
     public function addTag()
     {
-        // No specific permission for tags – we assume if you can create a post you can add a tag.
-        // But we'll check create permission on Tag? We can skip for now.
         $this->validate([
             'newTagName' => 'required|string|max:255|unique:tags,name',
         ]);
@@ -170,13 +159,16 @@ class PostFormComponent extends Component
             'name' => $this->newTagName,
             'slug' => Str::slug($this->newTagName),
         ]);
-
         $this->selectedTags[] = $tag->id;
         $this->newTagName = '';
+
+        ActivityLogger::log('Tag added from post form', [
+            'tag_id' => $tag->id,
+            'name'   => $tag->name,
+        ], 'tag');
+
         session()->flash('message', 'Tag added successfully!');
     }
-
-    // ─── Save ──────────────────────────────────────────────────────
 
     public function save()
     {
@@ -216,19 +208,31 @@ class PostFormComponent extends Component
             $post->update($data);
             $post->categories()->sync($this->selectedCategories);
             $post->tags()->sync($this->selectedTags);
+
+            ActivityLogger::log('Post updated', [
+                'post_id' => $post->id,
+                'title'   => $post->title,
+                'status'  => $post->status,
+            ], 'post');
+
             session()->flash('success', 'Post updated successfully!');
         } else {
             $this->authorize('create', Post::class);
             $post = Post::create($data);
             $post->categories()->attach($this->selectedCategories);
             $post->tags()->attach($this->selectedTags);
+
+            ActivityLogger::log('Post created', [
+                'post_id' => $post->id,
+                'title'   => $post->title,
+                'status'  => $post->status,
+            ], 'post');
+
             session()->flash('success', 'Post created successfully!');
         }
 
         $this->redirectRoute('manage.posts', navigate: true);
     }
-
-    // ─── Computed properties ──────────────────────────────────────
 
     public function getCategoriesProperty()
     {
@@ -239,8 +243,6 @@ class PostFormComponent extends Component
     {
         return Tag::orderBy('name')->get();
     }
-
-    // ─── Render ────────────────────────────────────────────────────
 
     public function render()
     {

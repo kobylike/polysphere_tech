@@ -2,14 +2,16 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Carbon\Carbon;
+use Spatie\Activitylog\Support\LogOptions;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 class Attendance extends Model
 {
-    use HasFactory;
+    use HasFactory, LogsActivity;
 
     protected $table = 'attendance';
 
@@ -26,7 +28,22 @@ class Attendance extends Model
         'date' => 'date',
         // check_in / check_out are TIME columns — kept as raw strings on purpose.
     ];
-
+    public function getActivitylogOptions(): LogOptions
+    {
+        $user = $this->user?->name ?? 'User';
+        $date = $this->date ?? 'unknown date';
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Attendance for {$user} on {$date} was recorded",
+                'updated' => "Attendance for {$user} on {$date} was updated",
+                'deleted' => "Attendance for {$user} on {$date} was deleted",
+                default   => "Attendance for {$user} on {$date} was {$eventName}",
+            })
+            ->useLogName('attendance');
+    }
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

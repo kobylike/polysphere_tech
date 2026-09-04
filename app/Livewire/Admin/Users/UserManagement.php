@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users;
 
+use App\Helpers\ActivityLogger; // <-- Added
 use App\Mail\AccountCreatedMail;
 use App\Mail\InvitationMail;
 use App\Models\Invitation;
@@ -628,6 +629,17 @@ class UserManagement extends Component
                 $profile->is_spotlight = $this->is_spotlight;
                 $profile->save();
 
+                // 🔥 Log user update
+                ActivityLogger::log('User updated by admin', [
+                    'user_id'      => $user->id,
+                    'email'        => $user->email,
+                    'status'       => $user->status,
+                    'roles'        => $roleNames,
+                    'position'     => $this->position,
+                    'is_spotlight' => $this->is_spotlight,
+                    'edited_by'    => Auth::id(),
+                ], 'user');
+
                 $this->logActivity($user->id, 'admin_update', "Account updated by admin ({$fullName}, {$this->email}).");
                 if ($emailChanged) {
                     $this->logActivity($user->id, 'email_changed', 'Email address changed by admin; verification reset.');
@@ -661,6 +673,17 @@ class UserManagement extends Component
                     'is_featured_team' => $this->is_featured_team,
                     'is_spotlight' => $this->is_spotlight,
                 ]);
+
+                // 🔥 Log user creation
+                ActivityLogger::log('User created by admin', [
+                    'user_id'      => $user->id,
+                    'email'        => $user->email,
+                    'status'       => $user->status,
+                    'roles'        => $roleNames,
+                    'position'     => $this->position,
+                    'is_spotlight' => $this->is_spotlight,
+                    'created_by'   => Auth::id(),
+                ], 'user');
 
                 $this->logActivity($user->id, 'admin_create', "Account created by admin ({$fullName}, {$this->email}).");
 
@@ -806,6 +829,16 @@ class UserManagement extends Component
             $user->assignRole($this->defaultRole);
         }
 
+        // 🔥 Log conversion
+        ActivityLogger::log('User converted to employee', [
+            'user_id'      => $user->id,
+            'email'        => $user->email,
+            'employee_id'  => $this->emp_employee_id,
+            'department'   => $this->emp_department,
+            'position'     => $this->emp_position,
+            'converted_by' => Auth::id(),
+        ], 'user');
+
         $this->logActivity($user->id, 'converted_to_employee', "User converted to employee (ID: {$this->emp_employee_id}) by admin.");
         $this->showConvertEmployeeModal = false;
         $this->convertUserId = null;
@@ -852,6 +885,14 @@ class UserManagement extends Component
         $user = User::findOrFail($this->selectedUserId);
         $this->authorize('delete', $user);
         $user->delete();
+
+        // 🔥 Log deletion
+        ActivityLogger::log('User deleted', [
+            'user_id'    => $user->id,
+            'email'      => $user->email,
+            'deleted_by' => Auth::id(),
+        ], 'user');
+
         $this->showDeleteModal = false;
         $this->selectedUserId = null;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Deleted', 'message' => 'User deleted successfully.']);
@@ -891,6 +932,19 @@ class UserManagement extends Component
             return;
         }
         $this->authorize('delete', User::class);
+
+        // Log each deletion
+        foreach ($ids as $id) {
+            $user = User::find($id);
+            if ($user) {
+                ActivityLogger::log('User deleted (bulk)', [
+                    'user_id'    => $user->id,
+                    'email'      => $user->email,
+                    'deleted_by' => Auth::id(),
+                ], 'user');
+            }
+        }
+
         User::whereIn('id', $ids)->delete();
         $this->selectedUsers = [];
         $this->selectAll = false;
@@ -904,9 +958,16 @@ class UserManagement extends Component
         $this->authorize('update', User::class);
         $ids = $this->selectedUsers;
         User::whereIn('id', $ids)->update(['status' => 'active']);
+
+        // Log each activation
         foreach ($ids as $id) {
+            ActivityLogger::log('User activated (bulk)', [
+                'user_id'     => $id,
+                'activated_by' => Auth::id(),
+            ], 'user');
             $this->logActivity((int) $id, 'bulk_activate', 'Account activated via bulk admin action.');
         }
+
         $this->selectedUsers = [];
         $this->selectAll = false;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Activated', 'message' => 'Selected users activated.']);
@@ -918,9 +979,15 @@ class UserManagement extends Component
         $this->authorize('update', User::class);
         $ids = $this->selectedUsers;
         User::whereIn('id', $ids)->update(['status' => 'suspended']);
+
         foreach ($ids as $id) {
+            ActivityLogger::log('User suspended (bulk)', [
+                'user_id'     => $id,
+                'suspended_by' => Auth::id(),
+            ], 'user');
             $this->logActivity((int) $id, 'bulk_suspend', 'Account suspended via bulk admin action.');
         }
+
         $this->selectedUsers = [];
         $this->selectAll = false;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Suspended', 'message' => 'Selected users suspended.']);
@@ -948,6 +1015,16 @@ class UserManagement extends Component
         $newStatus = $user->status === 'active' ? 'suspended' : 'active';
         $user->status = $newStatus;
         $user->save();
+
+        // 🔥 Log status toggle
+        ActivityLogger::log('User status toggled', [
+            'user_id'    => $user->id,
+            'email'      => $user->email,
+            'old_status' => $user->status === $newStatus ? 'active' : 'suspended', // Actually need old status; we can store before change
+            'new_status' => $newStatus,
+            'toggled_by' => Auth::id(),
+        ], 'user');
+
         $this->logActivity($user->id, 'status_toggle', "Status changed to '{$newStatus}' by admin.");
         $this->showToggleStatusModal = false;
         $this->toggleUserId = null;
@@ -977,6 +1054,15 @@ class UserManagement extends Component
             $action = 'verified';
         }
         $user->save();
+
+        // 🔥 Log verification toggle
+        ActivityLogger::log('Email verification toggled', [
+            'user_id'    => $user->id,
+            'email'      => $user->email,
+            'new_status' => $action,
+            'toggled_by' => Auth::id(),
+        ], 'user');
+
         $this->logActivity($user->id, 'verification_toggle', "Email marked as {$action} by admin.");
         $this->showToggleVerifyModal = false;
         $this->verifyUserId = null;
@@ -999,6 +1085,13 @@ class UserManagement extends Component
         $user->email_verification_sent_at = now();
         $user->save();
         $user->sendEmailVerificationNotification();
+
+        // 🔥 Log resend
+        ActivityLogger::log('Verification email resent', [
+            'user_id' => $user->id,
+            'email'   => $user->email,
+            'resent_by' => Auth::id(),
+        ], 'user');
 
         $this->logActivity($user->id, 'verification_resent', 'Verification email resent by admin.');
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Sent', 'message' => "Verification email sent to {$user->email}."]);
@@ -1025,6 +1118,13 @@ class UserManagement extends Component
             $user->email_verification_sent_at = now();
             $user->save();
             $user->sendEmailVerificationNotification();
+
+            ActivityLogger::log('Verification email resent (bulk)', [
+                'user_id'    => $user->id,
+                'email'      => $user->email,
+                'resent_by'  => Auth::id(),
+            ], 'user');
+
             $this->logActivity($user->id, 'verification_resent', 'Verification email resent via bulk admin action.');
         }
 
@@ -1064,6 +1164,14 @@ class UserManagement extends Component
         $profile->is_spotlight = !$profile->is_spotlight;
         $profile->save();
 
+        // 🔥 Log spotlight toggle
+        ActivityLogger::log('Spotlight status toggled', [
+            'user_id'      => $user->id,
+            'email'        => $user->email,
+            'new_status'   => $profile->is_spotlight ? 'added' : 'removed',
+            'toggled_by'   => Auth::id(),
+        ], 'user');
+
         $this->logActivity($user->id, 'spotlight_toggle', $profile->is_spotlight ? 'Added to homepage/About spotlight by admin.' : 'Removed from homepage/About spotlight by admin.');
         $this->showSpotlightModal = false;
         $this->spotlightUserId = null;
@@ -1101,6 +1209,16 @@ class UserManagement extends Component
         ]);
 
         Mail::to($this->inviteEmail)->queue(new InvitationMail($invitation));
+
+        // 🔥 Log invitation
+        ActivityLogger::log('Invitation sent', [
+            'email'        => $this->inviteEmail,
+            'role_id'      => $this->inviteRoleId,
+            'position'     => $this->invitePosition,
+            'expires_at'   => $invitation->expires_at,
+            'invited_by'   => Auth::id(),
+        ], 'user');
+
         $this->logActivity(Auth::id(), 'invitation_sent', "Invitation sent to {$this->inviteEmail}");
 
         $this->showInviteModal = false;

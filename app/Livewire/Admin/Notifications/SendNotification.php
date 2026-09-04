@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Notifications;
 
+use App\Helpers\ActivityLogger;
 use App\Helpers\NotificationHelper;
 use App\Models\Role;
 use App\Models\User;
@@ -79,32 +80,41 @@ class SendNotification extends Component
             'sender_name' => Auth::user()->name,
         ];
 
+        $recipientDescription = '';
+
         switch ($this->recipientType) {
             case 'all':
                 NotificationHelper::sendToAll($data);
                 $message = 'Notification sent to all users.';
+                $recipientDescription = 'All users';
                 break;
 
             case 'employees':
                 NotificationHelper::sendToEmployees($data);
                 $message = 'Notification sent to all employees.';
+                $recipientDescription = 'All employees';
                 break;
 
             case 'roles':
                 $roles = Role::whereIn('id', $this->selectedRoles)->get();
+                $roleNames = $roles->pluck('name')->toArray();
                 NotificationHelper::sendToRoles($roles, $data);
                 $message = 'Notification sent to selected roles.';
+                $recipientDescription = 'Roles: ' . implode(', ', $roleNames);
                 break;
 
             case 'positions':
                 NotificationHelper::sendToPositions($this->selectedPositions, $data);
                 $message = 'Notification sent to selected positions.';
+                $recipientDescription = 'Positions: ' . implode(', ', $this->selectedPositions);
                 break;
 
             case 'users':
                 $users = User::whereIn('id', $this->selectedUsers)->get();
+                $userNames = $users->pluck('name')->toArray();
                 NotificationHelper::sendToUsers($users, $data);
                 $message = 'Notification sent to selected users.';
+                $recipientDescription = 'Users: ' . implode(', ', $userNames);
                 break;
 
             case 'custom':
@@ -115,8 +125,21 @@ class SendNotification extends Component
                 ];
                 NotificationHelper::send($recipients, $data);
                 $message = 'Notification sent to custom recipients.';
+                $recipientDescription = 'Custom recipients';
                 break;
         }
+
+        // ─── Log notification ───────────────────────────────────────────────────
+        ActivityLogger::log('System notification sent', [
+            'title' => $this->title ?: 'Untitled',
+            'body' => $this->body,
+            'type' => $this->type,
+            'recipient_type' => $this->recipientType,
+            'recipients' => $recipientDescription,
+            'sender_name' => Auth::user()->name,
+            'link' => $this->link,
+            'icon' => $this->icon,
+        ], 'notification');
 
         $this->reset(['title', 'body', 'link', 'icon']);
 

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users\Account\Tabs;
 
+use App\Helpers\ActivityLogger; // <-- Added
 use App\Models\Notification;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -102,6 +103,12 @@ class NotificationTab extends Component
             ->findOrFail($id);
 
         $this->showDetailModal = true;
+
+        // Log that the user opened the notification detail (optional)
+        ActivityLogger::log('Notification detail viewed', [
+            'notification_id' => $this->selectedNotification->id,
+            'title'           => $this->selectedNotification->title,
+        ], 'notification');
     }
 
     public function closeDetailModal()
@@ -116,6 +123,10 @@ class NotificationTab extends Component
 
         if ($this->selectedNotification->isRead()) {
             $this->selectedNotification->markAsUnread();
+            ActivityLogger::log('Notification marked as unread', [
+                'notification_id' => $this->selectedNotification->id,
+                'title'           => $this->selectedNotification->title,
+            ], 'notification');
             $this->dispatch('notify', [
                 'type' => 'info',
                 'title' => 'Marked as unread',
@@ -123,6 +134,10 @@ class NotificationTab extends Component
             ]);
         } else {
             $this->selectedNotification->markAsRead();
+            ActivityLogger::log('Notification marked as read', [
+                'notification_id' => $this->selectedNotification->id,
+                'title'           => $this->selectedNotification->title,
+            ], 'notification');
             $this->dispatch('notify', [
                 'type' => 'success',
                 'title' => 'Marked as read',
@@ -130,7 +145,6 @@ class NotificationTab extends Component
             ]);
         }
 
-        // Refresh the selected notification
         $this->selectedNotification = $this->selectedNotification->fresh();
         $this->dispatch('notification-read');
     }
@@ -143,6 +157,11 @@ class NotificationTab extends Component
 
         $notification->markAsRead();
 
+        ActivityLogger::log('Notification marked as read (single)', [
+            'notification_id' => $notification->id,
+            'title'           => $notification->title,
+        ], 'notification');
+
         $this->dispatch('notify', [
             'type' => 'success',
             'title' => 'Marked as read',
@@ -154,10 +173,20 @@ class NotificationTab extends Component
 
     public function markAllAsRead()
     {
+        $count = Notification::where('notifiable_type', 'App\Models\User')
+            ->where('notifiable_id', $this->user->id)
+            ->whereNull('read_at')
+            ->count();
+
         Notification::where('notifiable_type', 'App\Models\User')
             ->where('notifiable_id', $this->user->id)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
+
+        ActivityLogger::log('All notifications marked as read', [
+            'user_id' => $this->user->id,
+            'count'   => $count,
+        ], 'notification');
 
         $this->dispatch('notify', [
             'type' => 'success',

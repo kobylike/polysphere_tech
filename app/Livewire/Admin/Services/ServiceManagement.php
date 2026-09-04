@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Services;
 
+use App\Helpers\ActivityLogger; // <-- Import
 use App\Models\Service;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -72,9 +73,21 @@ class ServiceManagement extends Component
                         $this->authorize('delete', $service);
                     }
                 }
+                // Log each deletion before deleting
+                foreach ($this->selectedServices as $id) {
+                    $service = Service::find($id);
+                    if ($service) {
+                        ActivityLogger::log('Service deleted (bulk)', [
+                            'service_id' => $service->id,
+                            'name'       => $service->name,
+                            'slug'       => $service->slug,
+                        ], 'service');
+                    }
+                }
                 Service::whereIn('id', $this->selectedServices)->delete();
                 session()->flash('success', 'Selected services deleted.');
                 break;
+
             case 'active':
             case 'inactive':
                 foreach ($this->selectedServices as $id) {
@@ -84,9 +97,22 @@ class ServiceManagement extends Component
                     }
                 }
                 $status = $this->bulkAction === 'active' ? 'active' : 'inactive';
+                // Log each service status change
+                foreach ($this->selectedServices as $id) {
+                    $service = Service::find($id);
+                    if ($service) {
+                        ActivityLogger::log('Service status changed (bulk)', [
+                            'service_id' => $service->id,
+                            'name'       => $service->name,
+                            'old_status' => $service->status,
+                            'new_status' => $status,
+                        ], 'service');
+                    }
+                }
                 Service::whereIn('id', $this->selectedServices)->update(['status' => $status]);
                 session()->flash('success', 'Selected services ' . ($status === 'active' ? 'activated' : 'deactivated') . '.');
                 break;
+
             default:
                 session()->flash('error', 'Invalid bulk action.');
                 return;
@@ -101,6 +127,14 @@ class ServiceManagement extends Component
     {
         $service = Service::findOrFail($id);
         $this->authorize('delete', $service);
+
+        // Log before deletion
+        ActivityLogger::log('Service deleted', [
+            'service_id' => $service->id,
+            'name'       => $service->name,
+            'slug'       => $service->slug,
+        ], 'service');
+
         $service->delete();
         session()->flash('success', 'Service deleted.');
     }
@@ -118,6 +152,15 @@ class ServiceManagement extends Component
             $prev->order = $temp;
             $service->save();
             $prev->save();
+
+            // Log reordering
+            ActivityLogger::log('Service reordered', [
+                'service_id'        => $service->id,
+                'service_name'      => $service->name,
+                'new_order'         => $service->order,
+                'swapped_with_id'   => $prev->id,
+                'swapped_with_name' => $prev->name,
+            ], 'service');
         }
     }
 
@@ -134,6 +177,14 @@ class ServiceManagement extends Component
             $next->order = $temp;
             $service->save();
             $next->save();
+
+            ActivityLogger::log('Service reordered', [
+                'service_id'        => $service->id,
+                'service_name'      => $service->name,
+                'new_order'         => $service->order,
+                'swapped_with_id'   => $next->id,
+                'swapped_with_name' => $next->name,
+            ], 'service');
         }
     }
 

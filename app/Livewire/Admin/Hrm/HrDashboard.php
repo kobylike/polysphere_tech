@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Hrm;
 
+use App\Helpers\ActivityLogger;
 use App\Mail\InvitationMail;
 use App\Models\Attendance;
 use App\Models\Holiday;
@@ -403,7 +404,6 @@ class HrDashboard extends Component
             'emergency_contact_phone' => ['required', 'string', 'regex:/' . $emergencyPattern . '/'],
             'is_featured_team' => 'boolean',
             'phone' => ['required', 'string', 'regex:/' . $pattern . '/'],
-            // 🔥 NEW: optional fields – adjust as needed
             'date_of_birth' => 'nullable|date|before:today',
             'country_code'  => 'nullable|string|max:10',
             'city'          => 'nullable|string|max:100',
@@ -428,7 +428,6 @@ class HrDashboard extends Component
             'emergency_contact_phone.regex' => 'That doesn\'t look like a valid number for the selected country.',
             'phone.required'       => 'A phone number is required.',
             'phone.regex'          => 'Please enter a valid phone number for the selected country' . ($this->phoneExample ? " — e.g. {$this->phoneExample}." : '.'),
-            // 🔥 optional – no custom messages needed
         ]);
 
         $fullName = trim($this->first_name . ' ' . $this->last_name);
@@ -453,11 +452,19 @@ class HrDashboard extends Component
                 'emergency_contact_phone' => $this->emergency_getFullPhone(),
                 'is_featured_team' => $this->is_featured_team,
                 'is_employee'    => true,
-                // 🔥 NEW: save new fields
                 'date_of_birth'  => $this->date_of_birth ? Carbon::parse($this->date_of_birth) : null,
                 'country_code'   => $this->country_code ?: null,
                 'city'           => $this->city ?: null,
             ]);
+
+            // ─── Log update ──────────────────────────────────────────────────────
+            ActivityLogger::log('Employee record updated', [
+                'user_id' => $user->id,
+                'employee_id' => $this->employee_id,
+                'name' => $fullName,
+                'department' => $this->department,
+                'position' => $this->position,
+            ], 'hr');
 
             $this->dispatch('notify', [
                 'type' => 'success',
@@ -485,13 +492,22 @@ class HrDashboard extends Component
                 'emergency_contact_phone' => $this->emergency_getFullPhone(),
                 'is_featured_team' => $this->is_featured_team,
                 'is_employee'    => true,
-                // 🔥 NEW: save new fields
                 'date_of_birth'  => $this->date_of_birth ? Carbon::parse($this->date_of_birth) : null,
                 'country_code'   => $this->country_code ?: null,
                 'city'           => $this->city ?: null,
             ]);
 
             $user->assignRole('User');
+
+            // ─── Log create ──────────────────────────────────────────────────────
+            ActivityLogger::log('Employee added', [
+                'user_id' => $user->id,
+                'employee_id' => $this->employee_id,
+                'name' => $fullName,
+                'email' => $this->email,
+                'department' => $this->department,
+                'position' => $this->position,
+            ], 'hr');
 
             $this->dispatch('notify', [
                 'type' => 'success',
@@ -540,6 +556,15 @@ class HrDashboard extends Component
         $user = User::find($this->deleteUserId);
         if ($user && $user->id !== Auth::id()) {
             $name = $user->name;
+
+            // ─── Log before delete ──────────────────────────────────────────────
+            ActivityLogger::log('Employee deleted', [
+                'user_id' => $user->id,
+                'name' => $name,
+                'employee_id' => $user->profile?->employee_id,
+                'department' => $user->profile?->department,
+            ], 'hr');
+
             $user->delete();
             $this->dispatch('notify', [
                 'type' => 'success',
@@ -597,6 +622,13 @@ class HrDashboard extends Component
         ]);
 
         Mail::to($this->inviteEmail)->queue(new InvitationMail($invitation));
+
+        // ─── Log invitation ──────────────────────────────────────────────────────
+        ActivityLogger::log('Invitation sent', [
+            'email' => $this->inviteEmail,
+            'role_id' => $this->inviteRoleId,
+            'position' => $this->invitePosition,
+        ], 'hr');
 
         $this->showInviteModal = false;
         $this->reset(['inviteEmail', 'inviteRoleId', 'invitePosition', 'inviteExpiryDays']);
@@ -699,6 +731,16 @@ class HrDashboard extends Component
             ]
         );
 
+        // ─── Log attendance ──────────────────────────────────────────────────────
+        ActivityLogger::log('Attendance marked', [
+            'user_id' => $this->attendanceUserId,
+            'name' => $this->attendanceUserName,
+            'date' => $this->attendanceDate,
+            'status' => $this->attendanceStatus,
+            'check_in' => $this->attendanceCheckIn,
+            'check_out' => $this->attendanceCheckOut,
+        ], 'attendance');
+
         $this->showAttendanceModal = false;
         $this->dispatch('notify', [
             'type' => 'success',
@@ -709,7 +751,6 @@ class HrDashboard extends Component
 
     /**
      * One-click marking for today's column: cycles Present → Absent → Leave → Cleared.
-     * This version is fixed and tested.
      */
     public function quickMarkToday($userId)
     {
@@ -729,6 +770,14 @@ class HrDashboard extends Component
 
         if ($next === null) {
             if ($existing) $existing->delete();
+
+            // ─── Log cleared ──────────────────────────────────────────────────────
+            ActivityLogger::log('Attendance cleared', [
+                'user_id' => $userId,
+                'name' => $user->name,
+                'date' => $today,
+            ], 'attendance');
+
             $this->dispatch('notify', ['type' => 'success', 'title' => 'Cleared', 'message' => "Today's mark for {$user->name} has been cleared."]);
             return;
         }
@@ -746,6 +795,14 @@ class HrDashboard extends Component
             $data['date'] = $today;
             Attendance::create($data);
         }
+
+        // ─── Log quick mark ──────────────────────────────────────────────────────
+        ActivityLogger::log('Attendance quick-marked', [
+            'user_id' => $userId,
+            'name' => $user->name,
+            'date' => $today,
+            'status' => $next,
+        ], 'attendance');
 
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Marked', 'message' => "{$user->name} marked as " . ucfirst($next) . " for today."]);
     }
@@ -809,6 +866,14 @@ class HrDashboard extends Component
             }
         });
 
+        // ─── Log bulk attendance ──────────────────────────────────────────────────
+        ActivityLogger::log('Bulk attendance marked', [
+            'date' => $this->bulkAttendanceDate,
+            'status' => $this->bulkAttendanceStatus,
+            'count' => $count,
+            'employees' => $this->bulkSelectedEmployees,
+        ], 'attendance');
+
         $this->showBulkAttendanceModal = false;
         $this->reset(['bulkSelectedEmployees', 'bulkAttendanceNotes', 'bulkSelectAll']);
 
@@ -828,7 +893,6 @@ class HrDashboard extends Component
 
     // ─── Holidays helper (recurrence-aware) ─────────────────────────────
 
-    /** All holidays, loaded once per request. */
     private function allHolidays(): \Illuminate\Support\Collection
     {
         return $this->holidaysCache ??= Holiday::orderBy('date')->get();
@@ -880,7 +944,7 @@ class HrDashboard extends Component
                 $date = Carbon::create($this->year, $this->month, $i);
                 $dateString = $date->toDateString();
                 $record = $userAttendance->get($dateString);
-                $status = $record->status ?? null; // null = unmarked
+                $status = $record->status ?? null;
                 $isHoliday = in_array($dateString, $holidayDates, true);
 
                 $row['days'][$i] = [
@@ -959,6 +1023,13 @@ class HrDashboard extends Component
             ]
         );
 
+        // ─── Log holiday ──────────────────────────────────────────────────────────
+        ActivityLogger::log($this->editingHolidayId ? 'Holiday updated' : 'Holiday added', [
+            'name' => $this->holidayName,
+            'date' => $this->holidayDate,
+            'recurring' => $this->holidayRecurring,
+        ], 'holiday');
+
         $this->holidaysCache = null; // invalidate cache
 
         $this->showHolidayModal = false;
@@ -972,7 +1043,15 @@ class HrDashboard extends Component
 
     public function deleteHoliday($id)
     {
-        Holiday::findOrFail($id)->delete();
+        $holiday = Holiday::findOrFail($id);
+
+        // ─── Log delete ──────────────────────────────────────────────────────────
+        ActivityLogger::log('Holiday deleted', [
+            'name' => $holiday->name,
+            'date' => $holiday->date->format('Y-m-d'),
+        ], 'holiday');
+
+        $holiday->delete();
         $this->holidaysCache = null; // invalidate cache
         $this->dispatch('notify', [
             'type' => 'success',
@@ -1113,7 +1192,7 @@ class HrDashboard extends Component
     public function setPhone(string $value): void
     {
         $clean = preg_replace('/[^0-9]/', '', $value);
-        $clean = ltrim($clean, '0') ?: $clean; // drop a leading trunk-code 0 before enforcing length
+        $clean = ltrim($clean, '0') ?: $clean;
         $max = $this->countryInfo['maxLength'] ?? 15;
         if (strlen($clean) > $max) {
             $clean = substr($clean, 0, $max);

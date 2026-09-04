@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users\Account\Tabs;
 
+use App\Helpers\ActivityLogger; // <-- Added
 use App\Helpers\ProfileHelper;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -452,14 +453,17 @@ class ProfileTab extends Component
             }
             $this->user->avatar = null;
             $this->user->save();
+
+            // 🔥 Log avatar deletion
+            ActivityLogger::log('Avatar deleted', [
+                'user_id' => $this->user->id,
+                'email'   => $this->user->email,
+            ], 'profile');
         }
         $this->avatar = null;
         $this->confirmingAvatarDelete = false;
 
-        // ✅ Reload the user from the database to get fresh `updated_at`
         $this->user = $this->user->fresh();
-
-        // 🚀 Broadcast the update
         ProfileHelper::broadcast($this->user);
 
         $this->dispatch('notify', [
@@ -527,6 +531,13 @@ class ProfileTab extends Component
             }
             $path = $this->avatar->store('avatars', 'public');
             $this->user->avatar = $path;
+
+            // 🔥 Log avatar upload
+            ActivityLogger::log('Avatar uploaded', [
+                'user_id' => $this->user->id,
+                'email'   => $this->user->email,
+                'path'    => $path,
+            ], 'profile');
         }
 
         // Update user
@@ -549,6 +560,8 @@ class ProfileTab extends Component
             }
         }
 
+        $oldProfileData = $profile->getAttributes(); // for logging context
+
         $profile->update([
             'about_me'                => $this->about_me,
             'skills'                  => $this->skills,
@@ -562,13 +575,15 @@ class ProfileTab extends Component
             'emergency_contact_phone' => $this->emergency_contact_phone_local ? $this->emergency_getFullPhone() : null,
         ]);
 
-        // ✅ Reload the user from the database to get fresh `updated_at`
+        // 🔥 Log profile update
+        ActivityLogger::log('Profile updated', [
+            'user_id'      => $this->user->id,
+            'email'        => $this->user->email,
+            'changed_fields' => array_keys(array_diff_assoc($profile->getAttributes(), $oldProfileData)),
+        ], 'profile');
+
         $this->user = $this->user->fresh();
-
-        // 🚀 Broadcast the updated profile
         ProfileHelper::broadcast($this->user);
-
-        // Reset the temporary avatar after successful save
         $this->avatar = null;
 
         $this->dispatch('notify', [

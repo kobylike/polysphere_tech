@@ -3,12 +3,16 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Comment extends Model
 {
+    use HasFactory, LogsActivity;
     protected $fillable = [
         'post_id',
         'user_id',
@@ -25,6 +29,22 @@ class Comment extends Model
         'verified_at' => 'datetime',
     ];
 
+    public function getActivitylogOptions(): LogOptions
+    {
+        $author = $this->user?->name ?? $this->guest_name ?? 'Anonymous';
+        $post = $this->post?->title ?? 'unknown post';
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Comment by {$author} on '{$post}' was created",
+                'updated' => "Comment by {$author} on '{$post}' was updated",
+                'deleted' => "Comment by {$author} on '{$post}' was deleted",
+                default   => "Comment by {$author} on '{$post}' was {$eventName}",
+            })
+            ->useLogName('comment');
+    }
     // ─── Relationships ──────────────────────────────────────────────
 
     public function user(): BelongsTo

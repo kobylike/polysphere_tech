@@ -18,7 +18,11 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use PragmaRX\Google2FA\Google2FA;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
+
+
 
 #[Fillable([
     'google_id',
@@ -47,7 +51,7 @@ use Spatie\Permission\Traits\HasRoles;
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasFactory, Notifiable, HasRoles;
+    use HasFactory, Notifiable, HasRoles, LogsActivity;
 
     protected function casts(): array
     {
@@ -61,7 +65,20 @@ class User extends Authenticatable implements MustVerifyEmail
             'last_seen_at' => 'datetime',
         ];
     }
-
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges() //
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "User '{$this->name}' (ID: {$this->id}) was created",
+                'updated' => "User '{$this->name}' (ID: {$this->id}) was updated",
+                'deleted' => "User '{$this->name}' (ID: {$this->id}) was deleted",
+                default => "User '{$this->name}' (ID: {$this->id}) was {$eventName}",
+            })
+            ->useLogName('user');
+    }
     public function notifications()
     {
         return $this->morphMany(Notification::class, 'notifiable')->latest();

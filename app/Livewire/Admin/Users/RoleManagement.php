@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Admin\Users;
 
+use App\Helpers\ActivityLogger; // <-- Added
 use App\Models\Role;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Auth;
@@ -213,6 +214,15 @@ class RoleManagement extends Component
                 $user->broadcastPermissions();
             }
 
+            // 🔥 Log role update
+            ActivityLogger::log('Role updated', [
+                'role_id'     => $role->id,
+                'name'        => $role->name,
+                'description' => $role->description,
+                'permissions' => $permissions->pluck('name')->toArray(),
+                'updated_by'  => Auth::id(),
+            ], 'role');
+
             session()->flash('success', "Role '{$role->name}' updated successfully.");
         } else {
             $role = Role::create([
@@ -222,6 +232,16 @@ class RoleManagement extends Component
                 'color'       => $this->color,
             ]);
             $role->syncPermissions($permissions);
+
+            // 🔥 Log role creation
+            ActivityLogger::log('Role created', [
+                'role_id'     => $role->id,
+                'name'        => $role->name,
+                'description' => $role->description,
+                'permissions' => $permissions->pluck('name')->toArray(),
+                'created_by'  => Auth::id(),
+            ], 'role');
+
             session()->flash('success', "Role '{$role->name}' created successfully.");
         }
 
@@ -243,6 +263,14 @@ class RoleManagement extends Component
 
         $role = Role::findOrFail($this->deletingId);
         $name = $role->name;
+
+        // 🔥 Log deletion
+        ActivityLogger::log('Role deleted', [
+            'role_id'     => $role->id,
+            'name'        => $role->name,
+            'deleted_by'  => Auth::id(),
+        ], 'role');
+
         $role->delete();
 
         $this->showDeleteModal = false;
@@ -263,6 +291,18 @@ class RoleManagement extends Component
             session()->flash('error', 'No deletable roles selected.');
             $this->showBulkDeleteModal = false;
             return;
+        }
+
+        // Log each deletion
+        foreach ($ids as $id) {
+            $role = Role::find($id);
+            if ($role) {
+                ActivityLogger::log('Role deleted (bulk)', [
+                    'role_id'     => $role->id,
+                    'name'        => $role->name,
+                    'deleted_by'  => Auth::id(),
+                ], 'role');
+            }
         }
 
         Role::whereIn('id', $ids)->delete();
