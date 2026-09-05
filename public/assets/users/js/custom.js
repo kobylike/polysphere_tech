@@ -257,11 +257,31 @@ var W3Crm = function(){
 	// `document` instead of bound directly to `.dz-fullscreen`, so the
 	// actual Fullscreen API toggle keeps working after wire:navigate
 	// rebuilds the navbar.
+	//
+	// DEBUG (temporary): added console.log() calls + .catch() on the
+	// requestFullscreen()/exitFullscreen() promises so we can see in
+	// DevTools (1) whether the click is even reaching this handler after
+	// a wire:navigate, and (2) whether the browser is silently rejecting
+	// the fullscreen request (most commonly because it no longer
+	// considers the click a valid "user gesture" — this happens if
+	// Livewire's navigate interception consumes/delays the click before
+	// this handler runs). Remove the console.log lines once confirmed
+	// fixed; keep the .catch() so failures are never silent again.
 	var handleDzFullScreen = function() {
 		jQuery(document).off('click.dzFullscreenToggle').on('click.dzFullscreenToggle', '.dz-fullscreen', function(e){
+
+			console.log('%c[dz-fullscreen] click received', 'color:#0af;font-weight:bold;', {
+				target: e.target,
+				currentTarget: e.currentTarget,
+				existingFullscreenElement: document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement || null
+			});
+
 			if(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement) {
+				console.log('[dz-fullscreen] currently fullscreen -> attempting to EXIT');
 				if(document.exitFullscreen) {
-					document.exitFullscreen();
+					document.exitFullscreen()
+						.then(() => console.log('[dz-fullscreen] exitFullscreen() succeeded'))
+						.catch(err => console.error('[dz-fullscreen] exitFullscreen() REJECTED:', err.name, err.message));
 				} else if(document.msExitFullscreen) {
 					document.msExitFullscreen();
 				} else if(document.mozCancelFullScreen) {
@@ -271,8 +291,11 @@ var W3Crm = function(){
 				}
 			}
 			else {
+				console.log('[dz-fullscreen] not fullscreen -> attempting to ENTER');
 				if(document.documentElement.requestFullscreen) {
-					document.documentElement.requestFullscreen();
+					document.documentElement.requestFullscreen()
+						.then(() => console.log('[dz-fullscreen] requestFullscreen() succeeded'))
+						.catch(err => console.error('[dz-fullscreen] requestFullscreen() REJECTED:', err.name, err.message));
 				} else if(document.documentElement.webkitRequestFullscreen) {
 					document.documentElement.webkitRequestFullscreen();
 				} else if(document.documentElement.mozRequestFullScreen) {

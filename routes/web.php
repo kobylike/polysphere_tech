@@ -7,6 +7,7 @@ use App\Livewire\Admin\Blog\Category\CategoryFormComponent;
 use App\Livewire\Admin\Blog\Post\PostFormComponent;
 use App\Livewire\Admin\Blog\Post\PostManagement;
 use App\Livewire\Admin\Dashboard\DashboardComponent;
+use App\Livewire\Admin\Dashboard\UserDashboardComponent;
 use App\Livewire\Admin\Hrm\HrDashboard;
 use App\Livewire\Admin\Messenger\ChatMessengerComponent;
 use App\Livewire\Admin\Messenger\ChatMessengerMain;
@@ -147,6 +148,8 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
             ->name('account');
 
         Route::get('/dashboard', DashboardComponent::class)->name('dashboard');
+        Route::get('/dashboard/user', UserDashboardComponent::class)
+            ->name('dashboard.user');
 
         // Chat messenger – accessible to everyone (may have internal permissions)
         Route::get('/chat-messenger', ChatMessengerMain::class)->name('messenger');

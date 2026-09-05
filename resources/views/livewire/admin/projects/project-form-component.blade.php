@@ -512,20 +512,18 @@
         }
 
         // ──────────────────────────────────────────────────────────────
-        // CKEditor – Singleton pattern using a global flag
+        // CKEditor – synchronous lock prevents duplicate initialization
         // ──────────────────────────────────────────────────────────────
 
         (function () {
-            window.ckeditorInitialized = false;
-
             function initCKEditor() {
                 const editorElement = document.querySelector('#ckeditor');
                 if (!editorElement) return;
                 if (editorElement.ckeditorInstance) return;
-                if (window.ckeditorInitialized) {
-                    window.ckeditorInitialized = false;
-                }
+                if (editorElement.dataset.ckInitializing === 'true') return;
                 if (typeof ClassicEditor === 'undefined') return;
+
+                editorElement.dataset.ckInitializing = 'true';
 
                 ClassicEditor
                     .create(editorElement, {
@@ -554,7 +552,7 @@
                     })
                     .then(editor => {
                         editorElement.ckeditorInstance = editor;
-                        window.ckeditorInitialized = true;
+                        editorElement.dataset.ckInitializing = 'false';
 
                         editor.model.document.on('change:data', () => {
                             @this.set('content', editor.getData());
@@ -563,7 +561,10 @@
                             editor.setData(@this.content);
                         }
                     })
-                    .catch(error => console.error('CKEditor error:', error));
+                    .catch(error => {
+                        editorElement.dataset.ckInitializing = 'false';
+                        console.error('CKEditor error:', error);
+                    });
             }
 
             document.addEventListener('livewire:initialized', initCKEditor);
@@ -573,27 +574,15 @@
                 if (editorElement && editorElement.ckeditorInstance) {
                     editorElement.ckeditorInstance.destroy().then(() => {
                         editorElement.ckeditorInstance = null;
-                        window.ckeditorInitialized = false;
+                        editorElement.dataset.ckInitializing = 'false';
                     }).catch(() => {
                         editorElement.ckeditorInstance = null;
-                        window.ckeditorInitialized = false;
+                        editorElement.dataset.ckInitializing = 'false';
                     });
                 }
             });
 
-            document.addEventListener('livewire:navigated', function () {
-                const editorElement = document.querySelector('#ckeditor');
-                if (editorElement && !editorElement.ckeditorInstance && !window.ckeditorInitialized) {
-                    initCKEditor();
-                }
-            });
-
-            document.addEventListener('livewire:update', function () {
-                const editorElement = document.querySelector('#ckeditor');
-                if (editorElement && !editorElement.ckeditorInstance && !window.ckeditorInitialized) {
-                    initCKEditor();
-                }
-            });
+            document.addEventListener('livewire:navigated', initCKEditor);
         })();
     </script>
 @endpush

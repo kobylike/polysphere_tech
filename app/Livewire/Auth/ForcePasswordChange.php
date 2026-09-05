@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Auth;
 
-use App\Helpers\ActivityLogger; // <-- Correct import
+use App\Helpers\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -25,8 +25,15 @@ class ForcePasswordChange extends Component
 
     public function mount()
     {
-        if (!Auth::user()->must_change_password) {
-            return $this->redirect(route('dashboard'));
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // If user doesn't need to change password, redirect to appropriate dashboard
+        if (!$user->must_change_password) {
+            $route = $user->hasRole(['Super Admin', 'Admin'])
+                ? route('dashboard')
+                : route('dashboard.user');
+            return redirect()->to($route);
         }
     }
 
@@ -73,7 +80,7 @@ class ForcePasswordChange extends Component
             'must_change_password' => false,
         ])->save();
 
-        // ✅ Log successful forced password change
+        // ✅ Log the successful change
         ActivityLogger::log('Forced password change completed', [
             'user_id' => $user->id,
             'email'   => $user->email,
@@ -82,7 +89,11 @@ class ForcePasswordChange extends Component
 
         session()->flash('status', 'Your password has been updated. Welcome aboard!');
 
-        return $this->redirect(route('dashboard'));
+        // ✅ Redirect based on role
+        $route = $user->hasRole(['Super Admin', 'Admin'])
+            ? route('dashboard')
+            : route('dashboard.user');
+        return redirect()->to($route);
     }
 
     public function togglePasswordVisibility(string $field = 'password')

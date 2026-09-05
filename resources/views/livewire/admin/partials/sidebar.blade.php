@@ -7,25 +7,67 @@ Sidebar start
         <ul class="metismenu" id="menu">
             <li class="menu-title">POLYSPHERE TECH</li>
 
-            {{-- Dashboard – always visible --}}
-            <li>
-                <a href="{{ route('dashboard') }}" wire:navigate.hover
-                    class="{{ request()->routeIs('dashboard') ? 'mm-active' : '' }}">
-                    <div class="menu-icon">
-                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M2.5 7.49999L10 1.66666L17.5 7.49999V16.6667C17.5 17.1087 17.3244 17.5326 17.0118 17.8452C16.6993 18.1577 16.2754 18.3333 15.8333 18.3333H4.16667C3.72464 18.3333 3.30072 18.1577 2.98816 17.8452C2.67559 17.5326 2.5 17.1087 2.5 16.6667V7.49999Z"
-                                stroke="#888888" stroke-linecap="round" stroke-linejoin="round" />
-                            <path d="M7.5 18.3333V10H12.5V18.3333" stroke="#888888" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                    </div>
-                    <span class="nav-text">Dashboard</span>
-                </a>
-            </li>
+            {{-- Dashboard – dropdown for admins, single link for users --}}
+            @php
+                $authUser = Auth::user();
+                $isAdmin = $authUser->hasRole(['Super Admin', 'Admin']);
+                $executiveActive = request()->routeIs('dashboard');
+                $userDashboardActive = request()->routeIs('dashboard.user');
+                $anyDashboardActive = $executiveActive || $userDashboardActive;
+            @endphp
+
+            @if($isAdmin)
+                {{-- Admin: Dropdown with two dashboards --}}
+                <li>
+                    <a class="has-arrow {{ $anyDashboardActive ? 'mm-active' : '' }}" href="javascript:void(0);"
+                        aria-expanded="{{ $anyDashboardActive ? 'true' : 'false' }}">
+                        <div class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M2.5 7.49999L10 1.66666L17.5 7.49999V16.6667C17.5 17.1087 17.3244 17.5326 17.0118 17.8452C16.6993 18.1577 16.2754 18.3333 15.8333 18.3333H4.16667C3.72464 18.3333 3.30072 18.1577 2.98816 17.8452C2.67559 17.5326 2.5 17.1087 2.5 16.6667V7.49999Z"
+                                    stroke="#888888" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M7.5 18.3333V10H12.5V18.3333" stroke="#888888" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                    <ul aria-expanded="false" class="{{ $anyDashboardActive ? 'mm-show' : '' }}">
+                        <li>
+                            <a href="{{ route('dashboard') }}" wire:navigate.hover
+                                class="{{ $executiveActive ? 'mm-active' : '' }}">
+                                Executive Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('dashboard.user') }}" wire:navigate.hover
+                                class="{{ $userDashboardActive ? 'mm-active' : '' }}">
+                                My Dashboard
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+            @else
+                {{-- Regular user: single link --}}
+                <li>
+                    <a href="{{ route('dashboard.user') }}" wire:navigate.hover
+                        class="{{ $userDashboardActive ? 'mm-active' : '' }}">
+                        <div class="menu-icon">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M2.5 7.49999L10 1.66666L17.5 7.49999V16.6667C17.5 17.1087 17.3244 17.5326 17.0118 17.8452C16.6993 18.1577 16.2754 18.3333 15.8333 18.3333H4.16667C3.72464 18.3333 3.30072 18.1577 2.98816 17.8452C2.67559 17.5326 2.5 17.1087 2.5 16.6667V7.49999Z"
+                                    stroke="#888888" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M7.5 18.3333V10H12.5V18.3333" stroke="#888888" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+            @endif
 
             {{-- Core HR --}}
-            @can('View HR Dashboard', $user)
+            @can('View HR Dashboard', $authUser)
                 <li>
                     <a href="{{ route('hr.dashboard') }}" wire:navigate.hover
                         class="{{ request()->routeIs('hr.dashboard') ? 'mm-active' : '' }}">
@@ -45,7 +87,7 @@ Sidebar start
             @endcan
 
             {{-- User Management: Users / Roles / Permissions --}}
-            @canany(['View Users', 'manage-roles', 'manage-permissions'], $user)
+            @canany(['View Users', 'manage-roles', 'manage-permissions'], $authUser)
                 <li>
                     <a class="has-arrow {{ request()->routeIs('users', 'roles', 'permissions') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
@@ -70,7 +112,7 @@ Sidebar start
                     </a>
                     <ul aria-expanded="false"
                         class="{{ request()->routeIs('users', 'roles', 'permissions') ? 'mm-show' : '' }}">
-                        @can('View Users', $user)
+                        @can('View Users', $authUser)
                             <li>
                                 <a href="{{ route('users') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('users') ? 'mm-active' : '' }}">
@@ -78,7 +120,7 @@ Sidebar start
                                 </a>
                             </li>
                         @endcan
-                        @can('manage-roles', $user)
+                        @can('manage-roles', $authUser)
                             <li>
                                 <a href="{{ route('roles') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('roles') ? 'mm-active' : '' }}">
@@ -86,7 +128,7 @@ Sidebar start
                                 </a>
                             </li>
                         @endcan
-                        @can('manage-permissions', $user)
+                        @can('manage-permissions', $authUser)
                             <li>
                                 <a href="{{ route('permissions') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('permissions') ? 'mm-active' : '' }}">
@@ -99,7 +141,7 @@ Sidebar start
             @endcanany
 
             {{-- Send Notification --}}
-            @can('Send Notifications', $user)
+            @can('Send Notifications', $authUser)
                 <li>
                     <a href="{{ route('notifications.send') }}" wire:navigate.hover
                         class="{{ request()->routeIs('notifications.send') ? 'mm-active' : '' }}">
@@ -119,7 +161,7 @@ Sidebar start
             @endcan
 
             {{-- Activity Logs --}}
-            @can('View Activity Logs', $user)
+            @can('View Activity Logs', $authUser)
                 <li>
                     <a href="{{ route('admin.logs') }}" wire:navigate.hover
                         class="{{ request()->routeIs('admin.logs') ? 'mm-active' : '' }}">
@@ -133,8 +175,9 @@ Sidebar start
                     </a>
                 </li>
             @endcan
+
             {{-- Projects --}}
-            @canany(['View Projects', 'Create Projects'], $user)
+            @canany(['View Projects', 'Create Projects'], $authUser)
                 <li>
                     <a class="has-arrow {{ request()->routeIs('admin.projects.*') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
@@ -155,7 +198,7 @@ Sidebar start
                         <span class="nav-text">Projects</span>
                     </a>
                     <ul aria-expanded="false" class="{{ request()->routeIs('admin.projects.*') ? 'mm-show' : '' }}">
-                        @can('View Projects', $user)
+                        @can('View Projects', $authUser)
                             <li>
                                 <a href="{{ route('admin.projects.index') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('admin.projects.index') ? 'mm-active' : '' }}">
@@ -163,7 +206,7 @@ Sidebar start
                                 </a>
                             </li>
                         @endcan
-                        @can('Create Projects', $user)
+                        @can('Create Projects', $authUser)
                             <li>
                                 <a href="{{ route('admin.projects.create') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('admin.projects.create') ? 'mm-active' : '' }}">
@@ -176,7 +219,7 @@ Sidebar start
             @endcanany
 
             {{-- Services --}}
-            @canany(['View Services', 'Create Services'], $user)
+            @canany(['View Services', 'Create Services'], $authUser)
                 <li>
                     <a class="has-arrow {{ request()->routeIs('admin.services.*') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
@@ -193,7 +236,7 @@ Sidebar start
                         <span class="nav-text">Services</span>
                     </a>
                     <ul aria-expanded="false" class="{{ request()->routeIs('admin.services.*') ? 'mm-show' : '' }}">
-                        @can('View Services', $user)
+                        @can('View Services', $authUser)
                             <li>
                                 <a href="{{ route('admin.services.index') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('admin.services.index') ? 'mm-active' : '' }}">
@@ -201,7 +244,7 @@ Sidebar start
                                 </a>
                             </li>
                         @endcan
-                        @can('Create Services', $user)
+                        @can('Create Services', $authUser)
                             <li>
                                 <a href="{{ route('admin.services.create') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('admin.services.create') ? 'mm-active' : '' }}">
@@ -214,7 +257,7 @@ Sidebar start
             @endcanany
 
             {{-- CMS: Blog / Categories --}}
-            @canany(['View Posts', 'Create Posts', 'View Categories', 'Create Categories'], $user)
+            @canany(['View Posts', 'Create Posts', 'View Categories', 'Create Categories'], $authUser)
                 <li>
                     <a class="has-arrow {{ request()->routeIs('manage.posts', 'create.post', 'edit.post', 'manage.categories', 'create.categories', 'edit.categories') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
@@ -232,7 +275,7 @@ Sidebar start
                     </a>
                     <ul aria-expanded="false"
                         class="{{ request()->routeIs('manage.posts', 'create.post', 'edit.post', 'manage.categories', 'create.categories', 'edit.categories') ? 'mm-show' : '' }}">
-                        @can('View Posts', $user)
+                        @can('View Posts', $authUser)
                             <li>
                                 <a href="{{ route('manage.posts') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('manage.posts', 'create.post', 'edit.post') ? 'mm-active' : '' }}">
@@ -240,7 +283,7 @@ Sidebar start
                                 </a>
                             </li>
                         @endcan
-                        @can('Create Posts', $user)
+                        @can('Create Posts', $authUser)
                             <li>
                                 <a href="{{ route('create.post') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('create.post') ? 'mm-active' : '' }}">
@@ -248,7 +291,7 @@ Sidebar start
                                 </a>
                             </li>
                         @endcan
-                        @can('View Categories', $user)
+                        @can('View Categories', $authUser)
                             <li>
                                 <a href="{{ route('manage.categories') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('manage.categories', 'edit.categories') ? 'mm-active' : '' }}">
@@ -256,7 +299,7 @@ Sidebar start
                                 </a>
                             </li>
                         @endcan
-                        @can('Create Categories', $user)
+                        @can('Create Categories', $authUser)
                             <li>
                                 <a href="{{ route('create.categories') }}" wire:navigate.hover
                                     class="{{ request()->routeIs('create.categories') ? 'mm-active' : '' }}">
@@ -337,7 +380,6 @@ Sidebar start
                             Activity
                         </a>
                     </li>
-                    {{-- 🔥 NEW: Notifications link --}}
                     <li>
                         <a href="{{ route('account', ['tab' => 'notifications']) }}" wire:navigate.hover
                             class="{{ request()->routeIs('account') && request()->route('tab') === 'notifications' ? 'mm-active' : '' }}">

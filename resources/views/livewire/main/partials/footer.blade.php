@@ -98,8 +98,9 @@
             <div class="footer-bottom pt-30 pb-30" style="border-top: 1px solid rgba(255,255,255,0.06);">
                 <div class="left-area" style="text-align: left;">
                     <span style="font-size: 14px; color: rgba(255,255,255,0.6);">
-                        © 2026 <a href="#" style="color: #fff; text-decoration: none;">Polysphere Tech</a>. All rights
-                        reserved.
+                        © {{ now()->year }}
+                        <a href="#" style="color: #fff; text-decoration: none;">PolySphere Tech</a>.
+                        All rights reserved.
                     </span>
                 </div>
                 <div class="right-area" style="text-align: right;">

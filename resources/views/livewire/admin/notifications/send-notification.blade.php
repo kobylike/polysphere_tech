@@ -24,7 +24,7 @@
     <div class="page-titles">
         <ol class="breadcrumb">
             <li><h5 class="bc-title">Send Notification</h5></li>
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+            <li class="breadcrumb-item"><a  wire:navigate.hover href="{{ route('dashboard') }}">Home</a></li>
             <li class="breadcrumb-item active">Send Notification</li>
         </ol>
     </div>

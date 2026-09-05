@@ -142,7 +142,11 @@ class Login extends Component
             return $this->redirectRoute('password.change.force', navigate: true);
         }
 
-        return $this->redirect(route('dashboard'));
+        // ─── Redirect based on role ──────────────────────────────────────────
+        $dashboardRoute = $user->hasRole(['Super Admin', 'Admin'])
+            ? route('dashboard')
+            : route('dashboard.user');
+        return $this->redirect($dashboardRoute);
     }
 
     public function render()

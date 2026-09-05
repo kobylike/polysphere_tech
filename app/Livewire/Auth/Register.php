@@ -496,7 +496,10 @@ class Register extends Component
 
         RateLimiter::increment($rateLimitKey);
 
-        return redirect()->route('dashboard')->with('success', 'Welcome to Polysphere Tech!');
+        $dashboardRoute = $user->hasRole(['Super Admin', 'Admin'])
+            ? route('dashboard')
+            : route('dashboard.user');
+        return redirect()->to($dashboardRoute)->with('success', 'Welcome to Polysphere Tech!');
     }
 
     // ─── Render ──────────────────────────────────────────────────

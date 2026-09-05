@@ -39,6 +39,34 @@
     <link href="{{ asset('assets/users/vendor/tagify/dist/tagify.css') }}" rel="stylesheet">
     <link href="{{ asset('assets/users/css/style.css') }}" rel="stylesheet">
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
+
+    <style>
+        .notif-dropdown-panel {
+            width: 380px;
+            max-width: calc(100vw - 2rem);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        @media (max-width: 480px) {
+            .notif-dropdown-panel {
+                width: calc(100vw - 2rem);
+                left: 1rem !important;
+                right: 1rem !important;
+            }
+        }
+
+        .notif-dropdown-panel .flex-grow-1 {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        .notif-dropdown-panel .flex-grow-1 p,
+        .notif-dropdown-panel .flex-grow-1 div {
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+    </style>
     @livewireStyles
 
     <!-- Vendor Scripts (deferred) -->
@@ -349,6 +377,195 @@
 
             if (document.readyState !== 'loading') {
                 bindHamburger();
+            }
+        })();
+    </script>
+    <script>
+        (function () {
+            function bindFullscreen() {
+                jQuery(document).off('click.dzFullscreenFix').on('click.dzFullscreenFix', '.dz-fullscreen', function (e) {
+                    e.preventDefault();
+
+                    var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
+                        document.mozFullScreenElement || document.msFullscreenElement;
+
+                    if (isFullscreen) {
+                        if (document.exitFullscreen) {
+                            document.exitFullscreen();
+                        } else if (document.msExitFullscreen) {
+                            document.msExitFullscreen();
+                        } else if (document.mozCancelFullScreen) {
+                            document.mozCancelFullScreen();
+                        } else if (document.webkitExitFullscreen) {
+                            document.webkitExitFullscreen();
+                        }
+                    } else {
+                        var el = document.documentElement;
+                        if (el.requestFullscreen) {
+                            el.requestFullscreen();
+                        } else if (el.webkitRequestFullscreen) {
+                            el.webkitRequestFullscreen();
+                        } else if (el.mozRequestFullScreen) {
+                            el.mozRequestFullScreen();
+                        } else if (el.msRequestFullscreen) {
+                            el.msRequestFullscreen();
+                        }
+                    }
+
+                    jQuery('.dz-fullscreen').toggleClass('active');
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', bindFullscreen);
+            document.addEventListener('livewire:navigated', bindFullscreen);
+
+            if (document.readyState !== 'loading') {
+                bindFullscreen();
+            }
+        })();
+    </script>
+    <script>
+        window.GlobalToast = window.GlobalToast || (function () {
+            let toastEl = null;
+            let hideTimeout = null;
+
+            function ensureToastEl() {
+                if (toastEl && document.body.contains(toastEl)) return toastEl;
+
+                toastEl = document.createElement('div');
+                toastEl.id = 'global-toast';
+                toastEl.style.cssText = [
+                    'position:fixed', 'top:16px', 'right:16px', 'z-index:99999',
+                    'max-width:420px', 'width:calc(100% - 32px)',
+                    'display:none', 'pointer-events:none'
+                ].join(';');
+                toastEl.innerHTML = `
+                <div id="global-toast-inner" style="pointer-events:auto; display:flex; align-items:center; padding:1rem; border-radius:1rem; box-shadow:0 10px 30px rgba(0,0,0,.2); color:#fff; gap:.75rem; backdrop-filter:blur(8px);">
+                    <div id="global-toast-icon" style="flex-shrink:0; font-size:1.5rem;"></div>
+                    <div style="flex-grow:1;">
+                        <div id="global-toast-title" style="font-weight:700;"></div>
+                        <div id="global-toast-message" style="font-size:.875rem; opacity:.9;"></div>
+                    </div>
+                    <button id="global-toast-close" style="background:none; border:0; color:#fff; opacity:.75; cursor:pointer; font-size:1rem;">✕</button>
+                </div>
+            `;
+                document.body.appendChild(toastEl);
+
+                toastEl.querySelector('#global-toast-close').addEventListener('click', hide);
+
+                return toastEl;
+            }
+
+            function show(detail) {
+                const el = ensureToastEl();
+                const type = detail.type || 'success';
+                const title = detail.title || (type === 'success' ? 'Success!' : 'Error!');
+                const message = detail.message || '';
+
+                const inner = el.querySelector('#global-toast-inner');
+                inner.style.background = type === 'success'
+                    ? 'linear-gradient(135deg, #10b981, #059669)'
+                    : 'linear-gradient(135deg, #ef4444, #dc2626)';
+
+                el.querySelector('#global-toast-icon').innerHTML =
+                    type === 'success' ? '✓' : '⚠';
+                el.querySelector('#global-toast-title').textContent = title;
+                el.querySelector('#global-toast-message').innerHTML = message;
+
+                el.style.display = 'block';
+
+                clearTimeout(hideTimeout);
+                hideTimeout = setTimeout(hide, 4000);
+            }
+
+            function hide() {
+                if (toastEl) toastEl.style.display = 'none';
+                clearTimeout(hideTimeout);
+            }
+
+            function bindNotifyListener() {
+                if (typeof window.Livewire === 'undefined') {
+                    setTimeout(bindNotifyListener, 300);
+                    return;
+                }
+                // Livewire.on is safe to call once; it does not duplicate
+                // across wire:navigate since this whole IIFE runs only once
+                // per real page load, not per Livewire component mount.
+                window.Livewire.on('notify', (detail) => {
+                    // Livewire v3 sometimes wraps single-array payloads
+                    const payload = Array.isArray(detail) ? detail[0] : detail;
+                    show(payload || {});
+                });
+            }
+
+            return { show, hide, bindNotifyListener };
+        })();
+
+        document.addEventListener('livewire:navigated', function () {
+            // Belt-and-braces: hide any stale toast on navigation.
+            window.GlobalToast.hide();
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            window.GlobalToast.bindNotifyListener();
+        });
+    </script>
+
+
+    <script>
+        function unstickPage() {
+            // Remove any stray Bootstrap backdrops left behind.
+            document.querySelectorAll('.modal-backdrop, .dropdown-backdrop, .offcanvas-backdrop')
+                .forEach(el => el.remove());
+
+            // Restore body state Bootstrap may have left locked.
+            document.body.classList.remove('modal-open');
+            document.body.style.removeProperty('overflow');
+            document.body.style.removeProperty('padding-right');
+
+            // Close any dropdown left in an inconsistent "show" state
+            // without its trigger (which Livewire may have replaced).
+            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                const trigger = menu.previousElementSibling;
+                if (!trigger || trigger.getAttribute('aria-expanded') !== 'true') {
+                    menu.classList.remove('show');
+                }
+            });
+
+            // Last-resort safety net: never leave the wrapper itself
+            // non-interactive.
+            const wrapper = document.getElementById('main-wrapper');
+            if (wrapper) wrapper.style.pointerEvents = '';
+        }
+
+        document.addEventListener('livewire:navigated', unstickPage);
+        // Also run right after any Livewire commit finishes, since the
+        // freeze happens after an in-page action (e.g. delete/save), not
+        // only after navigation.
+        document.addEventListener('livewire:init', () => {
+            window.Livewire.hook('commit', ({ succeed }) => {
+                succeed(() => {
+                    // Small delay so this runs after Livewire's own DOM
+                    // morph/cleanup for this commit has finished.
+                    setTimeout(unstickPage, 50);
+                });
+            });
+        });
+    </script>
+    <script>
+        (function () {
+            function collapseMobileSidebarByDefault() {
+                if (window.innerWidth <= 991) {
+                    document.getElementById('main-wrapper')?.classList.add('menu-toggle');
+                    document.querySelector('.hamburger')?.classList.add('is-active');
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', collapseMobileSidebarByDefault);
+            document.addEventListener('livewire:navigated', collapseMobileSidebarByDefault);
+
+            if (document.readyState !== 'loading') {
+                collapseMobileSidebarByDefault();
             }
         })();
     </script>

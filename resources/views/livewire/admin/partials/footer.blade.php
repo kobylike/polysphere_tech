@@ -1,6 +1,9 @@
 <div class="footer">
     <div class="copyright">
-        <p>Copyright © Developed by <a href="https://dexignzone.com/" target="_blank">DexignZone</a> <span
-                class="current-year">2024</span></p>
+        <p>
+            © {{ now()->year }}
+            <a href="https://polyspheretech.com/" target="_blank">PolySphere Tech</a>.
+            All rights reserved.
+        </p>
     </div>
 </div>

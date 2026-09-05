@@ -13,7 +13,7 @@
         @endif
     </a>
 
-    <div class="dropdown-menu dropdown-menu-end" style="width: 380px; max-height: 400px; overflow-y: auto;">
+    <div class="dropdown-menu dropdown-menu-end notif-dropdown-panel">
         <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
             <h6 class="mb-0">Notifications</h6>
             @if($unreadCount > 0)

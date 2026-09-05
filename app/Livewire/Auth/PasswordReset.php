@@ -121,6 +121,7 @@ class PasswordReset extends Component
                 ])->save();
 
                 event(new PasswordResetEvent($user));
+                
                 Auth::login($user);
             }
         );

@@ -4,8 +4,8 @@
     Name                 : W3CRM
     Author               : Dexignzone
     Author Portfolio     : https://themeforest.net/user/dexignzone/portfolio
-    
-	
+
+
 	Table of Sass Contents
 
     1. Abstracts
@@ -15,7 +15,7 @@
         _mixin
         _variable
 
-    2. bootstrap 
+    2. bootstrap
         -Here goes all official bootstrap scss files
 
     3. Global/Base
@@ -4103,7 +4103,7 @@ textarea.form-control-lg {
     float: left;
     padding-right: var(--bs-breadcrumb-item-padding-x);
     color: var(--bs-breadcrumb-divider-color);
-    content: var(--bs-breadcrumb-divider, "https://w3crm.dexignzone.com/") /* rtl: var(--bs-breadcrumb-divider, "/") */; }
+    content: var(--bs-breadcrumb-divider, "https://polyspheretech.com/") /* rtl: var(--bs-breadcrumb-divider, "/") */; }
 
 .breadcrumb-item.active {
   color: var(--bs-breadcrumb-item-active-color); }
