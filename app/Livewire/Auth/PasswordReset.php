@@ -2,7 +2,8 @@
 
 namespace App\Livewire\Auth;
 
-use App\Helpers\ActivityLogger; // <-- Correct import
+use App\Helpers\ActivityLogger;
+use App\Helpers\NotificationHelper; // <-- Added
 use App\Models\User;
 use Livewire\Component;
 use Illuminate\Support\Str;
@@ -121,8 +122,17 @@ class PasswordReset extends Component
                 ])->save();
 
                 event(new PasswordResetEvent($user));
-                
+
                 Auth::login($user);
+
+                // 🔥 Send notification
+                NotificationHelper::sendToUser($user, [
+                    'title' => 'Password Reset Successful',
+                    'body' => 'Your password has been reset successfully. If you did not perform this action, please contact support immediately.',
+                    'type' => 'success',
+                    'icon' => 'fa-key',
+                    'link' => route('dashboard'),
+                ]);
             }
         );
 
@@ -139,7 +149,7 @@ class PasswordReset extends Component
             ], 'auth');
 
             session()->flash('status', 'Your password has been reset successfully.');
-            $this->redirectRoute('dashboard', navigate: true);
+            $this->redirectRoute('dashboard');
             return;
         }
 

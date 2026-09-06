@@ -138,32 +138,7 @@
     <!-- ============================================ -->
     <!-- SEARCH AREA - Polysphere Tech Branded         -->
     <!-- ============================================ -->
-    <div class="df-search-area">
-        <div class="container">
-            <div class="row">
-                <div class="col-xl-12">
-                    <div class="df-search-form">
-                        <div class="df-search-close text-center mb-20">
-                            <button class="df-search-close-btn df-search-close-btn"></button>
-                        </div>
-                        <form action="#">
-                            <div class="df-search-input mb-10">
-                                <input type="text" placeholder="Search services, case studies, blog posts...">
-                                <button type="submit"><i class="icon-search"></i></button>
-                            </div>
-                            <div class="df-search-category">
-                                <span>Popular searches : </span>
-                                <a href="service-details.html">Custom Software, </a>
-                                <a href="service-details.html">SaaS Platform, </a>
-                                <a href="service-details.html">Digital Transformation, </a>
-                                <a href="service-details.html">IT Consulting</a>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    @livewire('main.partials.main-search')
     <div class="body-overlay"></div>
     <!-- ============================================ -->
 
@@ -262,6 +237,7 @@
 
     @livewireScripts
     @vite('resources/js/app.js')
+    @stack('scripts')
     <!-- ============================================ -->
     <!-- JAVASCRIPT                                  -->
     <!-- ============================================ -->

@@ -102,22 +102,21 @@
             <nav class="navbar navbar-expand">
                 <div class="collapse navbar-collapse justify-content-between">
                     <div class="header-left">
-                        <form>
-                            <div class="input-group search-area">
-                                <span class="input-group-text">
-                                    <button class="bg-transparent border-0">
-                                        <svg width="19" height="19" viewBox="0 0 19 19" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <circle cx="8.78605" cy="8.78605" r="8.23951" stroke="white"
-                                                stroke-linecap="round" stroke-linejoin="round" />
-                                            <path d="M14.5168 14.9447L17.7471 18.1667" stroke="white"
-                                                stroke-linecap="round" stroke-linejoin="round" />
-                                        </svg>
-                                    </button>
-                                </span>
-                                <input type="text" class="form-control" placeholder="Search">
-                            </div>
-                        </form>
+                        <div class="input-group search-area">
+                            <span class="input-group-text">
+                                <button class="bg-transparent border-0" wire:click="performSearch">
+                                    <svg width="19" height="19" viewBox="0 0 19 19" fill="none"
+                                        xmlns="http://www.w3.org/2000/svg">
+                                        <circle cx="8.78605" cy="8.78605" r="8.23951" stroke="white"
+                                            stroke-linecap="round" stroke-linejoin="round" />
+                                        <path d="M14.5168 14.9447L17.7471 18.1667" stroke="white" stroke-linecap="round"
+                                            stroke-linejoin="round" />
+                                    </svg>
+                                </button>
+                            </span>
+                            <input type="text" class="form-control" placeholder="Search..."
+                                wire:model.live="searchQuery" wire:keydown.enter="performSearch" autocomplete="off">
+                        </div>
                     </div>
 
                     <ul class="navbar-nav header-right">

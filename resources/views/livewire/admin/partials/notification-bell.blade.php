@@ -13,7 +13,7 @@
         @endif
     </a>
 
-    <div class="dropdown-menu dropdown-menu-end notif-dropdown-panel">
+    <div class="dropdown-menu dropdown-menu-end notif-dropdown-menu">
         <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
             <h6 class="mb-0">Notifications</h6>
             @if($unreadCount > 0)
@@ -24,7 +24,7 @@
         </div>
 
         @if(count($notifications) > 0)
-            <div class="dz-scroll style-1 p-3">
+            <div class="dz-scroll style-1 p-3 notif-dropdown-panel">
                 @foreach($notifications as $notif)
                     <div class="d-flex align-items-start gap-2 mb-3 pb-3 border-bottom">
                         <div class="flex-shrink-0">

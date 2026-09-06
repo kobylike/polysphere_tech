@@ -4,15 +4,12 @@ namespace App\Livewire\Admin\Partials;
 
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Livewire\Attributes\Layout;
-
 use Livewire\Component;
 
-
-#[Layout('layouts.users')]
 class Navbar extends Component
 {
     public $user;
+    public string $searchQuery = '';
 
     protected function getListeners()
     {
@@ -45,12 +42,20 @@ class Navbar extends Component
             Auth::logout();
             session()->regenerateToken();
             session()->invalidate();
-
             return redirect()->route('login');
         } catch (\Exception $e) {
             Log::error('Logout error: ' . $e->getMessage());
             return redirect()->route('login');
         }
+    }
+
+    // 🔥 Search method – navigates to search page with SPA
+    public function performSearch()
+    {
+        if (strlen(trim($this->searchQuery)) >= 2) {
+            return redirect()->route('search', ['q' => $this->searchQuery])->with('navigate', true);
+        }
+        return null;
     }
 
     public function render()

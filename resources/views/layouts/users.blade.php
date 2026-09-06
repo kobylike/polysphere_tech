@@ -37,64 +37,141 @@
     <link href="{{ asset('assets/users/vendor/bootstrap-datetimepicker/css/bootstrap-datetimepicker.min.css') }}"
         rel="stylesheet">
     <link href="{{ asset('assets/users/vendor/tagify/dist/tagify.css') }}" rel="stylesheet">
-    <link href="{{ asset('assets/users/css/style.css') }}" rel="stylesheet">
+    <link href="{{ asset('assets/users/css/style.css') }}?v={{ filemtime(public_path('assets/users/css/style.css')) }}"
+        rel="stylesheet">
     <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
 
-    <style>
+    {{-- ═══════════════════════════════════════════════════════════════════════════
+    RESPONSIVE OVERRIDES — custom breakpoint fixes on top of the theme's own CSS.
+    Two ranges handled separately:
+    - Tablet (768px–991px): handled via JS further down this file, which
+    just adds the theme's OWN `menu-toggle` class to #main-wrapper
+    automatically (the same class the desktop hamburger already adds
+    manually). Since data-sidebar-style stays "full" the whole time,
+    this activates the theme's own already-correct CSS for that
+    combination — icon-only rail width, plus the existing
+    `.metismenu > li:hover > ul` flyout rules — with zero new CSS of
+    our own needed. The hamburger itself is hidden at this width (CSS
+    below) since there's nothing left to manually toggle.
+    - Phone (<=767px): sidebar fully hidden off-canvas, hamburger slides it in/out via the `mobile-sidebar-open` class
+        we control ourselves (see the hamburger script near the bottom of this file).
+        ═══════════════════════════════════════════════════════════════════════════ --}} <style>
+        /* Tablet: hide the hamburger — menu-toggle is applied automatically
+        via JS, so there's nothing for the user to manually click here. */
+        @media (min-width: 768px) and (max-width: 991px) {
+        .nav-control {
+        display: none !important;
+        }
+        }
+
+        /* Phone: fully hidden, hamburger-controlled */
+        @media (max-width: 767px) {
+        .deznav {
+        left: -260px !important;
+        transition: left 0.3s ease;
+        z-index: 9999;
+        }
+        #main-wrapper.mobile-sidebar-open .deznav {
+        left: 0 !important;
+        }
+        .content-body {
+        margin-left: 0 !important;
+        }
+        }
+
+        /* Notification dropdown: matches the theme's own widget-timeline
+        pattern exactly (see the vanilla "height370" utility + dz-scroll
+        class) — just a fixed height with an internal scrollbar, no
+        custom width, z-index, or positioning. Every earlier attempt to
+        add more than this was solving problems that came from adding
+        too much custom CSS in the first place, not from anything
+        actually wrong with a plain Bootstrap dropdown. */
         .notif-dropdown-panel {
-            width: 380px;
-            max-width: calc(100vw - 2rem);
-            max-height: 400px;
-            overflow-y: auto;
+        max-height: 460px;
+        overflow-y: auto;
         }
-
+        @media (max-width: 991px) {
+        .notif-dropdown-panel {
+        max-height: 320px;
+        }
+        }
         @media (max-width: 480px) {
-            .notif-dropdown-panel {
-                width: calc(100vw - 2rem);
-                left: 1rem !important;
-                right: 1rem !important;
-            }
+        .notif-dropdown-panel {
+        max-height: 280px;
+        }
+        }
+        .notif-dropdown-menu {
+        width: 340px;
+        }
+        .notif-dropdown-panel > div {
+        transition: background-color 0.15s ease;
+        border-radius: 0.375rem;
+        }
+        .notif-dropdown-panel > div:hover {
+        background-color: rgba(0, 0, 0, 0.035);
         }
 
-        .notif-dropdown-panel .flex-grow-1 {
-            min-width: 0;
-            overflow: hidden;
+        /* Logo: full lockup on desktop, icon-only crop on phone */
+        .brand-logo-full {
+        height: 32px;
+        width: auto;
+        display: inline-block;
         }
-
-        .notif-dropdown-panel .flex-grow-1 p,
-        .notif-dropdown-panel .flex-grow-1 div {
-            overflow-wrap: break-word;
-            word-break: break-word;
+        .brand-logo-icon-only {
+        height: 32px;
+        width: auto;
+        display: none;
         }
-    </style>
-    @livewireStyles
+        @media (max-width: 767px) {
+        .brand-logo-full {
+        display: none !important;
+        }
+        .brand-logo-icon-only {
+        display: inline-block !important;
+        }
+        }
+        /* Also switch to icon-only whenever the sidebar is collapsed via
+        menu-toggle — this covers desktop (manual hamburger click) and
+        tablet (auto-applied menu-toggle), both of which narrow the
+        nav-header area and would otherwise clip the full logo. */
+        #main-wrapper.menu-toggle .brand-logo-full {
+        display: none !important;
+        }
+        #main-wrapper.menu-toggle .brand-logo-icon-only {
+        display: inline-block !important;
+        }
+        </style>
 
-    <!-- Vendor Scripts (deferred) -->
-    <script src="{{ asset('assets/users/vendor/global/global.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/chart.js/Chart.bundle.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/apexchart/apexchart.js') }}" defer></script>
-    <script src="{{ asset('assets/users/js/dashboard/dashboard-1.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/draggable/draggable.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/tagify/dist/tagify.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/datatables/js/jquery.dataTables.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/datatables/js/dataTables.buttons.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/datatables/js/buttons.html5.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/datatables/js/jszip.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/js/plugins-init/datatables.init.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/moment.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js') }}"
-        defer></script>
-    <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.min.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.world.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.usa.js') }}" defer></script>
-    <script src="{{ asset('assets/users/js/custom.js') }}?v={{ filemtime(public_path('assets/users/js/custom.js')) }}"
-        defer></script>
-    <script src="{{ asset('assets/users/js/deznav-init.js') }}" defer></script>
-    <script src="{{ asset('assets/users/js/demo.js') }}" defer></script>
-    <script src="{{ asset('assets/users/js/styleSwitcher.js') }}" defer></script>
-    <script src="{{ asset('assets/users/vendor/ckeditor/ckeditor.js') }}" defer></script>
-    <script src="{{ asset('assets/users/js/dashboard/cms.js') }}" defer></script>
+        @livewireStyles
+
+        <!-- Vendor Scripts (deferred) -->
+        <script src="{{ asset('assets/users/vendor/global/global.min.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/chart.js/Chart.bundle.min.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"
+            defer></script>
+        <script src="{{ asset('assets/users/vendor/apexchart/apexchart.js') }}" defer></script>
+        <script src="{{ asset('assets/users/js/dashboard/dashboard-1.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/draggable/draggable.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/tagify/dist/tagify.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/datatables/js/jquery.dataTables.min.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/datatables/js/dataTables.buttons.min.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/datatables/js/buttons.html5.min.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/datatables/js/jszip.min.js') }}" defer></script>
+        <script src="{{ asset('assets/users/js/plugins-init/datatables.init.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/moment.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js') }}"
+            defer></script>
+        <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.min.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.world.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.usa.js') }}" defer></script>
+        <script
+            src="{{ asset('assets/users/js/custom.js') }}?v={{ filemtime(public_path('assets/users/js/custom.js')) }}"
+            defer></script>
+        <script src="{{ asset('assets/users/js/deznav-init.js') }}" defer></script>
+        <script src="{{ asset('assets/users/js/demo.js') }}" defer></script>
+        <script src="{{ asset('assets/users/js/styleSwitcher.js') }}" defer></script>
+        <script src="{{ asset('assets/users/vendor/ckeditor/ckeditor.js') }}" defer></script>
+        <script src="{{ asset('assets/users/js/dashboard/cms.js') }}" defer></script>
 </head>
 
 <body data-typography="poppins" data-theme-version="light" data-layout="vertical" data-nav-headerbg="color_4"
@@ -102,9 +179,20 @@
     data-sidebar-style="full" data-sidebar-position="fixed" data-header-position="fixed" data-container="full">
 
     <div id="main-wrapper">
+        <script>
+            // Synchronous, non-deferred: runs immediately as the parser
+            // reaches this point, before the navbar/sidebar markup below is
+            // painted. This prevents the "full sidebar flashes then snaps
+            // to collapsed" FOUC that happens if we wait for
+            // DOMContentLoaded to add the menu-toggle class instead.
+            (function () {
+                var w = window.innerWidth;
+                if (w >= 768 && w <= 991) {
+                    document.getElementById('main-wrapper')?.classList.add('menu-toggle');
+                }
+            })();
+        </script>
         @auth
-
-
             @livewire('admin.partials.navbar')
             @livewire('admin.partials.sidebar')
         @endauth
@@ -363,83 +451,115 @@
         });
     </script>
 
-    <script>
-        (function () {
-            function bindHamburger() {
-                jQuery(document).off('click.hamburgerFix').on('click.hamburgerFix', '.nav-control', function () {
-                    jQuery('#main-wrapper').toggleClass('menu-toggle');
-                    jQuery('.hamburger').toggleClass('is-active');
-                });
-            }
+    {{--
+    ═══════════════════════════════════════════════════════════════════════════
+    HAMBURGER + SIDEBAR TOGGLE — single source of truth.
+    - Tablet (768–991px): hamburger is hidden entirely via CSS above, so this
+    never fires in that range anyway; sidebar just stays as the icon rail.
+    - Phone (<=767px): toggles our own `mobile-sidebar-open` class, which the CSS above uses to slide `.deznav` on/off
+        screen. - Desktop (>991px): falls back to the theme's original `menu-toggle`
+        class, completely untouched from vanilla behavior.
+        (Note: this replaces the old unconditional hamburger-binding script that
+        used to sit here — do not re-add a second copy of it.)
+        ═══════════════════════════════════════════════════════════════════════════ --}}
+        <script>
+            (function () {
+                function isMobile() {
+                    return window.innerWidth <= 767;
+                }
 
-            document.addEventListener('DOMContentLoaded', bindHamburger);
-            document.addEventListener('livewire:navigated', bindHamburger);
-
-            if (document.readyState !== 'loading') {
-                bindHamburger();
-            }
-        })();
-    </script>
-    <script>
-        (function () {
-            function bindFullscreen() {
-                jQuery(document).off('click.dzFullscreenFix').on('click.dzFullscreenFix', '.dz-fullscreen', function (e) {
-                    e.preventDefault();
-
-                    var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
-                        document.mozFullScreenElement || document.msFullscreenElement;
-
-                    if (isFullscreen) {
-                        if (document.exitFullscreen) {
-                            document.exitFullscreen();
-                        } else if (document.msExitFullscreen) {
-                            document.msExitFullscreen();
-                        } else if (document.mozCancelFullScreen) {
-                            document.mozCancelFullScreen();
-                        } else if (document.webkitExitFullscreen) {
-                            document.webkitExitFullscreen();
+                function bindHamburger() {
+                    jQuery(document).off('click.hamburgerFix').on('click.hamburgerFix', '.nav-control', function () {
+                        if (isMobile()) {
+                            jQuery('#main-wrapper').toggleClass('mobile-sidebar-open');
+                            jQuery('.hamburger').toggleClass('is-active');
+                        } else {
+                            jQuery('#main-wrapper').toggleClass('menu-toggle');
+                            jQuery('.hamburger').toggleClass('is-active');
                         }
-                    } else {
-                        var el = document.documentElement;
-                        if (el.requestFullscreen) {
-                            el.requestFullscreen();
-                        } else if (el.webkitRequestFullscreen) {
-                            el.webkitRequestFullscreen();
-                        } else if (el.mozRequestFullScreen) {
-                            el.mozRequestFullScreen();
-                        } else if (el.msRequestFullscreen) {
-                            el.msRequestFullscreen();
-                        }
+                    });
+                }
+
+                function resetOnNavigate() {
+                    if (isMobile()) {
+                        document.getElementById('main-wrapper')?.classList.remove('mobile-sidebar-open');
+                        document.querySelector('.hamburger')?.classList.remove('is-active');
                     }
+                }
 
-                    jQuery('.dz-fullscreen').toggleClass('active');
+                document.addEventListener('DOMContentLoaded', bindHamburger);
+                document.addEventListener('livewire:navigated', function () {
+                    bindHamburger();
+                    resetOnNavigate();
                 });
-            }
 
-            document.addEventListener('DOMContentLoaded', bindFullscreen);
-            document.addEventListener('livewire:navigated', bindFullscreen);
+                if (document.readyState !== 'loading') {
+                    bindHamburger();
+                }
+            })();
+        </script>
 
-            if (document.readyState !== 'loading') {
-                bindFullscreen();
-            }
-        })();
-    </script>
-    <script>
-        window.GlobalToast = window.GlobalToast || (function () {
-            let toastEl = null;
-            let hideTimeout = null;
+        <script>
+            (function () {
+                function bindFullscreen() {
+                    jQuery(document).off('click.dzFullscreenFix').on('click.dzFullscreenFix', '.dz-fullscreen', function (e) {
+                        e.preventDefault();
 
-            function ensureToastEl() {
-                if (toastEl && document.body.contains(toastEl)) return toastEl;
+                        var isFullscreen = document.fullscreenElement || document.webkitFullscreenElement ||
+                            document.mozFullScreenElement || document.msFullscreenElement;
 
-                toastEl = document.createElement('div');
-                toastEl.id = 'global-toast';
-                toastEl.style.cssText = [
-                    'position:fixed', 'top:16px', 'right:16px', 'z-index:99999',
-                    'max-width:420px', 'width:calc(100% - 32px)',
-                    'display:none', 'pointer-events:none'
-                ].join(';');
-                toastEl.innerHTML = `
+                        if (isFullscreen) {
+                            if (document.exitFullscreen) {
+                                document.exitFullscreen();
+                            } else if (document.msExitFullscreen) {
+                                document.msExitFullscreen();
+                            } else if (document.mozCancelFullScreen) {
+                                document.mozCancelFullScreen();
+                            } else if (document.webkitExitFullscreen) {
+                                document.webkitExitFullscreen();
+                            }
+                        } else {
+                            var el = document.documentElement;
+                            if (el.requestFullscreen) {
+                                el.requestFullscreen();
+                            } else if (el.webkitRequestFullscreen) {
+                                el.webkitRequestFullscreen();
+                            } else if (el.mozRequestFullScreen) {
+                                el.mozRequestFullScreen();
+                            } else if (el.msRequestFullscreen) {
+                                el.msRequestFullscreen();
+                            }
+                        }
+
+                        jQuery('.dz-fullscreen').toggleClass('active');
+                    });
+                }
+
+                document.addEventListener('DOMContentLoaded', bindFullscreen);
+                document.addEventListener('livewire:navigated', bindFullscreen);
+
+                if (document.readyState !== 'loading') {
+                    bindFullscreen();
+                }
+            })();
+        </script>
+
+        <script>
+            window.GlobalToast = window.GlobalToast || (function () {
+                let toastEl = null;
+                let hideTimeout = null;
+
+                function ensureToastEl() {
+                    if (toastEl && document.body.contains(toastEl)) return toastEl;
+
+                    toastEl = document.createElement('div');
+                    toastEl.id = 'global-toast';
+                    toastEl.style.cssText = [
+                        'position:fixed', 'top:16px', 'right:16px', 'z-index:99999',
+                        'max-width:420px', 'width:calc(100% - 32px)',
+                        'display:none', 'pointer-events:none'
+                    ].join(';');
+                    toastEl.innerHTML = `
                 <div id="global-toast-inner" style="pointer-events:auto; display:flex; align-items:center; padding:1rem; border-radius:1rem; box-shadow:0 10px 30px rgba(0,0,0,.2); color:#fff; gap:.75rem; backdrop-filter:blur(8px);">
                     <div id="global-toast-icon" style="flex-shrink:0; font-size:1.5rem;"></div>
                     <div style="flex-grow:1;">
@@ -449,127 +569,146 @@
                     <button id="global-toast-close" style="background:none; border:0; color:#fff; opacity:.75; cursor:pointer; font-size:1rem;">✕</button>
                 </div>
             `;
-                document.body.appendChild(toastEl);
+                    document.body.appendChild(toastEl);
 
-                toastEl.querySelector('#global-toast-close').addEventListener('click', hide);
+                    toastEl.querySelector('#global-toast-close').addEventListener('click', hide);
 
-                return toastEl;
-            }
-
-            function show(detail) {
-                const el = ensureToastEl();
-                const type = detail.type || 'success';
-                const title = detail.title || (type === 'success' ? 'Success!' : 'Error!');
-                const message = detail.message || '';
-
-                const inner = el.querySelector('#global-toast-inner');
-                inner.style.background = type === 'success'
-                    ? 'linear-gradient(135deg, #10b981, #059669)'
-                    : 'linear-gradient(135deg, #ef4444, #dc2626)';
-
-                el.querySelector('#global-toast-icon').innerHTML =
-                    type === 'success' ? '✓' : '⚠';
-                el.querySelector('#global-toast-title').textContent = title;
-                el.querySelector('#global-toast-message').innerHTML = message;
-
-                el.style.display = 'block';
-
-                clearTimeout(hideTimeout);
-                hideTimeout = setTimeout(hide, 4000);
-            }
-
-            function hide() {
-                if (toastEl) toastEl.style.display = 'none';
-                clearTimeout(hideTimeout);
-            }
-
-            function bindNotifyListener() {
-                if (typeof window.Livewire === 'undefined') {
-                    setTimeout(bindNotifyListener, 300);
-                    return;
+                    return toastEl;
                 }
-                // Livewire.on is safe to call once; it does not duplicate
-                // across wire:navigate since this whole IIFE runs only once
-                // per real page load, not per Livewire component mount.
-                window.Livewire.on('notify', (detail) => {
-                    // Livewire v3 sometimes wraps single-array payloads
-                    const payload = Array.isArray(detail) ? detail[0] : detail;
-                    show(payload || {});
-                });
-            }
 
-            return { show, hide, bindNotifyListener };
-        })();
+                function show(detail) {
+                    const el = ensureToastEl();
+                    const type = detail.type || 'success';
+                    const title = detail.title || (type === 'success' ? 'Success!' : 'Error!');
+                    const message = detail.message || '';
 
-        document.addEventListener('livewire:navigated', function () {
-            // Belt-and-braces: hide any stale toast on navigation.
-            window.GlobalToast.hide();
-        });
+                    const inner = el.querySelector('#global-toast-inner');
+                    inner.style.background = type === 'success'
+                        ? 'linear-gradient(135deg, #10b981, #059669)'
+                        : 'linear-gradient(135deg, #ef4444, #dc2626)';
 
-        document.addEventListener('DOMContentLoaded', function () {
-            window.GlobalToast.bindNotifyListener();
-        });
-    </script>
+                    el.querySelector('#global-toast-icon').innerHTML =
+                        type === 'success' ? '✓' : '⚠';
+                    el.querySelector('#global-toast-title').textContent = title;
+                    el.querySelector('#global-toast-message').innerHTML = message;
 
+                    el.style.display = 'block';
 
-    <script>
-        function unstickPage() {
-            // Remove any stray Bootstrap backdrops left behind.
-            document.querySelectorAll('.modal-backdrop, .dropdown-backdrop, .offcanvas-backdrop')
-                .forEach(el => el.remove());
-
-            // Restore body state Bootstrap may have left locked.
-            document.body.classList.remove('modal-open');
-            document.body.style.removeProperty('overflow');
-            document.body.style.removeProperty('padding-right');
-
-            // Close any dropdown left in an inconsistent "show" state
-            // without its trigger (which Livewire may have replaced).
-            document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
-                const trigger = menu.previousElementSibling;
-                if (!trigger || trigger.getAttribute('aria-expanded') !== 'true') {
-                    menu.classList.remove('show');
+                    clearTimeout(hideTimeout);
+                    hideTimeout = setTimeout(hide, 4000);
                 }
+
+                function hide() {
+                    if (toastEl) toastEl.style.display = 'none';
+                    clearTimeout(hideTimeout);
+                }
+
+                function bindNotifyListener() {
+                    if (typeof window.Livewire === 'undefined') {
+                        setTimeout(bindNotifyListener, 300);
+                        return;
+                    }
+                    // Livewire.on is safe to call once; it does not duplicate
+                    // across wire:navigate since this whole IIFE runs only once
+                    // per real page load, not per Livewire component mount.
+                    window.Livewire.on('notify', (detail) => {
+                        // Livewire v3 sometimes wraps single-array payloads
+                        const payload = Array.isArray(detail) ? detail[0] : detail;
+                        show(payload || {});
+                    });
+                }
+
+                return { show, hide, bindNotifyListener };
+            })();
+
+            document.addEventListener('livewire:navigated', function () {
+                // Belt-and-braces: hide any stale toast on navigation.
+                window.GlobalToast.hide();
             });
 
-            // Last-resort safety net: never leave the wrapper itself
-            // non-interactive.
-            const wrapper = document.getElementById('main-wrapper');
-            if (wrapper) wrapper.style.pointerEvents = '';
-        }
+            document.addEventListener('DOMContentLoaded', function () {
+                window.GlobalToast.bindNotifyListener();
+            });
+        </script>
 
-        document.addEventListener('livewire:navigated', unstickPage);
-        // Also run right after any Livewire commit finishes, since the
-        // freeze happens after an in-page action (e.g. delete/save), not
-        // only after navigation.
-        document.addEventListener('livewire:init', () => {
-            window.Livewire.hook('commit', ({ succeed }) => {
-                succeed(() => {
-                    // Small delay so this runs after Livewire's own DOM
-                    // morph/cleanup for this commit has finished.
-                    setTimeout(unstickPage, 50);
+        {{-- ═══════════════════════════════════════════════════════════════════════════
+        UNSTICK — clears any leftover Bootstrap dropdown/modal backdrop state and
+        forces pointer-events back on after every wire:navigate. This targets the
+        "page becomes unresponsive after an action, only a refresh fixes it" bug:
+        Bootstrap's dropdown/modal JS attaches internal click-outside listeners
+        and body classes (e.g. modal-open, overflow:hidden) directly to DOM nodes
+        it opened; if Livewire's morph step then replaces/removes those nodes
+        during a re-render (e.g. right after a wire:click that also dispatches
+        `notify`), Bootstrap's own cleanup never runs, and the leftover state
+        (a transparent backdrop, or body overflow/pointer-events left blocked)
+        silently eats every click until a hard refresh resets the DOM from
+        scratch.
+        ═══════════════════════════════════════════════════════════════════════════ --}}
+        <script>
+            function unstickPage() {
+                // Remove any stray Bootstrap backdrops left behind.
+                document.querySelectorAll('.modal-backdrop, .dropdown-backdrop, .offcanvas-backdrop')
+                    .forEach(el => el.remove());
+
+                // Restore body state Bootstrap may have left locked.
+                document.body.classList.remove('modal-open');
+                document.body.style.removeProperty('overflow');
+                document.body.style.removeProperty('padding-right');
+
+                // Close any dropdown left in an inconsistent "show" state
+                // without its trigger (which Livewire may have replaced).
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    const trigger = menu.previousElementSibling;
+                    if (!trigger || trigger.getAttribute('aria-expanded') !== 'true') {
+                        menu.classList.remove('show');
+                    }
+                });
+
+                // Last-resort safety net: never leave the wrapper itself
+                // non-interactive.
+                const wrapper = document.getElementById('main-wrapper');
+                if (wrapper) wrapper.style.pointerEvents = '';
+            }
+
+            document.addEventListener('livewire:navigated', unstickPage);
+            // Also run right after any Livewire commit finishes, since the
+            // freeze happens after an in-page action (e.g. delete/save), not
+            // only after navigation.
+            document.addEventListener('livewire:init', () => {
+                window.Livewire.hook('commit', ({ succeed }) => {
+                    succeed(() => {
+                        // Small delay so this runs after Livewire's own DOM
+                        // morph/cleanup for this commit has finished.
+                        setTimeout(unstickPage, 50);
+                    });
                 });
             });
-        });
-    </script>
-    <script>
-        (function () {
-            function collapseMobileSidebarByDefault() {
-                if (window.innerWidth <= 991) {
-                    document.getElementById('main-wrapper')?.classList.add('menu-toggle');
-                    document.querySelector('.hamburger')?.classList.add('is-active');
-                }
-            }
+        </script>
 
-            document.addEventListener('DOMContentLoaded', collapseMobileSidebarByDefault);
-            document.addEventListener('livewire:navigated', collapseMobileSidebarByDefault);
+        {{--
+        ═══════════════════════════════════════════════════════════════════════════
+        TABLET SIDEBAR MODE — handles re-applying menu-toggle after Livewire
+        navigation and window resize. The very first page load is already
+        handled by a synchronous inline script right inside #main-wrapper
+        (see near the top of
 
-            if (document.readyState !== 'loading') {
-                collapseMobileSidebarByDefault();
-            }
-        })();
-    </script>
+        <body>), which prevents a flash of the full
+            sidebar before this collapsed state kicks in.
+            ═══════════════════════════════════════════════════════════════════════════ --}}
+            <script>
+                (function () {
+                    function applyTabletMenuToggle() {
+                        const width = window.innerWidth;
+                        if (width >= 768 && width <= 991) {
+                            document.getElementById('main-wrapper')?.classList.add('menu-toggle');
+                        }
+                    }
 
-</body>
+                    document.addEventListener('livewire:navigated', applyTabletMenuToggle);
+                    window.addEventListener('resize', applyTabletMenuToggle);
+                })();
+            </script>
+
+        </body>
 
 </html>

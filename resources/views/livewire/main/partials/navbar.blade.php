@@ -106,8 +106,8 @@
                             </div>
                         </div>
 
-                        <!-- Search icon -->
-                        <div class="search-toggle-open header-search my-auto">
+                        <div class="search-toggle-open header-search my-auto"
+                            x-on:click="$dispatch('open-main-search')">
                             <div class="search-icon">
                                 <i class="icon-search"></i>
                             </div>

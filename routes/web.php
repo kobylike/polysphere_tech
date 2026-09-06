@@ -14,6 +14,7 @@ use App\Livewire\Admin\Messenger\ChatMessengerMain;
 use App\Livewire\Admin\Notifications\SendNotification;
 use App\Livewire\Admin\Projects\ProjectFormComponent;
 use App\Livewire\Admin\Projects\ProjectManagement;
+use App\Livewire\Admin\Search\GlobalSearch;
 use App\Livewire\Admin\Services\ServiceFormComponent;
 use App\Livewire\Admin\Services\ServiceManagement;
 use App\Livewire\Admin\Users\Account\AccountSettings;
@@ -44,6 +45,7 @@ use App\Livewire\Main\FaqComponent;
 use App\Livewire\Main\IndexComponent;
 use App\Livewire\Main\Projects\ProjectComponent;
 use App\Livewire\Main\Projects\ProjectDetails;
+use App\Livewire\Main\Search\MainGlobalSearch;
 use App\Livewire\Main\Services\ServiceComponent;
 use App\Livewire\Main\Services\ServiceDetails;
 use App\Livewire\Main\Team\TeamComponent;
@@ -130,7 +132,7 @@ Route::get('/projects', ProjectComponent::class)->name('projects');
 Route::get('/projects/{slug}', ProjectDetails::class)->name('project.details');
 Route::get('/services', ServiceComponent::class)->name('services');
 Route::get('/services/{slug}', ServiceDetails::class)->name('service.details');
-
+Route::get('/search', MainGlobalSearch::class)->name('main.search');
 
 Route::get('/force-password-change', ForcePasswordChange::class)
     ->middleware('auth')
@@ -240,5 +242,10 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
         Route::get('/admin/logs', LogManagement::class)
             ->middleware('can:View Activity Logs')
             ->name('admin.logs');
+
+
+        Route::get('/admin/search', GlobalSearch::class)
+
+            ->name('search');
     });
 });

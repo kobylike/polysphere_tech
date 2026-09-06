@@ -3,6 +3,7 @@
 namespace App\Livewire\Auth;
 
 use App\Helpers\ActivityLogger;
+use App\Helpers\NotificationHelper; // <-- Added
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password as PasswordRule;
@@ -86,6 +87,15 @@ class ForcePasswordChange extends Component
             'email'   => $user->email,
             'ip'      => request()->ip(),
         ], 'auth');
+
+        // 🔥 Send notification
+        NotificationHelper::sendToUser($user, [
+            'title' => 'Password Changed',
+            'body' => 'Your password has been updated successfully. If you did not perform this action, please contact support immediately.',
+            'type' => 'success',
+            'icon' => 'fa-key',
+            'link' => route('dashboard'),
+        ]);
 
         session()->flash('status', 'Your password has been updated. Welcome aboard!');
 
