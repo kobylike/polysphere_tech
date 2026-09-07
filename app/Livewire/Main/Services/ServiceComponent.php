@@ -10,6 +10,8 @@ class ServiceComponent extends Component
 {
     use WithPagination;
 
+    protected $paginationTheme = 'bootstrap';
+
     public $perPage = 6;
 
     public function getServices()

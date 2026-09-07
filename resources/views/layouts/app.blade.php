@@ -119,6 +119,58 @@
         .comment-item.is-reply {
             margin-left: 90px;
         }
+
+        .bd-basic__pagination .pagination {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0;
+            list-style: none;
+            padding: 0;
+        }
+
+        .bd-basic__pagination .page-item .page-link {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            margin: 0;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            color: #334155;
+            font-weight: 600;
+            font-size: 0.95rem;
+            background: #fff;
+            line-height: 1;
+            transition: all 0.2s ease;
+        }
+
+        .bd-basic__pagination .page-item .page-link:hover {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+        }
+
+        .bd-basic__pagination .page-item.active .page-link {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: #fff;
+            box-shadow: none;
+        }
+
+        .bd-basic__pagination .page-item.disabled .page-link {
+            opacity: 0.4;
+            cursor: not-allowed;
+            background: #f8fafc;
+            border-color: #e2e8f0;
+            color: #94a3b8;
+        }
+
+        .bd-basic__pagination .page-item .page-link:focus {
+            box-shadow: none;
+        }
     </style>
     @livewireStyles
 </head>

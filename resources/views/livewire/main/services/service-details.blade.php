@@ -1,6 +1,6 @@
 <div>
     <!-- Breadcrumb area start -->
-    <div class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
+    <div wire:ignore class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
         <div class="breadcrumb__thumb" data-background="{{ asset('assets/main/imgs/resources/page-title-bg-1.png') }}">
         </div>
         <div class="breadcrumb__thumb_2"
@@ -64,22 +64,27 @@
                         @endif
 
                         <!-- Feature List (static placeholder – you can make it dynamic later) -->
-                        <h4 class="mt-35">Choose Your Services</h4>
-                        <p class="mt-25 mb-35">lacus sed pretium pretium justo. Integer vitae venenatis lorem. Maecenas
-                            lacinia turpis the in nunc quam hendrerit scelerisque at finibus enim sagittis.</p>
+                        <h4 class="mt-35">Technology Solutions Built for Your Business</h4>
+                        <p class="mt-25 mb-35"> At PolySphere Tech, we combine software engineering, cloud technology,
+                            artificial intelligence, cybersecurity, and digital transformation to build solutions that
+                            solve real business challenges. From understanding your requirements to designing,
+                            developing, deploying, and supporting your technology, we work with you every step of the
+                            way to create secure, scalable, and future-ready digital solutions. </p>
                         <div class="row">
                             <div class="col-lg-7">
                                 <figure class="w-img">
-                                    <img src="{{ asset('assets/main/imgs/service/service-details-4.jpg') }}" alt="">
+                                    <img src="{{ asset('assets/main/imgs/service/service.jpg') }}"
+                                        alt="Polysphere Tech">
                                 </figure>
                             </div>
                             <div class="col-lg-5">
                                 <ul class="service-details-page-list pt-20 pb-10">
-                                    <li>Technology Consultancy</li>
-                                    <li>Maintenance And Support</li>
-                                    <li>We Provide best services</li>
-                                    <li>Requirements Gathering</li>
-                                    <li>Business Growth</li>
+                                    <li>Custom Software Development</li>
+                                    <li>SaaS & Web Application Development</li>
+                                    <li>AI & Business Automation</li>
+                                    <li>Cloud & Infrastructure Solutions</li>
+                                    <li>Cybersecurity & Application Security</li>
+                                    <li>Digital Transformation & IT Consulting</li>
                                 </ul>
                             </div>
                         </div>
@@ -115,25 +120,7 @@
                             </div>
 
                             <!-- CTA Widget -->
-                            <div class="service-widget-2 mb-30">
-                                <figure class="w-img">
-                                    <img src="{{ asset('assets/main/imgs/service/service-widget-1.jpg') }}"
-                                        alt="Need Help?">
-                                </figure>
-                                <div class="content bg-color-1 text-center">
-                                    <div class="icon-box p-relative">
-                                        <i class="fal fa-phone-volume"></i>
-                                    </div>
-                                    <h5>Need Help? Call Here</h5>
-                                    <a class="pt-25 pb-25 phone" href="tel:+1234567890">+1 (234) 567-8900</a>
-                                    <div class="btn-box">
-                                        <a class="primary-btn-1 btn-hover" href="{{ route('contact') }}">
-                                            GET A QUOTE &nbsp; | <i class="icon-right-arrow"></i>
-                                            <span style="top: 147.172px; left: 108.5px;"></span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                            @livewire('main.partials.help')
 
                             <!-- Company File -->
                             <div class="service-widget-3">

@@ -162,25 +162,7 @@
                             </div>
 
                             <!-- Contact Widget / CTA -->
-                            <div class="service-widget-2 mb-30">
-                                <figure class="w-img">
-                                    <img src="{{ asset('assets/main/imgs/service/service-widget-1.jpg') }}"
-                                        alt="Need Help?">
-                                </figure>
-                                <div class="content bg-color-1 text-center">
-                                    <div class="icon-box p-relative">
-                                        <i class="fal fa-phone-volume"></i>
-                                    </div>
-                                    <h5>Need Help? Call Here</h5>
-                                    <a class="pt-25 pb-25 phone" href="tel:+1234567890">+1 (234) 567-8900</a>
-                                    <div class="btn-box">
-                                        <a class="primary-btn-1 btn-hover" href="{{ route('contact') }}">
-                                            GET A QUOTE &nbsp; | <i class="icon-right-arrow"></i>
-                                            <span style="top: 147.172px; left: 108.5px;"></span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                            @livewire('main.partials.help')
 
                         </aside>
                     </div>
