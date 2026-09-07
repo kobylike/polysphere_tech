@@ -1,5 +1,5 @@
 <li class="nav-item dropdown notification_dropdown">
-    <a class="nav-link bell-link" href="javascript:void(0);" role="button" data-bs-toggle="dropdown">
+    <a class="nav-link bell-link js-dropdown-toggle" href="javascript:void(0);" role="button">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path
                 d="M18 8C18 6.4087 17.3679 4.88258 16.2426 3.75736C15.1174 2.63214 13.5913 2 12 2C10.4087 2 8.88258 2.63214 7.75736 3.75736C6.63214 4.88258 6 6.4087 6 8C6 15 3 17 3 17H21C21 17 18 15 18 8Z"
@@ -13,7 +13,7 @@
         @endif
     </a>
 
-    <div class="dropdown-menu dropdown-menu-end notif-dropdown-menu">
+    <div class="dropdown-menu dropdown-menu-end notif-dropdown-menu js-dropdown-menu" data-dropdown-id="notif">
         <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
             <h6 class="mb-0">Notifications</h6>
             @if($unreadCount > 0)

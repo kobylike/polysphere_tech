@@ -25,19 +25,10 @@
         </div>
     </div>
 
-    {{--
-        No Alpine anywhere in this component anymore. The toast and the
-        submit-button loading state are both driven purely by Livewire's
-        own server state / wire:loading, so there's no separate client-side
-        JS state that can ever drift out of sync with what the server
-        actually knows.
-    --}}
+
     <script>
         document.addEventListener('livewire:navigated', () => {
-            // Fires on every navigation Livewire handles, including a
-            // browser back/forward restore of a cached page snapshot.
-            // Broadcasting this makes sure the component never shows a
-            // stale "success" state left over from a previous visit.
+
             window.Livewire.dispatch('contact-form-reset');
         });
     </script>
@@ -88,7 +79,7 @@
                                 <i class="fat fa-phone-volume"></i>
                             </div>
                             <div class="info">
-                                <span class="ps-contact-card__label">Call Us 24/7</span>233597563427
+                                <span class="ps-contact-card__label">Call Us 24/7</span>
                                 <h4 class="ps-contact-card__value"><a href="tel:+233597563427">+233 (59) 756-3427</a></h4>
                             </div>
                         </div>

@@ -241,12 +241,12 @@
                             </a>
                         </li>
 
-                        {{-- User Profile Dropdown --}}
+                        {{-- User Profile Dropdown — Alpine-store-driven so it
+                        survives wire:navigate instead of snapping shut. --}}
                         @auth
                             <li class="nav-item ps-3">
                                 <div class="dropdown header-profile2">
-                                    <a class="nav-link" href="javascript:void(0);" role="button" data-bs-toggle="dropdown"
-                                        aria-expanded="false">
+                                    <a class="nav-link js-dropdown-toggle" href="javascript:void(0);" role="button">
                                         <div class="header-info2 d-flex align-items-center">
                                             <div class="header-media">
                                                 <img src="{{ $user->avatar_url }}" alt="{{ $user->name }}">
@@ -257,7 +257,8 @@
                                             </div>
                                         </div>
                                     </a>
-                                    <div class="dropdown-menu dropdown-menu-end" wire:ignore>
+                                    <div class="dropdown-menu dropdown-menu-end js-dropdown-menu" wire:ignore
+                                        data-dropdown-id="profile">
                                         <div class="card border-0 mb-0">
                                             <div class="card-header py-2">
                                                 <div class="products">
