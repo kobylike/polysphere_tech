@@ -231,7 +231,8 @@
         @endif
         @yield('content')
     </main>
-
+    <!-- AI Chat Widget -->
+    @livewire('main.chat-widget')
     <!-- Footer Component -->
     @livewire('main.partials.footer')
 

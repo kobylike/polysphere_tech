@@ -1,24 +1,6 @@
-<div x-data="userHandler()" @notify.window="showToast($event.detail)" class="position-relative">
+<div class="position-relative">
 
-    {{-- Toast --}}
-    <div x-show="toastVisible" x-cloak x-transition:enter.duration.300ms.opacity.scale
-        x-transition:leave.duration.200ms.opacity.scale class="position-fixed top-0 end-0 p-3"
-        style="z-index: 9999; max-width: 420px; width: 100%;">
-        <div class="d-flex align-items-center p-3 rounded-4 shadow-lg border-0 text-white gap-3"
-            :class="toastType === 'success' ? 'bg-gradient-success' : 'bg-gradient-danger'"
-            style="backdrop-filter: blur(8px); background: linear-gradient(135deg, #10b981, #059669);">
-            <div class="flex-shrink-0">
-                <i class="fas fa-2x" :class="toastType === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
-            </div>
-            <div class="flex-grow-1">
-                <h6 class="mb-0 fw-bold" style="color: #ffffff;" x-text="toastTitle"></h6>
-                <p class="mb-0 small" style="color: #ffffff; opacity: 0.9;" x-html="toastMessage"></p>
-            </div>
-            <button @click="dismissToast()" class="btn btn-sm btn-link text-white p-0 opacity-75">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
+
 
     {{-- PAGE TITLES --}}
     <div class="page-titles">
@@ -650,7 +632,8 @@
                                                         wire:model="selectedRoles" id="role_{{ $roleOption }}">
                                                     <label class="form-check-label" for="role_{{ $roleOption }}">
                                                         <span class="badge badge-secondary light border-0">
-                                                            <i class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
+                                                            <i
+                                                                class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
                                                             {{ $roleOption }}
                                                         </span>
                                                     </label>
@@ -689,7 +672,8 @@
                                                     wire:model="selectedRoles" id="role_{{ $roleOption }}">
                                                 <label class="form-check-label" for="role_{{ $roleOption }}">
                                                     <span class="badge badge-secondary light border-0">
-                                                        <i class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
+                                                        <i
+                                                            class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
                                                         {{ $roleOption }}
                                                     </span>
                                                 </label>
@@ -1017,7 +1001,8 @@
                                 <option value="">— Default (User) —</option>
                                 @foreach($assignableRoles as $role)
                                     <option value="{{ \Spatie\Permission\Models\Role::where('name', $role)->first()->id }}">
-                                        {{ $role }}</option>
+                                        {{ $role }}
+                                    </option>
                                 @endforeach
                             </select>
                             @error('inviteRoleId')
@@ -1429,50 +1414,3 @@
         transition: all 0.1s ease;
     }
 </style>
-
-{{-- Alpine Handler --}}
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('userHandler', () => ({
-            toastVisible: false,
-            toastType: 'success',
-            toastTitle: '',
-            toastMessage: '',
-            toastTimeout: null,
-
-            init() {
-                window.addEventListener('livewire:navigate', () => {
-                    this.toastVisible = false;
-                    clearTimeout(this.toastTimeout);
-                });
-            },
-
-            showToast(detail) {
-                this.toastType = detail.type || 'success';
-                this.toastTitle = detail.title || (this.toastType === 'success' ? 'Success!' : 'Error!');
-                this.toastMessage = detail.message || '';
-                this.toastVisible = true;
-                clearTimeout(this.toastTimeout);
-                this.toastTimeout = setTimeout(() => {
-                    this.dismissToast();
-                }, 4000);
-            },
-
-            dismissToast() {
-                this.toastVisible = false;
-                clearTimeout(this.toastTimeout);
-            }
-        }));
-    });
-
-    window.addEventListener('pageshow', (event) => {
-        if (event.persisted) {
-            document.querySelectorAll('[x-data]').forEach((el) => {
-                if (el.__x && 'toastVisible' in el.__x.$data) {
-                    el.__x.$data.toastVisible = false;
-                    clearTimeout(el.__x.$data.toastTimeout);
-                }
-            });
-        }
-    });
-</script>

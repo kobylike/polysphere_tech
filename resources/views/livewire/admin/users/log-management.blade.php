@@ -1,30 +1,13 @@
-<div x-data="logHandler()" @notify.window="showToast($event.detail)" class="position-relative">
+<div class="position-relative">
 
-    {{-- Toast --}}
-    <div x-show="toastVisible" x-cloak x-transition:enter.duration.300ms.opacity.scale
-        x-transition:leave.duration.200ms.opacity.scale class="position-fixed top-0 end-0 p-3"
-        style="z-index: 9999; max-width: 420px; width: 100%;">
-        <div class="d-flex align-items-center p-3 rounded-4 shadow-lg border-0 text-white gap-3"
-            :class="toastType === 'success' ? 'bg-gradient-success' : 'bg-gradient-danger'"
-            style="backdrop-filter: blur(8px); background: linear-gradient(135deg, #10b981, #059669);">
-            <div class="flex-shrink-0">
-                <i class="fas fa-2x" :class="toastType === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
-            </div>
-            <div class="flex-grow-1">
-                <h6 class="mb-0 fw-bold" style="color: #ffffff;" x-text="toastTitle"></h6>
-                <p class="mb-0 small" style="color: #ffffff; opacity: 0.9;" x-html="toastMessage"></p>
-            </div>
-            <button @click="dismissToast()" class="btn btn-sm btn-link text-white p-0 opacity-75">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    </div>
 
     {{-- PAGE TITLES --}}
     <div class="page-titles">
         <ol class="breadcrumb">
-            <li><h5 class="bc-title">Activity Logs</h5></li>
-            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
+            <li>
+                <h5 class="bc-title">Activity Logs</h5>
+            </li>
+            <li class="breadcrumb-item"><a wire:navigate.hover href="{{ route('dashboard') }}">Home</a></li>
             <li class="breadcrumb-item active">Audit Trail</li>
         </ol>
     </div>
@@ -84,7 +67,8 @@
                 <div class="row g-2 g-md-3 align-items-end">
                     <div class="col-12 col-md-3">
                         <label class="form-label fw-semibold small">Search</label>
-                        <input type="text" class="form-control" wire:model.live.debounce.300ms="search" placeholder="Description, log name, properties...">
+                        <input type="text" class="form-control" wire:model.live.debounce.300ms="search"
+                            placeholder="Description, log name, properties...">
                     </div>
                     <div class="col-6 col-md-2">
                         <label class="form-label fw-semibold small">Log Name</label>
@@ -170,7 +154,8 @@
                                     <td>
                                         @if($log->causer)
                                             <div class="d-flex align-items-center gap-2">
-                                                <img src="{{ $log->causer->avatar_url }}" alt="" class="rounded-circle" style="width:32px; height:32px; object-fit:cover;">
+                                                <img src="{{ $log->causer->avatar_url }}" alt="" class="rounded-circle"
+                                                    style="width:32px; height:32px; object-fit:cover;">
                                                 <div>
                                                     <div>{{ $log->causer->name }}</div>
                                                     <small class="text-muted">{{ $log->causer->email }}</small>
@@ -180,10 +165,13 @@
                                             <span class="text-muted">System</span>
                                         @endif
                                     </td>
-                                    <td><span class="badge bg-secondary light border-0">{{ $log->log_name ?? 'default' }}</span></td>
+                                    <td><span
+                                            class="badge bg-secondary light border-0">{{ $log->log_name ?? 'default' }}</span>
+                                    </td>
                                     <td>
                                         @if($log->event)
-                                            <span class="badge bg-{{ $log->event === 'created' ? 'success' : ($log->event === 'updated' ? 'warning' : ($log->event === 'deleted' ? 'danger' : 'info')) }} light border-0">
+                                            <span
+                                                class="badge bg-{{ $log->event === 'created' ? 'success' : ($log->event === 'updated' ? 'warning' : ($log->event === 'deleted' ? 'danger' : 'info')) }} light border-0">
                                                 {{ ucfirst($log->event) }}
                                             </span>
                                         @else
@@ -193,7 +181,8 @@
                                     <td>{{ $log->description }}</td>
                                     <td>
                                         @if($log->properties && $log->properties->count())
-                                            <button class="btn btn-sm btn-outline-secondary" wire:click="openPropertyModal({{ $log->id }})">
+                                            <button class="btn btn-sm btn-outline-secondary"
+                                                wire:click="openPropertyModal({{ $log->id }})">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                         @else
@@ -221,7 +210,8 @@
 
     {{-- Property Modal --}}
     @if($showPropertyModal && $selectedLog)
-        <div class="modal fade show d-block" id="propertyModal" tabindex="-1" style="background: rgba(0,0,0,0.5);" wire:ignore.self>
+        <div class="modal fade show d-block" id="propertyModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
+            wire:ignore.self>
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header">
@@ -229,7 +219,8 @@
                         <button type="button" class="btn-close" wire:click="closePropertyModal"></button>
                     </div>
                     <div class="modal-body">
-                        <pre class="bg-light p-3 rounded" style="max-height:400px; overflow-y:auto;">{{ json_encode($selectedLog->properties, JSON_PRETTY_PRINT) }}</pre>
+                        <pre class="bg-light p-3 rounded"
+                            style="max-height:400px; overflow-y:auto;">{{ json_encode($selectedLog->properties, JSON_PRETTY_PRINT) }}</pre>
                     </div>
                     <div class="modal-footer">
                         <button class="btn btn-secondary" wire:click="closePropertyModal">Close</button>
@@ -240,42 +231,18 @@
     @endif
 </div>
 
-@push('scripts')
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('logHandler', () => ({
-            toastVisible: false,
-            toastType: 'success',
-            toastTitle: '',
-            toastMessage: '',
-            toastTimeout: null,
-            init() {
-                window.addEventListener('livewire:navigate', () => {
-                    this.toastVisible = false;
-                    clearTimeout(this.toastTimeout);
-                });
-            },
-            showToast(detail) {
-                this.toastType = detail.type || 'success';
-                this.toastTitle = detail.title || (this.toastType === 'success' ? 'Success!' : 'Error!');
-                this.toastMessage = detail.message || '';
-                this.toastVisible = true;
-                clearTimeout(this.toastTimeout);
-                this.toastTimeout = setTimeout(() => {
-                    this.dismissToast();
-                }, 4000);
-            },
-            dismissToast() {
-                this.toastVisible = false;
-                clearTimeout(this.toastTimeout);
-            }
-        }));
-    });
-</script>
-@endpush
+
 
 <style>
-    .bg-gradient-success { background: linear-gradient(135deg, #10b981, #059669); }
-    .bg-gradient-danger { background: linear-gradient(135deg, #ef4444, #dc2626); }
-    [x-cloak] { display: none !important; }
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .bg-gradient-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    [x-cloak] {
+        display: none !important;
+    }
 </style>
