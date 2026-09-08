@@ -11,6 +11,7 @@ use App\Livewire\Admin\Dashboard\UserDashboardComponent;
 use App\Livewire\Admin\Hrm\HrDashboard;
 use App\Livewire\Admin\Messenger\ChatMessengerComponent;
 use App\Livewire\Admin\Messenger\ChatMessengerMain;
+use App\Livewire\Admin\Newsletter\SubscriberManagement;
 use App\Livewire\Admin\Notifications\SendNotification;
 use App\Livewire\Admin\Projects\ProjectFormComponent;
 use App\Livewire\Admin\Projects\ProjectManagement;
@@ -51,6 +52,7 @@ use App\Livewire\Main\Services\ServiceDetails;
 use App\Livewire\Main\Team\TeamComponent;
 use App\Livewire\Main\Team\TeamDetails;
 use App\Models\Comment;
+use App\Models\Subscriber;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -117,9 +119,37 @@ Route::get('/reset-password/{token}', PasswordReset::class)
     ->name('password.reset');
 
 
+
+// ─── Newsletter Verification ────────────────────────────────────────────────
+Route::get('/newsletter/verify/{token}', function ($token) {
+    $subscriber = Subscriber::where('verification_token', $token)
+        ->where('status', 'pending')
+        ->firstOrFail();
+
+    $subscriber->markAsActive();
+
+    return redirect()->route('index')
+        ->with('success', '🎉 Your subscription has been confirmed! You\'ll now receive our newsletter.');
+})->name('newsletter.verify');
+
+// ─── Unsubscribe ─────────────────────────────────────────────────────────────
+Route::get('/newsletter/unsubscribe/{email}/{token}', function ($email, $token) {
+    $subscriber = Subscriber::where('email', $email)
+        ->where('verification_token', $token)
+        ->where('status', 'active')
+        ->firstOrFail();
+
+    $subscriber->markAsUnsubscribed();
+
+    return redirect()->route('index')
+        ->with('info', '✅ You have been unsubscribed from our newsletter.');
+})->name('newsletter.unsubscribe');
+
 Route::get('/team', TeamComponent::class)->name('team');
 Route::get('/team/{slug}', TeamDetails::class)->name('team.details');
 Route::get('/privacy', PrivacyComponent::class)->name('privacy');
+Route::get('/terms', TermsComponent::class)->name('terms');
+
 
 // Main Public
 Route::get('/', IndexComponent::class)->name('index');
@@ -133,6 +163,7 @@ Route::get('/projects/{slug}', ProjectDetails::class)->name('project.details');
 Route::get('/services', ServiceComponent::class)->name('services');
 Route::get('/services/{slug}', ServiceDetails::class)->name('service.details');
 Route::get('/search', MainGlobalSearch::class)->name('main.search');
+
 
 Route::get('/force-password-change', ForcePasswordChange::class)
     ->middleware('auth')
@@ -247,5 +278,10 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
         Route::get('/admin/search', GlobalSearch::class)
 
             ->name('search');
+
+
+        Route::get('/admin/newsletter/subscribers', SubscriberManagement::class)
+            ->middleware('can:View Newsletter Subscribers')
+            ->name('admin.newsletter.subscribers');
     });
 });

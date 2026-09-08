@@ -159,7 +159,24 @@ Sidebar start
                     </a>
                 </li>
             @endcan
-
+            {{-- Newsletter Subscribers --}}
+            @can('View Newsletter Subscribers', $authUser)
+                <li>
+                    <a href="{{ route('admin.newsletter.subscribers') }}" wire:navigate.hover
+                        class="{{ request()->routeIs('admin.newsletter.subscribers') ? 'mm-active' : '' }}">
+                        <div class="menu-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"
+                                    stroke="#888888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M22 6L12 13L2 6" stroke="#888888" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="nav-text">Subscribers</span>
+                    </a>
+                </li>
+            @endcan
             {{-- Activity Logs --}}
             @can('View Activity Logs', $authUser)
                 <li>

@@ -4,15 +4,22 @@
     <div class="container-fluid bg-color-1">
         <div class="header-top">
             <div class="header-top-contact-info">
-                <span class="email p-relative"><a
-                        href="mailto:info@polyspheretech.com">contact@polyspheretech.com</a></span>
+                <span class="email p-relative">
+                    <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>
+                </span>
                 <span class="time p-relative">Hours: Mon - Fri: 9.00 AM - 6.00 PM</span>
             </div>
             <div class="header-top-socials">
-                <span><a href="#"><i class="fab fa-facebook-f"></i></a></span>
-                <span><a href="#"><i class="fab fa-twitter"></i></a></span>
-                <span><a href="#"><i class="fab fa-linkedin-in"></i></a></span>
-                <span><a href="#"><i class="fab fa-youtube"></i></a></span>
+                <span><a href="https://web.facebook.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
+                            class="fab fa-facebook-f"></i></a></span>
+                <span><a href="https://x.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
+                            class="fab fa-twitter"></i></a></span>
+                <span><a href="https://www.linkedin.com/company/polysphere-tech/" target="_blank"
+                        rel="noopener noreferrer"><i class="fab fa-linkedin-in"></i></a></span>
+                <span><a href="https://www.instagram.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
+                            class="fab fa-instagram"></i></a></span>
+                <span><a href="https://www.youtube.com/@polyspheretech" target="_blank" rel="noopener noreferrer"><i
+                            class="fab fa-youtube"></i></a></span>
             </div>
         </div>
     </div>
@@ -36,14 +43,8 @@
                                 <nav id="mobile-menu">
                                     <ul>
                                         <!-- Home -->
-                                        <li class="has-dropdown {{ request()->routeIs('index') ? 'active' : '' }}">
+                                        <li class="{{ request()->routeIs('index') ? 'active' : '' }}">
                                             <a wire:navigate.hover href="{{ route('index') }}">Home</a>
-                                            {{-- <ul class="submenu">
-                                                <li><a href="{{ route('index') }}">Home One</a></li>
-                                                {{-- <li><a href="index-2.html">Home Two</a></li>
-                                                <li><a href="index-3.html">Home Three</a></li>
-                                                <li><a href="dark-home.html">Home Dark</a></li>
-                                            </ul> --}}
                                         </li>
 
                                         <!-- About -->
@@ -54,39 +55,24 @@
                                         <!-- Services -->
                                         <li class="has-dropdown {{ request()->routeIs('services*') ? 'active' : '' }}">
                                             <a wire:navigate.hover href="{{ route('services') }}">Services</a>
-                                            {{-- <ul class="submenu">
-                                                <li><a href="services.html">Services</a></li>
-                                                <li><a href="service-details.html">Service Details</a></li>
-                                            </ul> --}}
                                         </li>
 
-                                        <!-- Pages -->
+                                        <!-- Explore (Projects, Team, FAQ) -->
                                         <li
                                             class="has-dropdown {{ request()->routeIs('projects*') || request()->routeIs('team*') || request()->routeIs('faq') ? 'active' : '' }}">
                                             <a href="#">Explore</a>
                                             <ul class="submenu">
-                                                <li class="has-dropdown"><a wire:navigate.hover
-                                                        href="{{ route('projects') }}">Projects</a>
-                                                    {{-- <ul class="submenu">
-                                                        <li><a href="projects.html">Projects</a></li>
-                                                        <li><a href="project-details.html">Projects Details</a></li>
-                                                    </ul> --}}
+                                                <li><a wire:navigate.hover href="{{ route('projects') }}">Projects</a>
                                                 </li>
                                                 <li><a wire:navigate.hover href="{{ route('team') }}">Team</a></li>
-
-                                                <li><a wire:navigate.hover href="{{ route('faq') }}">Faq's</a></li>
-
+                                                <li><a wire:navigate.hover href="{{ route('faq') }}">FAQ</a></li>
                                             </ul>
                                         </li>
 
                                         <!-- Blog -->
-                                        <li class="has-dropdown {{ request()->routeIs('blog*') ? 'active' : '' }}">
+                                        <li
+                                            class="{{ request()->routeIs('posts*') || request()->routeIs('blog.details') ? 'active' : '' }}">
                                             <a wire:navigate.hover href="{{ route('posts') }}">Blog</a>
-                                            {{-- <ul class="submenu">
-                                                <li><a href="blog-standard.html">Blog Default</a></li>
-                                                <li><a href="blog-grid.html">Blog Grid</a></li>
-                                                <li><a href="blog-details.html">Blog Details</a></li>
-                                            </ul> --}}
                                         </li>
 
                                         <!-- Contact -->
@@ -95,17 +81,10 @@
                                         </li>
                                     </ul>
                                 </nav>
-                                <!-- for wp (hidden) -->
-                                <div class="header__hamburger ml-50 d-none">
-                                    <button type="button" class="hamburger-btn offcanvas-open-btn">
-                                        <span>01</span>
-                                        <span>01</span>
-                                        <span>01</span>
-                                    </button>
-                                </div>
                             </div>
                         </div>
 
+                        <!-- Search toggle -->
                         <div class="search-toggle-open header-search my-auto"
                             x-on:click="$dispatch('open-main-search')">
                             <div class="search-icon">
@@ -113,7 +92,7 @@
                             </div>
                         </div>
 
-                        <!-- Shopping cart (optional – you can remove if not needed) -->
+                        <!-- Shopping cart (optional) -->
                         <div class="header-shopping-cart my-auto">
                             <div class="cart-icon">
                                 <a href="#"><i class="icon-shopping-cart"></i></a>

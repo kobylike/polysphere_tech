@@ -15,10 +15,16 @@
                                 transformation solutions that drive business growth.
                             </p>
                             <div class="footer-socials">
-                                <span><a href="#"><i class="fab fa-facebook-f"></i></a></span>
-                                <span><a href="#"><i class="fab fa-twitter"></i></a></span>
-                                <span><a href="#"><i class="fab fa-linkedin-in"></i></a></span>
-                                <span><a href="#"><i class="fab fa-youtube"></i></a></span>
+                                <span><a href="{{ $socials['linkedin'] }}" target="_blank" rel="noopener noreferrer"><i
+                                            class="fab fa-linkedin-in"></i></a></span>
+                                <span><a href="{{ $socials['facebook'] }}" target="_blank" rel="noopener noreferrer"><i
+                                            class="fab fa-facebook-f"></i></a></span>
+                                <span><a href="{{ $socials['instagram'] }}" target="_blank" rel="noopener noreferrer"><i
+                                            class="fab fa-instagram"></i></a></span>
+                                <span><a href="{{ $socials['x'] }}" target="_blank" rel="noopener noreferrer"><i
+                                            class="fab fa-twitter"></i></a></span>
+                                <span><a href="{{ $socials['youtube'] }}" target="_blank" rel="noopener noreferrer"><i
+                                            class="fab fa-youtube"></i></a></span>
                             </div>
                         </div>
                     </div>
@@ -28,11 +34,15 @@
                         <div class="footer-widget-2 pl-50">
                             <h4 class="mb-20 footer-title">Our Services</h4>
                             <ul class="service-list">
-                                <li><a href="service-details.html">Custom Software Development</a></li>
-                                <li><a href="service-details.html">SaaS Platform Engineering</a></li>
-                                <li><a href="service-details.html">Digital Transformation</a></li>
-                                <li><a href="service-details.html">IT Consulting</a></li>
-                                <li><a href="service-details.html">Cloud & Cyber (Coming Soon)</a></li>
+                                @forelse($services as $service)
+                                    <li>
+                                        <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}">
+                                            {{ $service->name }}
+                                        </a>
+                                    </li>
+                                @empty
+                                    <li><span class="text-muted">No services available</span></li>
+                                @endforelse
                             </ul>
                         </div>
                     </div>
@@ -42,29 +52,34 @@
                         <div class="footer-widget-3">
                             <h4 class="mb-20 footer-title">Latest Insights</h4>
                             <ul class="blog-list">
-                                <li>
-                                    <div class="footer-blog-post-box mb-15">
-                                        <figure class="thumb">
-                                            <img src="{{ asset('assets/main/imgs/blog/blog-s-1.jpg') }}" alt="Blog">
-                                        </figure>
-                                        <div class="content">
-                                            <span class="date"><a href="news-details.html">15 Jan, 2026</a></span>
-                                            <h6><a href="news-details.html">Top 5 SaaS Trends Shaping 2026</a></h6>
+                                @forelse($recentPosts as $post)
+                                    <li>
+                                        <div class="footer-blog-post-box mb-15">
+                                            <figure class="thumb">
+                                                @if($post->featured_image)
+                                                    <img src="{{ asset('storage/' . $post->featured_image) }}"
+                                                        alt="{{ $post->title }}">
+                                                @else
+                                                    <img src="{{ asset('assets/main/imgs/blog/blog-s-1.jpg') }}" alt="Blog">
+                                                @endif
+                                            </figure>
+                                            <div class="content">
+                                                <span class="date">
+                                                    <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
+                                                        {{ $post->published_at->format('d M, Y') }}
+                                                    </a>
+                                                </span>
+                                                <h6>
+                                                    <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
+                                                        {{ Str::limit($post->title, 40) }}
+                                                    </a>
+                                                </h6>
+                                            </div>
                                         </div>
-                                    </div>
-                                </li>
-                                <li>
-                                    <div class="footer-blog-post-box mb-15">
-                                        <figure class="thumb">
-                                            <img src="{{ asset('assets/main/imgs/blog/blog-s-2.jpg') }}" alt="Blog">
-                                        </figure>
-                                        <div class="content">
-                                            <span class="date"><a href="news-details.html">10 Jan, 2026</a></span>
-                                            <h6><a href="news-details.html">A Practical Guide to Digital
-                                                    Transformation</a></h6>
-                                        </div>
-                                    </div>
-                                </li>
+                                    </li>
+                                @empty
+                                    <li><span class="text-muted">No recent posts</span></li>
+                                @endforelse
                             </ul>
                         </div>
                     </div>
@@ -76,17 +91,7 @@
                             <p style="font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
                                 Subscribe for exclusive insights, industry trends, and special offers.
                             </p>
-                            <div class="footer-subscribe">
-                                <form action="#">
-                                    <input type="email" name="email" placeholder="Your email address" required
-                                        style="width: 100%; padding: 12px 16px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: #fff; border-radius: 8px; font-size: 14px; margin-bottom: 12px;">
-                                    <button type="submit" class="primary-btn-1 btn-hover"
-                                        style="width: 100%; padding: 12px; text-align: center; font-size: 13px; letter-spacing: 1px;">
-                                        SUBSCRIBE NOW
-                                        <span style="top: 147.172px; left: 108.5px;"></span>
-                                    </button>
-                                </form>
-                            </div>
+                            @livewire('main.partials.newsletter-subscribe')
                         </div>
                     </div>
                 </div>
@@ -98,18 +103,23 @@
             <div class="footer-bottom pt-30 pb-30" style="border-top: 1px solid rgba(255,255,255,0.06);">
                 <div class="left-area" style="text-align: left;">
                     <span style="font-size: 14px; color: rgba(255,255,255,0.6);">
-                        © {{ now()->year }}
-                        <a href="#" style="color: #fff; text-decoration: none;">PolySphere Tech</a>.
+                        &copy; {{ now()->year }}
+                        <a href="{{ route('index') }}" style="color: #fff; text-decoration: none;"
+                            wire:navigate.hover>PolySphere Tech</a>.
                         All rights reserved.
                     </span>
                 </div>
                 <div class="right-area" style="text-align: right;">
-                    <span style="font-size: 14px; color: rgba(255,255,255,0.6);"><a href="#"
-                            style="color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.3s;">Terms &
-                            Conditions</a></span>
-                    <span style="font-size: 14px; color: rgba(255,255,255,0.6); margin-left: 20px;"><a href="#"
+                    <span style="font-size: 14px; color: rgba(255,255,255,0.6);">
+                        <a wire:navigate.hover href="{{ route('privacy') }}"
                             style="color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.3s;">Privacy
-                            Policy</a></span>
+                            Policy</a>
+                    </span>
+                    <span style="font-size: 14px; color: rgba(255,255,255,0.6); margin-left: 20px;">
+                        <a wire:navigate.hover href="{{ route('terms') }}"
+                            style="color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.3s;">Terms
+                            &amp; Conditions</a>
+                    </span>
                 </div>
             </div>
         </div>

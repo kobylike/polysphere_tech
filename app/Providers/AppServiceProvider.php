@@ -8,6 +8,7 @@ use App\Models\Post;
 use App\Models\Project;
 use App\Models\Role;
 use App\Models\Service;
+use App\Models\Subscriber;
 use App\Models\User;
 use App\Policies\CategoryPolicy;
 use App\Policies\PermissionPolicy;
@@ -15,6 +16,7 @@ use App\Policies\PostPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\RolePolicy;
 use App\Policies\ServicePolicy;
+use App\Policies\SubscriberPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -41,7 +43,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Category::class, CategoryPolicy::class);
         Gate::policy(Project::class, ProjectPolicy::class);
         Gate::policy(Service::class, ServicePolicy::class);
-
+        Gate::policy(Subscriber::class, SubscriberPolicy::class);
 
         Gate::define('manage-roles', function ($user) {
             return $user->hasRole('Super Admin');

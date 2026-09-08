@@ -54,8 +54,13 @@ class RolesAndPermissionsSeeder extends Seeder
             // Notifications
             'Send Notifications',
 
-            // 🔥 NEW: Activity Logs
+            // Activity Logs
             'View Activity Logs',
+
+            // ─── NEW: Newsletter Subscribers ────────────────────────────────
+            'View Newsletter Subscribers',
+            'Edit Newsletter Subscribers',
+            'Delete Newsletter Subscribers',
         ];
 
         foreach ($permissions as $perm) {
@@ -94,7 +99,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'Edit Services',
             'Delete Services',
             'Send Notifications',
-            'View Activity Logs', // 🔥 New permission for Admin
+            'View Activity Logs',
+            // ─── NEW: Newsletter permissions ─────────────────────────────────
+            'View Newsletter Subscribers',
+            'Edit Newsletter Subscribers',
+            'Delete Newsletter Subscribers',
         ]);
 
         $userRole = Role::firstOrCreate(['name' => 'User', 'guard_name' => 'web']);
