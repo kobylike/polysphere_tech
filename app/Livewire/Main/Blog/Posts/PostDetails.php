@@ -12,10 +12,10 @@ use Livewire\Attributes\Layout;
 class PostDetails extends Component
 {
     public $post;
-    public $recentPosts;
+    public $relatedPosts;
     public $categoriesWithCount;
     public $popularTags;
-    public $relatedPosts;
+    public $search = ''; // For search input
 
     public function mount($slug)
     {
@@ -24,12 +24,7 @@ class PostDetails extends Component
             ->where('status', 'published')
             ->firstOrFail();
 
-        $this->recentPosts = Post::where('status', 'published')
-            ->where('id', '!=', $this->post->id)
-            ->orderBy('published_at', 'desc')
-            ->limit(3)
-            ->get(['id', 'title', 'slug', 'featured_image', 'published_at']);
-
+        // ─── Categories with post counts ──────────────────────────────
         $this->categoriesWithCount = Category::withCount(['posts' => function ($query) {
             $query->where('status', 'published');
         }])
@@ -37,6 +32,7 @@ class PostDetails extends Component
             ->orderBy('name')
             ->get();
 
+        // ─── Popular tags ──────────────────────────────────────────────
         $this->popularTags = Tag::withCount(['posts' => function ($query) {
             $query->where('status', 'published');
         }])
@@ -45,15 +41,31 @@ class PostDetails extends Component
             ->limit(10)
             ->get();
 
+        // ─── Related posts (same categories) – for sidebar ────────────
         $categoryIds = $this->post->categories->pluck('id')->toArray();
-        $this->relatedPosts = Post::where('status', 'published')
-            ->where('id', '!=', $this->post->id)
-            ->whereHas('categories', function ($query) use ($categoryIds) {
-                $query->whereIn('categories.id', $categoryIds);
-            })
-            ->orderBy('published_at', 'desc')
-            ->limit(3)
-            ->get();
+
+        if (count($categoryIds)) {
+            $this->relatedPosts = Post::where('status', 'published')
+                ->where('id', '!=', $this->post->id)
+                ->whereHas('categories', function ($query) use ($categoryIds) {
+                    $query->whereIn('categories.id', $categoryIds);
+                })
+                ->orderBy('published_at', 'desc')
+                ->limit(5)
+                ->get();
+        } else {
+            $this->relatedPosts = Post::where('status', 'published')
+                ->where('id', '!=', $this->post->id)
+                ->orderBy('published_at', 'desc')
+                ->limit(5)
+                ->get();
+        }
+    }
+
+    // ─── Search redirect with Livewire navigation ─────────────────────
+    public function searchPosts()
+    {
+        $this->redirectRoute('posts', ['search' => $this->search], navigate: true);
     }
 
     public function render()

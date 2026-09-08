@@ -101,33 +101,6 @@
                         </div>
                     </div>
 
-                    <!-- ─── RELATED POSTS ─── -->
-                    @if($relatedPosts->isNotEmpty())
-                        <div class="related-posts mt-60">
-                            <h4 class="mb-30">Related Posts</h4>
-                            <div class="row g-4">
-                                @foreach($relatedPosts as $related)
-                                    <div class="col-md-4">
-                                        <div class="blog-style-one h-100">
-                                            <a class="blog-image w-img" href="{{ route('blog.details', $related->slug) }}">
-                                                <img src="{{ $related->featured_image ? asset('storage/' . $related->featured_image) : asset('assets/main/imgs/blog/blog-sidebar-1.jpg') }}"
-                                                    alt="{{ $related->title }}"
-                                                    style="height: 180px; object-fit: cover; width: 100%;">
-                                            </a>
-                                            <div class="blog-content p-3">
-                                                <h6 class="blog-title"><a wire:navigate.hover
-                                                        href="{{ route('blog.details', $related->slug) }}">{{ Str::limit($related->title, 40) }}</a>
-                                                </h6>
-                                                <span
-                                                    class="text-muted small">{{ $related->published_at->format('d M, Y') }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endif
-
                     <!-- ─── COMMENTS SECTION ───────────────────────────── -->
                     @if($post->allow_comments)
                         @livewire('main.blog.posts.comment-component', ['post' => $post], key($post->id))
@@ -144,12 +117,12 @@
                     <div class="blog-sidebar">
                         <aside>
 
-                            <!-- Search Widget -->
+                            <!-- ─── Search Widget (Livewire style) ─── -->
                             <div class="blog-widget-1 mb-30">
                                 <h5 class="blog-widget-title p-relative mb-45">Search</h5>
                                 <div class="search-form p-relative">
-                                    <form action="{{ route('posts') }}" method="GET">
-                                        <input type="text" name="search" placeholder="Search here...">
+                                    <form wire:submit.prevent="searchPosts">
+                                        <input type="text" wire:model="search" placeholder="Search here...">
                                         <button type="submit"><i class="icon-search"></i></button>
                                     </form>
                                 </div>
@@ -161,7 +134,7 @@
                                 <ul class="blog-categories-list">
                                     @foreach($categoriesWithCount as $cat)
                                         <li>
-                                            <a href="{{ route('posts') }}?category={{ $cat->slug }}">
+                                            <a wire:navigate.hover href="{{ route('posts') }}?category={{ $cat->slug }}">
                                                 <span>{{ $cat->name }}</span>
                                                 <span>({{ $cat->posts_count }})</span>
                                             </a>
@@ -170,27 +143,29 @@
                                 </ul>
                             </div>
 
-                            <!-- Recent Posts Widget -->
+                            <!-- ─── Related Posts Widget ─────────────────── -->
                             <div class="blog-widget-3 mb-30">
-                                <h5 class="blog-widget-title p-relative mb-45">Recent Posts</h5>
+                                <h5 class="blog-widget-title p-relative mb-45">Related Posts</h5>
                                 <div class="blog-post-sidebar-area">
-                                    @foreach($recentPosts as $recent)
+                                    @forelse($relatedPosts as $related)
                                         <div class="blog-post-sidebar">
-                                            <a class="w-img blog-sidebar-thumb"
-                                                href="{{ route('blog.details', $recent->slug) }}">
-                                                <img src="{{ $recent->featured_image ? asset('storage/' . $recent->featured_image) : asset('assets/main/imgs/blog/blog-sidebar-1.jpg') }}"
-                                                    alt="{{ $recent->title }}">
+                                            <a class="w-img blog-sidebar-thumb" wire:navigate.hover
+                                                href="{{ route('blog.details', $related->slug) }}">
+                                                <img src="{{ $related->featured_image ? asset('storage/' . $related->featured_image) : asset('assets/main/imgs/blog/blog-sidebar-1.jpg') }}"
+                                                    alt="{{ $related->title }}">
                                             </a>
                                             <div class="content">
                                                 <span><i class="fal fa-calendar-alt"></i>
-                                                    {{ $recent->published_at->format('d M, Y') }}</span>
+                                                    {{ $related->published_at->format('d M, Y') }}</span>
                                                 <h6 class="blog-sidebar-post-title mt-10">
-                                                    <a
-                                                        href="{{ route('blog.details', $recent->slug) }}">{{ Str::limit($recent->title, 40) }}</a>
+                                                    <a wire:navigate.hover
+                                                        href="{{ route('blog.details', $related->slug) }}">{{ Str::limit($related->title, 40) }}</a>
                                                 </h6>
                                             </div>
                                         </div>
-                                    @endforeach
+                                    @empty
+                                        <p class="text-muted small">No related posts found.</p>
+                                    @endforelse
                                 </div>
                             </div>
 
@@ -199,7 +174,9 @@
                                 <h5 class="blog-widget-title p-relative mb-45">Tags</h5>
                                 <div class="tagcloud">
                                     @forelse($popularTags as $tag)
-                                        <a href="#">{{ $tag->name }}</a>
+                                        <a wire:navigate.hover href="{{ route('posts') }}?search={{ $tag->name }}">
+                                            {{ $tag->name }}
+                                        </a>
                                     @empty
                                         <span class="text-muted">No tags yet.</span>
                                     @endforelse
@@ -239,7 +216,6 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     }
 
-    /* Side-by-side images inside a row */
     .blog-content-body .row {
         display: flex;
         flex-wrap: wrap;
@@ -267,7 +243,6 @@
         font-weight: 700;
     }
 
-    /* ─── BLOCKQUOTE ─── */
     .blog-content-body blockquote {
         border-left: 4px solid #3b82f6;
         padding: 20px 30px;
@@ -303,7 +278,6 @@
         margin-bottom: 20px;
     }
 
-    /* ─── RESPONSIVE ─── */
     @media (max-width: 767px) {
         .blog-content-body .row .col-lg-6 {
             flex: 0 0 100%;
