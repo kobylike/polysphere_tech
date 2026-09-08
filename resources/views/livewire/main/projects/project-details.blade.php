@@ -8,7 +8,7 @@
             <div class="row justify-content-center">
                 <div class="col-xxl-12">
                     <div class="breadcrumb__wrapper p-relative">
-                        <h2 class="breadcrumb__title">Project Details</h2>
+                        <h2 class="breadcrumb__title">{{ $project->title }}</h2>
                         <div class="breadcrumb__menu">
                             <nav>
                                 <ul>
@@ -28,7 +28,8 @@
 
     <section class="Project-details-page section-space">
         <div class="small-container">
-            <!-- Main Image (Featured) -->
+
+            <!-- Featured Image -->
             <figure class="w-img">
                 @if($project->featured_image)
                     <img src="{{ asset('storage/' . $project->featured_image) }}" alt="{{ $project->title }}">
@@ -40,65 +41,108 @@
             <div class="row mt-50">
                 <div class="col-xxl-8 col-xl-8 col-lg-8">
                     <div class="project-details-page-content">
+
                         <!-- Project Info -->
                         <div class="project-info mb-50">
-                            @if($project->start_year || $project->end_year)
-                                <h6><span>Year:</span>
-                                    {{ $project->start_year }}{{ $project->end_year ? ' - ' . $project->end_year : '' }}
-                                </h6>
+                            @if($this->yearRange)
+                                <h6><span>Year:</span> {{ $this->yearRange }}</h6>
                             @endif
                             @if($project->client)
                                 <h6><span>Client:</span> {{ $project->client }}</h6>
                             @endif
                             @if($project->service)
-                                <h6><span>Service:</span> {{ $project->service->name }}</h6>
+                                <h6><span>Category:</span> {{ $project->service->name }}</h6>
                             @endif
-                            @if($project->company)
-                                <h6><span>Company:</span> {{ $project->company }}</h6>
+                            @if($project->location)
+                                <h6><span>Location:</span> {{ $project->location }}</h6>
                             @endif
+                            {{-- @if($project->company)
+                            <h6><span>Company:</span> {{ $project->company }}</h6>
+                            @endif --}}
                         </div>
 
                         <!-- Title -->
                         <h5 class="project-details-page-title">{{ $project->title }}</h5>
 
-                        <!-- Content (CKEditor) -->
-                        <div class="project-content mt-30 mb-30">
-                            {!! $project->content !!}
-                        </div>
+                        <!-- Intro Content (CKEditor) -->
+                        @if($project->content)
+                            <div class="project-content mt-30 mb-30">
+                                {!! $project->content !!}
+                            </div>
+                        @endif
 
-                        <!-- Additional Images (if any) -->
+                        <!-- Additional Images Gallery -->
                         @if($project->additional_images && count($project->additional_images) > 0)
-                            <div class="row mb-40">
+                            <div class="row g-3 mb-40">
                                 @foreach($project->additional_images as $img)
                                     <div class="col-lg-6">
                                         <figure class="w-img">
-                                            <img src="{{ asset('storage/' . $img) }}" alt="{{ $project->title }} additional">
+                                            <img src="{{ asset('storage/' . $img) }}" alt="{{ $project->title }} gallery image">
                                         </figure>
                                     </div>
                                 @endforeach
                             </div>
                         @endif
 
-                        <!-- Video Section -->
-                        @if($project->video || $project->video_url)
-                            <div class="project-details-video p-relative">
-                                <figure class="image w-img">
-                                    @if($project->thumbnail_image)
-                                        <img src="{{ asset('storage/' . $project->thumbnail_image) }}" alt="Video thumbnail">
-                                    @else
-                                        <img src="{{ asset('assets/main/imgs/project/project-details-3.jpg') }}"
-                                            alt="Video thumbnail">
+                        <!-- The Challenge Of Project -->
+                        @if($project->challenge_content || $project->challenge_image || count($project->challenge_features ?? []))
+                            <h4 class="mt-35 mb-25">The Challenge Of Project</h4>
+
+                            @if($project->challenge_content)
+                                <p>{{ $project->challenge_content }}</p>
+                            @endif
+
+                            @if($project->challenge_image || count($project->challenge_features ?? []))
+                                <div class="row">
+                                    @if($project->challenge_image)
+                                        <div class="col-lg-7">
+                                            <figure class="w-img">
+                                                <img src="{{ asset('storage/' . $project->challenge_image) }}"
+                                                    alt="Project challenge">
+                                            </figure>
+                                        </div>
                                     @endif
-                                </figure>
-                                <div class="play-btn">
-                                    <div class="video_player_btn">
-                                        <a href="{{ $project->video ? $project->video : $project->video_url }}"
-                                            class="popup-video">
-                                            <i class="icon-play"></i>
-                                        </a>
+
+                                    @if(count($project->challenge_features ?? []))
+                                        <div class="{{ $project->challenge_image ? 'col-lg-5' : 'col-lg-12' }}">
+                                            <ul class="service-details-page-list pt-20 pb-10">
+                                                @foreach($project->challenge_features as $feature)
+                                                    <li>{{ $feature }}</li>
+                                                @endforeach
+                                            </ul>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
+                        @endif
+
+                        <!-- The Final View Of Project -->
+                        @if($project->final_view_content || $this->videoSrc)
+                            <h4 class="mt-35 mb-25">The Final View Of Project</h4>
+
+                            @if($project->final_view_content)
+                                <p class="mb-30">{{ $project->final_view_content }}</p>
+                            @endif
+
+                            @if($this->videoSrc)
+                                <div class="project-details-video p-relative">
+                                    <figure class="image w-img">
+                                        @if($project->thumbnail_image)
+                                            <img src="{{ asset('storage/' . $project->thumbnail_image) }}" alt="Video thumbnail">
+                                        @else
+                                            <img src="{{ asset('assets/main/imgs/project/project-details-3.jpg') }}"
+                                                alt="Video thumbnail">
+                                        @endif
+                                    </figure>
+                                    <div class="play-btn">
+                                        <div class="video_player_btn">
+                                            <a href="{{ $this->videoSrc }}" class="popup-video">
+                                                <i class="icon-play"></i>
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endif
                         @endif
 
                         <!-- Related Projects -->
@@ -147,57 +191,46 @@
                 <div class="col-xxl-4 col-xl-4 col-lg-4">
                     <div class="service-sidebar">
                         <aside>
-                            <!-- Service Widget -->
+
+                            {{-- ─── Recent Projects Widget ─────────────────────────── --}}
                             <div class="service-widget-1 mb-30">
-                                <h5>Our Services</h5>
+                                <h5>Recent Projects</h5>
                                 <ul>
-                                    @php
-                                        $services = \App\Models\Service::where('status', 'active')->orderBy('name')->get();
-                                    @endphp
-                                    @forelse($services as $svc)
+                                    @forelse($recentProjects as $recent)
                                         <li>
-                                            <a href="{{ route('projects') }}?service={{ $svc->slug }}">
-                                                <span>{{ $svc->name }}</span>
+                                            <a wire:navigate.hover href="{{ route('project.details', $recent->slug) }}">
+                                                <span>{{ $recent->title }}</span>
                                                 <span><i class="icon-arrow-right-double"></i></span>
                                             </a>
                                         </li>
                                     @empty
-                                        <li><span>No services</span></li>
+                                        <li><span>No other projects</span></li>
                                     @endforelse
                                 </ul>
                             </div>
 
-                            <!-- CTA Widget -->
-                            <div class="service-widget-2 mb-30">
-                                <figure class="w-img">
-                                    <img src="{{ asset('assets/main/imgs/service/service-widget-1.jpg') }}"
-                                        alt="Need Help?">
-                                </figure>
-                                <div class="content bg-color-1 text-center">
-                                    <div class="icon-box p-relative">
-                                        <i class="fal fa-phone-volume"></i>
-                                    </div>
-                                    <h5>Need Help? Call Here</h5>
-                                    <a class="pt-25 pb-25 phone" href="tel:+1234567890">+1 (234) 567-8900</a>
-                                    <div class="btn-box">
-                                        <a class="primary-btn-1 btn-hover" href="{{ route('contact') }}">
-                                            GET A QUOTE &nbsp; | <i class="icon-right-arrow"></i>
-                                            <span style="top: 147.172px; left: 108.5px;"></span>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                            {{-- ─── CTA Widget ─────────────────────────────────────── --}}
+                            @livewire('main.partials.help')
 
-                            <!-- Company File -->
-                            <div class="service-widget-3">
-                                <div class="company-file">
-                                    <h6>Company File</h6>
-                                    <div class="file-size">
-                                        <span>(1.5MB)</span>
-                                        <span><a href="#"><i class="far fa-arrow-down-to-bracket"></i></a></span>
+                            {{-- ─── Company File ───────────────────────────────────── --}}
+                            @if($project->attachment)
+                                <div class="service-widget-3">
+                                    <div class="company-file">
+                                        <h6>{{ $project->attachment_original_name ?? 'Company File' }}</h6>
+                                        <div class="file-size">
+                                            @if($this->attachmentSizeFormatted)
+                                                <span>({{ $this->attachmentSizeFormatted }})</span>
+                                            @endif
+                                            <span>
+                                                <a href="{{ asset('storage/' . $project->attachment) }}" download>
+                                                    <i class="far fa-arrow-down-to-bracket"></i>
+                                                </a>
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            @endif
+
                         </aside>
                     </div>
                 </div>

@@ -1,588 +1,460 @@
 <div>
-    <div class="page-titles">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="javascript:void(0)">CMS</a></li>
-            <li class="breadcrumb-item active">
-                <a href="javascript:void(0)">
-                    {{ $projectId ? 'Edit' : 'Add' }} Project
-                </a>
-            </li>
-        </ol>
-    </div>
+    <div class="card">
+        <div class="card-header">
+            <h4 >{{ $projectId ? 'Edit Project' : 'Create New Project' }}</h4>
+        </div>
+        <div class="card-body">
+            @if (session()->has('success'))
+                <div class="alert alert-success">{{ session('success') }}</div>
+            @endif
 
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-xl-12">
-                <!-- Action buttons -->
-                <div class="mb-3">
-                    <ul class="d-flex align-items-center flex-wrap">
-                        <li>
-                            <a wire:navigate.hover href="{{ route('admin.projects.index') }}" class="btn btn-primary">
-                                <i class="fa-solid fa-list me-1"></i> Project List
-                            </a>
-                        </li>
-                        @can('create', App\Models\Project::class)
-                            <li>
-                                <a wire:navigate.hover href="{{ route('admin.projects.create') }}"
-                                    class="btn btn-primary mx-1">
-                                    <i class="fa-solid fa-plus me-1"></i> Add Project
-                                </a>
-                            </li>
-                        @endcan
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
                     </ul>
                 </div>
+            @endif
 
-                <!-- Session messages -->
-                @if(session()->has('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-                @if(session()->has('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-                @if($errors->any())
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <ul class="mb-0">
-                            @foreach($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
+            <form wire:submit.prevent="save" wire:key="project-form-{{ $projectId ?? 'new' }}">
+                <div class="row">
+                    {{-- ══════════════════════════════════════════════════════
+                    LEFT COLUMN — mirrors the top-to-bottom flow of the
+                    project-details template.
+                    ══════════════════════════════════════════════════════ --}}
+                    <div class="col-md-8">
 
-                <!-- Main Form -->
-                @canany(['create', 'update'], App\Models\Project::class)
-                    <form wire:submit.prevent="save" enctype="multipart/form-data">
-                        @csrf
+                        <!-- Title -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title</label>
+                            <input type="text" id="title" class="form-control" wire:model="title">
+                            @error('title') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Slug -->
+                        <div class="mb-3">
+                            <label for="slug" class="form-label">
+                                Slug
+                                @if ($slugManuallyEdited)
+                                    <span class="badge bg-secondary">Manually edited</span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 ms-1"
+                                        wire:click="resetSlugToTitle">Reset to title</button>
+                                @else
+                                    <span class="badge bg-light text-dark border">Auto-generated</span>
+                                @endif
+                            </label>
+                            <input type="text" id="slug" class="form-control" wire:model.live.debounce.400ms="slug">
+                            <div class="form-text">
+                                The slug follows the title automatically until you edit it yourself.
+                            </div>
+                            @error('slug') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Service (drives the "Category" shown on the project page) -->
+                        <div class="mb-3">
+                            <label for="service_id" class="form-label">Service (Category)</label>
+                            <select id="service_id" class="form-select" wire:model="service_id">
+                                <option value="">Select Service</option>
+                                @foreach($this->services as $service)
+                                    <option value="{{ $service->id }}">{{ $service->name }}</option>
+                                @endforeach
+                            </select>
+                            @error('service_id') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <hr>
+
+                        <!-- ─── "Here to know about this project" ─────────── -->
+                        <h5 class="mb-3">Here to know about this project</h5>
+                        <div class="mb-3">
+                            <label for="editor" class="form-label">Overview</label>
+                            <div wire:ignore>
+                                <textarea id="editor" class="form-control" wire:model="content"></textarea>
+                            </div>
+                            @error('content') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="excerpt" class="form-label">Excerpt <span class="text-muted small">(used for
+                                    project cards / listings)</span></label>
+                            <textarea id="excerpt" class="form-control" wire:model="excerpt" rows="3"></textarea>
+                            @error('excerpt') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <hr>
+
+                        <!-- ─── "The Challenge Of Project" ─────────────────── -->
+                        <h5 class="mb-3">The Challenge Of Project</h5>
+
+                        <div class="mb-3">
+                            <label for="challenge_content" class="form-label">Challenge description</label>
+                            <textarea id="challenge_content" class="form-control" wire:model="challenge_content"
+                                rows="4"></textarea>
+                            @error('challenge_content') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
                         <div class="row">
-                            <!-- Left Column -->
-                            <div class="col-xl-8">
-                                <!-- Title -->
-                                <div class="mb-3">
-                                    <label class="form-label">Title <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control w-50" wire:model.live.debounce.500ms="title"
-                                        placeholder="Enter project title">
-                                    @error('title') <span class="text-danger">{{ $message }}</span> @enderror
-                                </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="challenge_image" class="form-label">Challenge Image <span
+                                        class="text-muted small">(min 428x250)</span></label>
+                                <input type="file" id="challenge_image" class="form-control"
+                                    wire:model="challenge_image">
+                                @error('challenge_image') <span class="text-danger">{{ $message }}</span> @enderror
 
-                                <!-- CKEditor Content -->
-                                <div class="card h-auto">
-                                    <div class="card-body pt-3">
-                                        <div wire:ignore>
-                                            <textarea id="ckeditor" wire:model.live.debounce.1000ms="content"
-                                                style="display:none;"></textarea>
-                                        </div>
-                                        <div class="form-text mt-2">Write the detailed description of the project.</div>
+                                @if ($existing_challenge_image && !$challenge_image)
+                                    <div class="mt-2 d-flex align-items-start gap-2">
+                                        <img src="{{ asset('storage/' . $existing_challenge_image) }}" alt="Challenge image"
+                                            style="max-width:100%; max-height:150px;">
+                                        <button type="button" class="btn btn-danger btn-sm"
+                                            wire:click="removeChallengeImage"
+                                            wire:confirm="Remove this image?">Remove</button>
                                     </div>
-                                </div>
+                                @endif
 
-                                <!-- Excerpt -->
-                                <div class="filter cm-content-box box-primary">
-                                    <div class="content-title">
-                                        <div class="cpa">Excerpt</div>
-                                        <div class="tools">
-                                            <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                    class="fal fa-angle-down"></i></a>
-                                        </div>
+                                @if ($challenge_image)
+                                    <div class="mt-2">
+                                        <img src="{{ $challenge_image->temporaryUrl() }}" alt="Preview"
+                                            style="max-width:100%; max-height:150px;">
+                                        <p class="text-muted small">New image preview</p>
                                     </div>
-                                    <div class="cm-content-body publish-content form excerpt">
-                                        <div class="card-body">
-                                            <label class="form-label">Excerpt</label>
-                                            <textarea class="form-control" rows="3" wire:model="excerpt"
-                                                placeholder="Short summary of the project"></textarea>
-                                            <div class="form-text">A brief overview that appears on the project listing
-                                                page.</div>
-                                            @error('excerpt') <span class="text-danger">{{ $message }}</span> @enderror
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Slug -->
-                                <div class="filter cm-content-box box-primary">
-                                    <div class="content-title">
-                                        <div class="cpa">Slug</div>
-                                        <div class="tools">
-                                            <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                    class="fal fa-angle-down"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="cm-content-body form excerpt">
-                                        <div class="card-body">
-                                            <label class="form-label">Slug</label>
-                                            <input type="text" class="form-control" wire:model="slug"
-                                                placeholder="URL-friendly version of the title">
-                                            @error('slug') <span class="text-danger">{{ $message }}</span> @enderror
-                                            <div class="form-text">Automatically generated from the title.</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- SEO -->
-                                <div class="filter cm-content-box box-primary">
-                                    <div class="content-title">
-                                        <div class="cpa">SEO</div>
-                                        <div class="tools">
-                                            <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                    class="fal fa-angle-down"></i></a>
-                                        </div>
-                                    </div>
-                                    <div class="cm-content-body form excerpt">
-                                        <div class="card-body">
-                                            <label class="form-label">SEO Title</label>
-                                            <input type="text" class="form-control mb-3" wire:model="seo_title"
-                                                placeholder="SEO Title (optional)">
-                                            <div class="row">
-                                                <div class="col-xl-6 col-sm-6">
-                                                    <label class="form-label">Keywords</label>
-                                                    <input type="text" class="form-control mb-sm-0 mb-3"
-                                                        wire:model="seo_keywords" placeholder="Meta Keywords">
-                                                </div>
-                                                <div class="col-xl-6 col-sm-6">
-                                                    <label class="form-label">Description</label>
-                                                    <textarea class="form-control" rows="3" wire:model="seo_description"
-                                                        placeholder="Meta Description"></textarea>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                @endif
                             </div>
 
-                            <!-- Right Sidebar -->
-                            <div class="col-xl-4">
-                                <div class="right-sidebar-sticky">
-                                    <!-- Publish Box -->
-                                    <div class="filter cm-content-box box-primary">
-                                        <div class="content-title">
-                                            <div class="cpa">Published</div>
-                                            <div class="tools">
-                                                <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                        class="fal fa-angle-down"></i></a>
-                                            </div>
-                                        </div>
-                                        <div class="cm-content-body publish-content form excerpt">
-                                            <div class="card-body pb-0">
-                                                <div class="mb-3">
-                                                    <label class="form-label">Status</label>
-                                                    <select class="form-select" wire:model="status">
-                                                        <option value="draft">Draft</option>
-                                                        <option value="published">Published</option>
-                                                        <option value="private">Private</option>
-                                                        <option value="pending">Pending</option>
-                                                        <option value="trash">Trash</option>
-                                                    </select>
-                                                    @error('status') <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Visibility</label>
-                                                    <select class="form-select" wire:model="visibility">
-                                                        <option value="public">Public</option>
-                                                        <option value="password_protected">Password Protected</option>
-                                                        <option value="private">Private</option>
-                                                    </select>
-                                                    @error('visibility') <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="form-label">Publish Date</label>
-                                                    <input type="datetime-local" class="form-control"
-                                                        wire:model="published_at">
-                                                    @error('published_at') <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                                <hr>
-                                                <div class="text-end">
-                                                    <button type="submit" class="btn btn-primary btn-sm">
-                                                        {{ $projectId ? 'Update' : 'Publish' }}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Checklist Items <span class="text-muted small">(the ✓ list
+                                        next to the image)</span></label>
+                                @foreach ($challenge_features as $index => $feature)
+                                    <div class="input-group mb-2" wire:key="challenge-feature-{{ $index }}">
+                                        <input type="text" class="form-control" wire:model="challenge_features.{{ $index }}"
+                                            placeholder="e.g. Technology Consultancy">
+                                        <button type="button" class="btn btn-outline-danger"
+                                            wire:click="removeChallengeFeature({{ $index }})">&times;</button>
                                     </div>
+                                @endforeach
+                                @error('challenge_features') <span class="text-danger d-block">{{ $message }}</span>
+                                @enderror
+                                @error('challenge_features.*') <span class="text-danger d-block">{{ $message }}</span>
+                                @enderror
 
-                                    <!-- Service -->
-                                    <div class="filter cm-content-box box-primary">
-                                        <div class="content-title">
-                                            <div class="cpa">Service</div>
-                                            <div class="tools">
-                                                <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                        class="fal fa-angle-down"></i></a>
-                                            </div>
-                                        </div>
-                                        <div class="cm-content-body publish-content form excerpt">
-                                            <div class="card-body">
-                                                <select class="form-select" wire:model="service_id">
-                                                    <option value="">Select a service</option>
-                                                    @foreach($this->services as $svc)
-                                                        <option value="{{ $svc->id }}">{{ $svc->name }}</option>
-                                                    @endforeach
-                                                </select>
-                                                @error('service_id') <span class="text-danger">{{ $message }}</span>
-                                                @enderror
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Project Metadata -->
-                                    <div class="filter cm-content-box box-primary">
-                                        <div class="content-title">
-                                            <div class="cpa">Project Metadata</div>
-                                            <div class="tools">
-                                                <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                        class="fal fa-angle-down"></i></a>
-                                            </div>
-                                        </div>
-                                        <div class="cm-content-body publish-content form excerpt">
-                                            <div class="card-body">
-                                                <!-- Year Range -->
-                                                <div class="row">
-                                                    <div class="col-6">
-                                                        <label class="form-label">Start Year</label>
-                                                        <select class="form-select" wire:model="start_year">
-                                                            <option value="">Select year</option>
-                                                            @php
-                                                                $currentYear = date('Y');
-                                                                $years = range(2000, $currentYear + 5);
-                                                            @endphp
-                                                            @foreach($years as $year)
-                                                                <option value="{{ $year }}">{{ $year }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                        @error('start_year') <span class="text-danger">{{ $message }}</span>
-                                                        @enderror
-                                                    </div>
-                                                    <div class="col-6">
-                                                        <label class="form-label">End Year</label>
-                                                        <select class="form-select" wire:model="end_year">
-                                                            <option value="">Select year</option>
-                                                            @foreach($years as $year)
-                                                                <option value="{{ $year }}">{{ $year }}</option>
-                                                            @endforeach
-                                                        </select>
-                                                        @error('end_year') <span class="text-danger">{{ $message }}</span>
-                                                        @enderror
-                                                    </div>
-                                                </div>
-
-                                                <!-- Client -->
-                                                <div class="mb-3">
-                                                    <label class="form-label">Client</label>
-                                                    <input type="text" class="form-control" wire:model="client"
-                                                        placeholder="e.g. Master Service">
-                                                    @error('client') <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-
-                                                <!-- Company -->
-                                                <div class="mb-3">
-                                                    <label class="form-label">Company</label>
-                                                    <input type="text" class="form-control" wire:model="company"
-                                                        placeholder="e.g. W3C">
-                                                    @error('company') <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Video -->
-                                    <div class="filter cm-content-box box-primary"
-                                        wire:key="video-section-{{ $videoInputType }}">
-                                        <div class="content-title">
-                                            <div class="cpa">Video</div>
-                                            <div class="tools">
-                                                <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                        class="fal fa-angle-down"></i></a>
-                                            </div>
-                                        </div>
-                                        <div class="cm-content-body publish-content form excerpt">
-                                            <div class="card-body">
-                                                <!-- Choose input type -->
-                                                <div class="mb-3">
-                                                    <label class="form-label">Video Source</label>
-                                                    <div class="d-flex gap-3">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" id="videoTypeUrl"
-                                                                value="url" wire:model.live="videoInputType">
-                                                            <label class="form-check-label" for="videoTypeUrl">URL</label>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" id="videoTypeFile"
-                                                                value="file" wire:model.live="videoInputType">
-                                                            <label class="form-check-label" for="videoTypeFile">Upload
-                                                                File</label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Video URL -->
-                                                @if($videoInputType === 'url')
-                                                    <div class="mb-3" wire:key="video-url-field">
-                                                        <label class="form-label">Video URL</label>
-                                                        <input type="url" class="form-control" wire:model="video_url"
-                                                            placeholder="https://www.youtube.com/watch?v=...">
-                                                        @error('video_url') <span class="text-danger">{{ $message }}</span>
-                                                        @enderror
-                                                        <div class="form-text">YouTube or Vimeo URL.</div>
-                                                    </div>
-                                                @endif
-
-                                                <!-- Video File Upload -->
-                                                @if($videoInputType === 'file')
-                                                    <div class="mb-3" wire:key="video-file-field">
-                                                        <label class="form-label">Upload Video File</label>
-                                                        <input type="file" class="form-control" wire:model="video_file"
-                                                            accept=".mp4,.mov,.avi,.webm">
-                                                        @error('video_file') <span class="text-danger">{{ $message }}</span>
-                                                        @enderror
-                                                        <div class="form-text">MP4, MOV, AVI, WebM (max 50MB).</div>
-                                                        @if($existing_video_file)
-                                                            <div class="mt-2">
-                                                                <span class="text-success">Current video:
-                                                                    {{ basename($existing_video_file) }}</span>
-                                                                <button type="button" class="btn btn-sm btn-danger ms-2"
-                                                                    wire:click="removeVideoFile">Remove</button>
-                                                            </div>
-                                                        @endif
-                                                        @if($video_file)
-                                                            <span class="text-success ms-2">Uploaded:
-                                                                {{ $video_file->getClientOriginalName() }}</span>
-                                                        @endif
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Featured Image -->
-                                    <div class="filter cm-content-box box-primary">
-                                        <div class="content-title">
-                                            <div class="cpa">Featured Image <span class="text-muted">(1170x550)</span></div>
-                                            <div class="tools">
-                                                <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                        class="fal fa-angle-down"></i></a>
-                                            </div>
-                                        </div>
-                                        <div class="cm-content-body publish-content form excerpt">
-                                            <div class="card-body">
-                                                <div class="avatar-upload d-flex align-items-center">
-                                                    <div class="position-relative">
-                                                        <div class="avatar-preview">
-                                                            @if($existing_featured_image && !$featured_image)
-                                                                <div
-                                                                    style="width:150px; height:150px; background-image: url('{{ asset('storage/' . $existing_featured_image) }}'); background-size:cover; background-position:center; border-radius:8px;">
-                                                                </div>
-                                                            @elseif($featured_image)
-                                                                <div
-                                                                    style="width:150px; height:150px; background-image: url('{{ $featured_image->temporaryUrl() }}'); background-size:cover; background-position:center; border-radius:8px;">
-                                                                </div>
-                                                            @else
-                                                                <div
-                                                                    style="width:150px; height:150px; background-color:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px;">
-                                                                    <span class="text-muted">No image</span>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                        <div class="change-btn d-flex align-items-center flex-wrap mt-2">
-                                                            <input type="file" id="featuredImageUpload" class="d-none"
-                                                                wire:model="featured_image"
-                                                                accept=".png,.jpg,.jpeg,.gif,.webp">
-                                                            <label for="featuredImageUpload"
-                                                                class="btn btn-light ms-0">Choose Image</label>
-                                                            @if($featured_image) <span
-                                                            class="ms-2 text-success">Uploaded</span> @endif
-                                                        </div>
-                                                        @error('featured_image') <span
-                                                        class="text-danger">{{ $message }}</span> @enderror
-                                                        <div class="form-text mt-2">Recommended size: 1170x550 pixels.</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Thumbnail Image -->
-                                    <div class="filter cm-content-box box-primary">
-                                        <div class="content-title">
-                                            <div class="cpa">Video Thumbnail <span class="text-muted">(770x350)</span></div>
-                                            <div class="tools">
-                                                <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                        class="fal fa-angle-down"></i></a>
-                                            </div>
-                                        </div>
-                                        <div class="cm-content-body publish-content form excerpt">
-                                            <div class="card-body">
-                                                <div class="avatar-upload d-flex align-items-center">
-                                                    <div class="position-relative">
-                                                        <div class="avatar-preview">
-                                                            @if($existing_thumbnail_image && !$thumbnail_image)
-                                                                <div
-                                                                    style="width:150px; height:150px; background-image: url('{{ asset('storage/' . $existing_thumbnail_image) }}'); background-size:cover; background-position:center; border-radius:8px;">
-                                                                </div>
-                                                            @elseif($thumbnail_image)
-                                                                <div
-                                                                    style="width:150px; height:150px; background-image: url('{{ $thumbnail_image->temporaryUrl() }}'); background-size:cover; background-position:center; border-radius:8px;">
-                                                                </div>
-                                                            @else
-                                                                <div
-                                                                    style="width:150px; height:150px; background-color:#f0f0f0; display:flex; align-items:center; justify-content:center; border-radius:8px;">
-                                                                    <span class="text-muted">No image</span>
-                                                                </div>
-                                                            @endif
-                                                        </div>
-                                                        <div class="change-btn d-flex align-items-center flex-wrap mt-2">
-                                                            <input type="file" id="thumbnailImageUpload" class="d-none"
-                                                                wire:model="thumbnail_image"
-                                                                accept=".png,.jpg,.jpeg,.gif,.webp">
-                                                            <label for="thumbnailImageUpload"
-                                                                class="btn btn-light ms-0">Choose Image</label>
-                                                            @if($thumbnail_image) <span
-                                                            class="ms-2 text-success">Uploaded</span> @endif
-                                                        </div>
-                                                        @error('thumbnail_image') <span
-                                                        class="text-danger">{{ $message }}</span> @enderror
-                                                        <div class="form-text mt-2">Recommended size: 770x350 pixels.</div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Additional Images -->
-                                    <div class="filter cm-content-box box-primary">
-                                        <div class="content-title">
-                                            <div class="cpa">Additional Images <span class="text-muted">(max 2,
-                                                    428x250)</span></div>
-                                            <div class="tools">
-                                                <a href="javascript:void(0);" class="expand SlideToolHeader"><i
-                                                        class="fal fa-angle-down"></i></a>
-                                            </div>
-                                        </div>
-                                        <div class="cm-content-body publish-content form excerpt">
-                                            <div class="card-body">
-                                                @for($i = 0; $i < 2; $i++)
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Image {{ $i + 1 }} <span
-                                                                class="text-muted">(optional)</span></label>
-                                                        <input type="file" class="form-control"
-                                                            wire:model="additional_images.{{ $i }}"
-                                                            accept=".png,.jpg,.jpeg,.gif,.webp">
-                                                        @error('additional_images.' . $i) <span
-                                                        class="text-danger">{{ $message }}</span> @enderror
-                                                        @if(isset($existing_additional_images[$i]))
-                                                            <div class="mt-1">
-                                                                <span class="text-success">Current image:
-                                                                    {{ basename($existing_additional_images[$i]) }}</span>
-                                                                <button type="button" class="btn btn-sm btn-danger ms-2"
-                                                                    wire:click="removeAdditionalImage({{ $i }})">Remove</button>
-                                                            </div>
-                                                        @endif
-                                                    </div>
-                                                @endfor
-                                                @error('additional_images') <span class="text-danger">{{ $message }}</span>
-                                                @enderror
-                                                <div class="form-text">Recommended size: 428x250 pixels.</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                @if (count($challenge_features) < 10)
+                                    <button type="button" class="btn btn-outline-secondary btn-sm"
+                                        wire:click="addChallengeFeature">+ Add item</button>
+                                @endif
                             </div>
                         </div>
-                    </form>
-                @endcanany
-            </div>
+
+                        <hr>
+
+                        <!-- ─── "The Final View Of Project" ────────────────── -->
+                        <h5 class="mb-3">The Final View Of Project</h5>
+
+                        <div class="mb-3">
+                            <label for="final_view_content" class="form-label">Final view description</label>
+                            <textarea id="final_view_content" class="form-control" wire:model="final_view_content"
+                                rows="4"></textarea>
+                            @error('final_view_content') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="thumbnail_image" class="form-label">
+                                Final View Image <span class="text-muted small">(min 770x350 — also used as the video
+                                    poster)</span>
+                            </label>
+                            <input type="file" id="thumbnail_image" class="form-control" wire:model="thumbnail_image">
+                            @error('thumbnail_image') <span class="text-danger">{{ $message }}</span> @enderror
+
+                            @if ($existing_thumbnail_image && !$thumbnail_image)
+                                <div class="mt-2 d-flex align-items-start gap-2">
+                                    <img src="{{ asset('storage/' . $existing_thumbnail_image) }}" alt="Final view image"
+                                        style="max-width:100%; max-height:150px;">
+                                    <button type="button" class="btn btn-danger btn-sm" wire:click="removeThumbnailImage"
+                                        wire:confirm="Are you sure you want to remove this image?">Remove</button>
+                                </div>
+                                <p class="text-muted small">Current image</p>
+                            @endif
+
+                            @if ($thumbnail_image)
+                                <div class="mt-2">
+                                    <img src="{{ $thumbnail_image->temporaryUrl() }}" alt="Preview"
+                                        style="max-width:100%; max-height:150px;">
+                                    <p class="text-muted small">New image preview</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Video (plays on top of the Final View image) -->
+                        <div class="mb-3">
+                            <label class="form-label">Video</label>
+                            <div class="btn-group w-100" role="group">
+                                <button type="button"
+                                    class="btn btn-outline-secondary {{ $videoInputType === 'url' ? 'active' : '' }}"
+                                    wire:click="$set('videoInputType', 'url')">URL</button>
+                                <button type="button"
+                                    class="btn btn-outline-secondary {{ $videoInputType === 'file' ? 'active' : '' }}"
+                                    wire:click="$set('videoInputType', 'file')">File</button>
+                            </div>
+
+                            @if ($videoInputType === 'url')
+                                <input type="url" class="form-control mt-2" wire:model="video_url"
+                                    placeholder="https://...">
+                                @error('video_url') <span class="text-danger">{{ $message }}</span> @enderror
+                                @if ($video_url)
+                                    <div class="mt-1 text-muted small">Current URL: {{ $video_url }}</div>
+                                @endif
+                            @else
+                                <input type="file" class="form-control mt-2" wire:model="video_file" accept="video/*">
+                                @error('video_file') <span class="text-danger">{{ $message }}</span> @enderror
+                                @if ($existing_video_file && !$video_file)
+                                    <div class="mt-1 text-muted small">
+                                        Current video file: {{ basename($existing_video_file) }}
+                                        <button type="button" class="btn btn-sm btn-danger" wire:click="removeVideoFile"
+                                            wire:confirm="Remove this video file?">Remove</button>
+                                    </div>
+                                @endif
+                            @endif
+                        </div>
+
+                        <!-- Additional / gallery images -->
+                        <div class="mb-3">
+                            <label for="additional_images" class="form-label">Project Gallery Images (max 2, min
+                                428x250)</label>
+                            <input type="file" id="additional_images" class="form-control"
+                                wire:model="additional_images" multiple>
+                            @error('additional_images.*') <span class="text-danger">{{ $message }}</span> @enderror
+                            @error('additional_images') <span class="text-danger">{{ $message }}</span> @enderror
+
+                            @if (!empty($existing_additional_images) && empty($additional_images))
+                                <div class="mt-2 row g-2">
+                                    @foreach($existing_additional_images as $index => $img)
+                                        <div class="col-6 position-relative">
+                                            <img src="{{ asset('storage/' . $img) }}" alt="Additional image"
+                                                style="width:100%; height:auto; border-radius:4px;">
+                                            <button type="button" class="btn btn-danger btn-sm position-absolute top-0 end-0"
+                                                wire:click="removeAdditionalImage({{ $index }})"
+                                                style="border-radius:50%; padding:0 6px;"
+                                                wire:confirm="Remove this image?">×</button>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+
+                            @if ($additional_images)
+                                <div class="mt-2 row g-2">
+                                    @foreach($additional_images as $img)
+                                        <div class="col-6">
+                                            <img src="{{ $img->temporaryUrl() }}" alt="Preview"
+                                                style="width:100%; height:auto; border-radius:4px;">
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+
+                    {{-- ══════════════════════════════════════════════════════
+                    RIGHT COLUMN — meta / sidebar fields.
+                    ══════════════════════════════════════════════════════ --}}
+                    <div class="col-md-4">
+
+                        <!-- Featured Image (page banner) -->
+                        <div class="mb-3">
+                            <label for="featured_image" class="form-label">Featured Image <span
+                                    class="text-muted small">(banner, min 1170x550)</span></label>
+                            <input type="file" id="featured_image" class="form-control" wire:model="featured_image">
+                            @error('featured_image') <span class="text-danger">{{ $message }}</span> @enderror
+
+                            @if ($existing_featured_image && !$featured_image)
+                                <div class="mt-2 d-flex align-items-start gap-2">
+                                    <img src="{{ asset('storage/' . $existing_featured_image) }}" alt="Featured image"
+                                        style="max-width:100%; max-height:150px;">
+                                    <button type="button" class="btn btn-danger btn-sm" wire:click="removeFeaturedImage"
+                                        wire:confirm="Are you sure you want to remove this image?">Remove</button>
+                                </div>
+                                <p class="text-muted small">Current image</p>
+                            @endif
+
+                            @if ($featured_image)
+                                <div class="mt-2">
+                                    <img src="{{ $featured_image->temporaryUrl() }}" alt="Preview"
+                                        style="max-width:100%; max-height:150px;">
+                                    <p class="text-muted small">New image preview</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Location -->
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" id="location" class="form-control" wire:model="location"
+                                placeholder="e.g. New York, USA">
+                            @error('location') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Client & Company -->
+                        <div class="mb-3">
+                            <label for="client" class="form-label">Client</label>
+                            <input type="text" id="client" class="form-control" wire:model="client">
+                            @error('client') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="company" class="form-label">Company</label>
+                            <input type="text" id="company" class="form-control" wire:model="company">
+                            @error('company') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Year Range -->
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label for="start_year" class="form-label">Start Year</label>
+                                <input type="number" id="start_year" class="form-control" wire:model="start_year"
+                                    min="2000" max="{{ date('Y') + 5 }}">
+                                @error('start_year') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-6">
+                                <label for="end_year" class="form-label">End Year</label>
+                                <input type="number" id="end_year" class="form-control" wire:model="end_year" min="2000"
+                                    max="{{ date('Y') + 5 }}">
+                                @error('end_year') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        <div class="mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select id="status" class="form-select" wire:model="status">
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                                <option value="private">Private</option>
+                                <option value="pending">Pending</option>
+                                <option value="trash">Trash</option>
+                            </select>
+                            @error('status') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Visibility -->
+                        <div class="mb-3">
+                            <label for="visibility" class="form-label">Visibility</label>
+                            <select id="visibility" class="form-select" wire:model="visibility">
+                                <option value="public">Public</option>
+                                <option value="password_protected">Password Protected</option>
+                                <option value="private">Private</option>
+                            </select>
+                            @error('visibility') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <!-- Published At -->
+                        <div class="mb-3">
+                            <label for="published_at" class="form-label">Published At</label>
+                            <input type="datetime-local" id="published_at" class="form-control"
+                                wire:model="published_at">
+                            @error('published_at') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <hr>
+
+                        <!-- Company File download box -->
+                        <div class="mb-3">
+                            <label for="attachment" class="form-label">Company File <span
+                                    class="text-muted small">(sidebar download button)</span></label>
+                            <input type="file" id="attachment" class="form-control" wire:model="attachment">
+                            @error('attachment') <span class="text-danger">{{ $message }}</span> @enderror
+
+                            @if ($existing_attachment && !$attachment)
+                                <div
+                                    class="mt-2 d-flex align-items-center justify-content-between bg-primary text-white rounded p-2">
+                                    <span>
+                                        <i class="bi bi-file-earmark-arrow-down"></i>
+                                        {{ $existing_attachment_name ?? basename($existing_attachment) }}
+                                        <small>({{ \App\Livewire\Admin\Projects\ProjectFormComponent::formatBytes($existing_attachment_size) }})</small>
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-light" wire:click="removeAttachment"
+                                        wire:confirm="Remove this file?">Remove</button>
+                                </div>
+                            @endif
+
+                            @if ($attachment)
+                                <div class="mt-1 text-muted small">
+                                    New file selected: {{ $attachment->getClientOriginalName() }}
+                                </div>
+                            @endif
+                        </div>
+
+                        <hr>
+
+                        <!-- SEO Fields -->
+                        <h6>SEO</h6>
+                        <div class="mb-3">
+                            <label for="seo_title" class="form-label">SEO Title</label>
+                            <input type="text" id="seo_title" class="form-control" wire:model="seo_title">
+                            @error('seo_title') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="seo_description" class="form-label">SEO Description</label>
+                            <textarea id="seo_description" class="form-control" wire:model="seo_description"
+                                rows="2"></textarea>
+                            @error('seo_description') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+                        <div class="mb-3">
+                            <label for="seo_keywords" class="form-label">SEO Keywords</label>
+                            <input type="text" id="seo_keywords" class="form-control" wire:model="seo_keywords">
+                            @error('seo_keywords') <span class="text-danger">{{ $message }}</span> @enderror
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">
+                            {{ $projectId ? 'Update' : 'Create' }} Project
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
 
 @push('scripts')
     <script>
-        function toggleScreenOptions() {
-            const el = document.getElementById('screenOptions');
-            if (el) {
-                el.style.display = el.style.display === 'none' ? 'block' : 'none';
-            }
-        }
-
-        // ──────────────────────────────────────────────────────────────
-        // CKEditor – synchronous lock prevents duplicate initialization
-        // ──────────────────────────────────────────────────────────────
-
-        (function () {
-            function initCKEditor() {
-                const editorElement = document.querySelector('#ckeditor');
-                if (!editorElement) return;
-                if (editorElement.ckeditorInstance) return;
-                if (editorElement.dataset.ckInitializing === 'true') return;
-                if (typeof ClassicEditor === 'undefined') return;
-
-                editorElement.dataset.ckInitializing = 'true';
-
-                ClassicEditor
-                    .create(editorElement, {
-                        toolbar: [
-                            'heading', '|',
-                            'bold', 'italic', 'link', '|',
-                            'bulletedList', 'numberedList', 'blockQuote', '|',
-                            'imageUpload', '|',
-                            'undo', 'redo'
-                        ],
-                        image: {
-                            toolbar: [
-                                'imageTextAlternative',
-                                'imageStyle:alignLeft',
-                                'imageStyle:alignCenter',
-                                'imageStyle:alignRight'
-                            ],
-                            styles: ['alignLeft', 'alignCenter', 'alignRight']
-                        },
-                        simpleUpload: {
-                            uploadUrl: '{{ route('ckeditor.upload') }}',
-                            headers: {
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            }
-                        }
-                    })
-                    .then(editor => {
-                        editorElement.ckeditorInstance = editor;
-                        editorElement.dataset.ckInitializing = 'false';
-
-                        editor.model.document.on('change:data', () => {
-                            @this.set('content', editor.getData());
-                        });
-                        if (@this.content) {
-                            editor.setData(@this.content);
-                        }
-                    })
-                    .catch(error => {
-                        editorElement.dataset.ckInitializing = 'false';
-                        console.error('CKEditor error:', error);
-                    });
-            }
-
-            document.addEventListener('livewire:initialized', initCKEditor);
-
-            document.addEventListener('livewire:navigating', function () {
-                const editorElement = document.querySelector('#ckeditor');
-                if (editorElement && editorElement.ckeditorInstance) {
-                    editorElement.ckeditorInstance.destroy().then(() => {
-                        editorElement.ckeditorInstance = null;
-                        editorElement.dataset.ckInitializing = 'false';
-                    }).catch(() => {
-                        editorElement.ckeditorInstance = null;
-                        editorElement.dataset.ckInitializing = 'false';
-                    });
+        document.addEventListener('DOMContentLoaded', function () {
+            // ─── CKEditor – single instance, never reinitialised ────────────────
+            if (window.ckEditorInstance) {
+                const currentContent = @this.content;
+                if (currentContent !== window.ckEditorInstance.getData()) {
+                    window.ckEditorInstance.setData(currentContent);
                 }
-            });
+                return;
+            }
 
-            document.addEventListener('livewire:navigated', initCKEditor);
-        })();
+            const textarea = document.getElementById('editor');
+            if (!textarea) return;
+
+            ClassicEditor
+                .create(textarea, {
+                    toolbar: [
+                        'heading', '|',
+                        'bold', 'italic', 'link', '|',
+                        'bulletedList', 'numberedList', 'blockQuote', '|',
+                        'insertTable', '|',
+                        'undo', 'redo'
+                    ],
+                })
+                .then(editor => {
+                    window.ckEditorInstance = editor;
+                    editor.model.document.on('change:data', () => {
+                        @this.set('content', editor.getData());
+                    });
+                })
+                .catch(error => console.error('CKEditor error:', error));
+        });
+
+        // ─── After every Livewire update, ensure editor content matches Livewire ──
+        document.addEventListener('livewire:updated', function () {
+            const editor = window.ckEditorInstance;
+            if (!editor) return;
+
+            const currentContent = @this.content;
+            if (currentContent !== editor.getData()) {
+                editor.setData(currentContent);
+            }
+        });
     </script>
 @endpush

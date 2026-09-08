@@ -66,7 +66,7 @@ class ProjectManagement extends Component
     public function updatedSelectAll($value)
     {
         if ($value) {
-            $this->selectedProjects = $this->getProjects()->pluck('id')->toArray();
+            $this->selectedProjects = $this->getProjects()->pluck('id')->map(fn($id) => (string) $id)->toArray();
         } else {
             $this->selectedProjects = [];
         }
@@ -81,31 +81,28 @@ class ProjectManagement extends Component
             return;
         }
 
-        // Check permission based on action
-        switch ($this->bulkAction) {
-            case 'delete':
-                $this->authorize('delete', Project::class);
-                break;
-            case 'publish':
-            case 'draft':
-            case 'trash':
-                $this->authorize('update', Project::class);
-                break;
-            default:
-                session()->flash('error', 'Invalid bulk action.');
-                return;
+        if (!in_array($this->bulkAction, ['delete', 'publish', 'draft', 'trash'], true)) {
+            session()->flash('error', 'Invalid bulk action.');
+            return;
         }
 
-        $projectNames = [];
         $projectIds = $this->selectedProjects;
+        $projects = Project::whereIn('id', $projectIds)->get();
+
+        // Authorize against each actual model — a class-string ability check
+        // (e.g. authorize('update', Project::class)) doesn't work here because
+        // ProjectPolicy::update()/delete() require a Project instance argument.
+        $ability = $this->bulkAction === 'delete' ? 'delete' : 'update';
+        foreach ($projects as $project) {
+            $this->authorize($ability, $project);
+        }
+
+        $projectNames = $projects->pluck('title')->toArray();
 
         switch ($this->bulkAction) {
             case 'delete':
-                $projects = Project::whereIn('id', $projectIds)->get();
-                $projectNames = $projects->pluck('title')->toArray();
                 Project::whereIn('id', $projectIds)->delete();
 
-                // ─── Log bulk delete ──────────────────────────────────────────
                 ActivityLogger::log('Bulk projects deleted', [
                     'project_ids' => $projectIds,
                     'project_names' => $projectNames,
@@ -119,6 +116,7 @@ class ProjectManagement extends Component
                 Project::whereIn('id', $projectIds)->update(['status' => 'published', 'published_at' => now()]);
                 ActivityLogger::log('Bulk projects published', [
                     'project_ids' => $projectIds,
+                    'project_names' => $projectNames,
                     'count' => count($projectIds),
                 ], 'project');
                 session()->flash('success', 'Selected projects published.');
@@ -128,6 +126,7 @@ class ProjectManagement extends Component
                 Project::whereIn('id', $projectIds)->update(['status' => 'draft']);
                 ActivityLogger::log('Bulk projects moved to draft', [
                     'project_ids' => $projectIds,
+                    'project_names' => $projectNames,
                     'count' => count($projectIds),
                 ], 'project');
                 session()->flash('success', 'Selected projects moved to draft.');
@@ -137,14 +136,11 @@ class ProjectManagement extends Component
                 Project::whereIn('id', $projectIds)->update(['status' => 'trash']);
                 ActivityLogger::log('Bulk projects moved to trash', [
                     'project_ids' => $projectIds,
+                    'project_names' => $projectNames,
                     'count' => count($projectIds),
                 ], 'project');
                 session()->flash('success', 'Selected projects moved to trash.');
                 break;
-
-            default:
-                session()->flash('error', 'Invalid bulk action.');
-                return;
         }
 
         $this->selectedProjects = [];
@@ -161,7 +157,6 @@ class ProjectManagement extends Component
 
         $projectTitle = $project->title;
 
-        // ─── Log delete ──────────────────────────────────────────────────────
         ActivityLogger::log('Project deleted', [
             'project_id' => $project->id,
             'title' => $projectTitle,

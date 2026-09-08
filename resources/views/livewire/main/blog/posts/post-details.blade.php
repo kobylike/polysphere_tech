@@ -7,7 +7,7 @@
 <div>
     <!-- Breadcrumb area start -->
     <div class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
-        <div class="breadcrumb__thumb" data-background="{{ asset('assets/main/imgs/resources/page-title-bg-1.png') }}">
+        <div class="breadcrumb__thumb" data-background="{{ asset('assets/main/imgs/resources/blog2.jpg') }}">
         </div>
         <div class="breadcrumb__thumb_2"
             data-background="{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}"></div>

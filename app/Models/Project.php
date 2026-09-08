@@ -18,31 +18,50 @@ class Project extends Model
         'slug',
         'content',
         'excerpt',
+
         'featured_image',
         'additional_images',
         'thumbnail_image',
         'video_url',
         'video_file',
+
         'service_id',
-        'status',
-        'visibility',
-        'published_at',
-        'seo_title',
-        'seo_description',
-        'seo_keywords',
-        'custom_fields',
-        'author_id',
+
         'start_year',
         'end_year',
         'client',
         'company',
+        'location',
+
+        'challenge_content',
+        'challenge_features',
+        'challenge_image',
+
+        'final_view_content',
+
+        'attachment',
+        'attachment_original_name',
+        'attachment_size',
+
+        'status',
+        'visibility',
+        'published_at',
+
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'custom_fields',
+
+        'author_id',
     ];
 
     protected $casts = [
-        'additional_images' => 'array',
-        'custom_fields' => 'array',
-        'published_at' => 'datetime',
+        'additional_images'  => 'array',
+        'challenge_features' => 'array',
+        'custom_fields'      => 'array',
+        'published_at'       => 'datetime',
     ];
+
     public function getActivitylogOptions(): LogOptions
     {
         $title = $this->title ?? $this->slug ?? "ID: {$this->id}";
@@ -58,6 +77,7 @@ class Project extends Model
             })
             ->useLogName('project');
     }
+
     public function getVideoAttribute()
     {
         if ($this->video_file) {

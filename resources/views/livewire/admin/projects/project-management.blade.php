@@ -121,7 +121,7 @@
                             <table class="table table-bordered table-striped table-condensed flip-content">
                                 <thead>
                                     <tr>
-                                        <th width="40"><input type="checkbox" wire:model="selectAll"
+                                        <th width="40"><input type="checkbox" wire:model.live="selectAll"
                                                 class="form-check-input"></th>
                                         <th>#</th>
                                         <th><a href="javascript:void(0);" wire:click="sortBy('title')">Title
@@ -140,9 +140,11 @@
                                 </thead>
                                 <tbody>
                                     @forelse($projects as $project)
-                                        <tr>
-                                            <td><input type="checkbox" value="{{ $project->id }}" wire:model="selectedProjects"
-                                                    class="form-check-input"></td>
+                                        <tr wire:key="project-row-{{ $project->id }}">
+                                            <td>
+                                                <input type="checkbox" value="{{ $project->id }}" wire:model="selectedProjects"
+                                                    class="form-check-input" wire:key="project-checkbox-{{ $project->id }}">
+                                            </td>
                                             <td>{{ $projects->firstItem() + $loop->index }}</td>
                                             <td>
                                                 {{ Str::limit($project->title, 30) }}
