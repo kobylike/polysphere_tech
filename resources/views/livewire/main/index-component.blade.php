@@ -442,7 +442,7 @@
                 </div>
                 <div class="col-xxl-6 col-xl-6 col-lg-6 wow fadeInLeft" data-wow-delay="1.2s">
                     <figure class="image m-img">
-                        <img src="{{ asset('assets/main/imgs/resources/choose-1.png') }}" alt="Why choose us">
+                        <img src="{{ asset('assets/main/imgs/resources/choose-1.jpg') }}" alt="Why choose us">
                     </figure>
                 </div>
             </div>
