@@ -1,8 +1,8 @@
 <div>
     <!-- Breadcrumb area start -->
     <div wire:ignore class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
-        <div class="breadcrumb__thumb" data-background="{{ asset('assets/main/imgs/resources/service.jpg') }}"></div>
-        <div class="breadcrumb__thumb_2" data-background="{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}"></div>
+        <div class="breadcrumb__thumb" style="background-image: url('{{ asset('assets/main/imgs/resources/service.jpg') }}');"></div>
+        <div class="breadcrumb__thumb_2" style="background-image: url('{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}');"></div>
         <div class="small-container">
             <div class="row justify-content-center">
                 <div class="col-xxl-12">
@@ -78,8 +78,8 @@
 
     <!-- Why Choose Us (static) – kept as is -->
     <section class="choose-section bg-color-1 section-space-top p-relative">
-        <div class="bg-image" data-background="{{ asset('assets/main/imgs/bg/choose-bg.png') }}"></div>
-        <div class="shape-image" data-background="{{ asset('assets/main/imgs/shapes/shape-15.png') }}"></div>
+        <div class="bg-image" style="background-image: url('{{ asset('assets/main/imgs/bg/choose-bg.png') }}');"></div>
+        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');"></div>
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6 p-relative section-space-medium-bottom">

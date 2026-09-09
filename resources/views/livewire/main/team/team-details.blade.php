@@ -3,8 +3,8 @@
     <!-- BREADCRUMB                                                 -->
     <!-- ============================================================ -->
     <div class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
-        <div class="breadcrumb__thumb" data-background="{{ asset('assets/main/imgs/resources/team.jpg') }}"></div>
-        <div class="breadcrumb__thumb_2" data-background="assets/imgs/resources/page-title-bg-2.png"></div>
+        <div class="breadcrumb__thumb" style="background-image: url('{{ asset('assets/main/imgs/resources/team.jpg') }}');"></div>
+        <div class="breadcrumb__thumb_2" style="background-image: url('assets/imgs/resources/page-title-bg-2.png');"></div>
         <div class="small-container">
             <div class="row justify-content-center">
                 <div class="col-xxl-12">

@@ -7,10 +7,10 @@
 <div>
     <!-- Breadcrumb area start -->
     <div class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
-        <div class="breadcrumb__thumb" data-background="{{ asset('assets/main/imgs/resources/blog2.jpg') }}">
+        <div class="breadcrumb__thumb" style="background-image: url('{{ asset('assets/main/imgs/resources/blog2.jpg') }}');">
         </div>
         <div class="breadcrumb__thumb_2"
-            data-background="{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}"></div>
+            style="background-image: url('{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}');"></div>
         <div class="small-container">
             <div class="row justify-content-center">
                 <div class="col-xxl-12">

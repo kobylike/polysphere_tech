@@ -1,4 +1,3 @@
-{{-- resources/views/index.blade.php --}}
 <div>
     <!-- Banner area start -->
     <section class="banner-section p-relative fix">
@@ -7,7 +6,7 @@
                 <!-- Slide 1 -->
                 <div class="swiper-slide">
                     <div wire:ignore class="banner-main"
-                        data-background="{{ asset('assets/main/imgs/banner/banner-1.jpg') }}">
+                        style="background-image: url('{{ asset('assets/main/imgs/banner/banner-1.jpg') }}');">
                         <div class="large-container">
                             <div class="banner-area p-relative z-3 wow img-custom-anim-left animated"
                                 data-wow-delay="1500ms">
@@ -16,7 +15,8 @@
                                 <p class="banner-text">We craft custom software, cloud‑native platforms, and digital
                                     strategies that turn your vision into a competitive advantage.</p>
                                 <div class="banner-btn-area">
-                                    <a class="primary-btn-1 btn-hover" href="services.html">
+                                    <a class="primary-btn-1 btn-hover" wire:navigate.hover
+                                        href="{{ route('services') }}">
                                         Explore Our Work &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
                                     </a>
@@ -31,17 +31,17 @@
                         </div>
                     </div>
                     <div class="banner-shape-area">
-                        <div class="shape-1" data-background="{{ asset('assets/main/imgs/shapes/shape-1.png') }}"></div>
-                        <div class="shape-2" data-background="{{ asset('assets/main/imgs/shapes/shape-2.png') }}"></div>
-                        <div class="shape-3" data-background="{{ asset('assets/main/imgs/shapes/shape-3.png') }}"></div>
-                        <div class="shape-4" data-background="{{ asset('assets/main/imgs/shapes/shape-4.png') }}"></div>
-                        <div class="shape-5" data-background="{{ asset('assets/main/imgs/shapes/shape-5.png') }}"></div>
+                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
+                        <div class="shape-2" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
+                        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
+                        <div class="shape-4" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
+                        <div class="shape-5" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
                     </div>
                 </div>
                 <!-- Slide 2 -->
                 <div class="swiper-slide">
                     <div wire:ignore class="banner-main"
-                        data-background="{{ asset('assets/main/imgs/banner/banner-2.jpg') }}">
+                        style="background-image: url('{{ asset('assets/main/imgs/banner/banner-2.jpg') }}');">
                         <div class="large-container">
                             <div class="banner-area p-relative z-3 wow img-custom-anim-left animated"
                                 data-wow-delay="2500ms">
@@ -50,7 +50,8 @@
                                 <p class="banner-text">From legacy migration to AI‑driven automation – we guide you
                                     through every step of your digital evolution.</p>
                                 <div class="banner-btn-area">
-                                    <a class="primary-btn-1 btn-hover" href="services.html">
+                                    <a class="primary-btn-1 btn-hover" wire:navigate.hover
+                                        href="{{ route('services') }}">
                                         Start Your Journey &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
                                     </a>
@@ -65,17 +66,17 @@
                         </div>
                     </div>
                     <div class="banner-shape-area">
-                        <div class="shape-1" data-background="{{ asset('assets/main/imgs/shapes/shape-1.png') }}"></div>
-                        <div class="shape-2" data-background="{{ asset('assets/main/imgs/shapes/shape-2.png') }}"></div>
-                        <div class="shape-3" data-background="{{ asset('assets/main/imgs/shapes/shape-3.png') }}"></div>
-                        <div class="shape-4" data-background="{{ asset('assets/main/imgs/shapes/shape-4.png') }}"></div>
-                        <div class="shape-5" data-background="{{ asset('assets/main/imgs/shapes/shape-5.png') }}"></div>
+                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
+                        <div class="shape-2" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
+                        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
+                        <div class="shape-4" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
+                        <div class="shape-5" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
                     </div>
                 </div>
                 <!-- Slide 3 -->
                 <div class="swiper-slide">
                     <div wire:ignore class="banner-main"
-                        data-background="{{ asset('assets/main/imgs/banner/banner-3.jpg') }}">
+                        style="background-image: url('{{ asset('assets/main/imgs/banner/banner-3.jpg') }}');">
                         <div class="large-container">
                             <div class="banner-area p-relative z-3 wow img-custom-anim-left animated"
                                 data-wow-delay="3000ms">
@@ -84,7 +85,8 @@
                                 <p class="banner-text">We’re building the foundation for tomorrow’s security and
                                     scalability – so you can grow without limits.</p>
                                 <div class="banner-btn-area">
-                                    <a class="primary-btn-1 btn-hover" href="contact.html">
+                                    <a class="primary-btn-1 btn-hover" wire:navigate.hover
+                                        href="{{ route('contact') }}">
                                         Talk to an Expert &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
                                     </a>
@@ -99,11 +101,11 @@
                         </div>
                     </div>
                     <div class="banner-shape-area">
-                        <div class="shape-1" data-background="{{ asset('assets/main/imgs/shapes/shape-1.png') }}"></div>
-                        <div class="shape-2" data-background="{{ asset('assets/main/imgs/shapes/shape-2.png') }}"></div>
-                        <div class="shape-3" data-background="{{ asset('assets/main/imgs/shapes/shape-3.png') }}"></div>
-                        <div class="shape-4" data-background="{{ asset('assets/main/imgs/shapes/shape-4.png') }}"></div>
-                        <div class="shape-5" data-background="{{ asset('assets/main/imgs/shapes/shape-5.png') }}"></div>
+                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
+                        <div class="shape-2" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
+                        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
+                        <div class="shape-4" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
+                        <div class="shape-5" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
                     </div>
                 </div>
             </div>
@@ -117,17 +119,17 @@
     <!-- About us area start -->
     <section class="about-us-section section-space p-relative">
         <div class="shape-area">
-            <div class="shape-1" data-background="{{ asset('assets/main/imgs/bg/bg-shape-1.png') }}"></div>
-            <div class="shape-2 quote-animation" data-background="{{ asset('assets/main/imgs/shapes/shape-7.png') }}">
+            <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/bg/bg-shape-1.png') }}');"></div>
+            <div class="shape-2 quote-animation" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-7.png') }}');">
             </div>
-            <div class="shape-3 quote-animation" data-background="{{ asset('assets/main/imgs/shapes/shape-8.png') }}">
+            <div class="shape-3 quote-animation" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-8.png') }}');">
             </div>
         </div>
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6">
                     <div class="about-us-image-area p-relative wow fadeInRight" data-wow-delay=".5s">
-                        <div class="border-shape" data-background="{{ asset('assets/main/imgs/shapes/shape-6.png') }}">
+                        <div class="border-shape" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
                         </div>
                         <figure class="image-1">
                             <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}" alt="Polysphere Tech team">
@@ -172,7 +174,9 @@
                                     alt="Growth icon">
                             </div>
                             <div class="content">
-                                <h5><a href="about.html">Business‑Driven Development</a></h5>
+                                <h5>
+                                    <a wire:navigate.hover href="{{ route('about') }}">Business‑Driven Development</a>
+                                </h5>
                                 <p>We align every line of code with your strategic objectives, ensuring measurable ROI
                                     and faster time‑to‑market.</p>
                             </div>
@@ -183,13 +187,13 @@
                                     alt="Consultancy icon">
                             </div>
                             <div class="content">
-                                <h5><a href="about.html">End‑to‑End Consultancy</a></h5>
+                                <h5><a href="{{ route('services') }}">End‑to‑End Consultancy</a></h5>
                                 <p>From discovery and architecture to deployment and maintenance – we’re with you at
                                     every stage of your journey.</p>
                             </div>
                         </div>
                         <div class="about-btn-box wow fadeInLeft" data-wow-delay="1s">
-                            <a class="primary-btn-1 btn-hover" href="about.html">
+                            <a class="primary-btn-1 btn-hover" wire:navigate.hover href="{{ route('about') }}">
                                 Learn More &nbsp; | <i class="icon-right-arrow"></i>
                                 <span style="top: 147.172px; left: 108.5px;"></span>
                             </a>
@@ -201,11 +205,13 @@
     </section>
     <!-- About us area end -->
 
-    <!-- Service Slider area start -->
+    <!-- ════════════════════════════════════════════════════════════════════════
+         Service Slider – DYNAMIC from DB
+         ════════════════════════════════════════════════════════════════════════ -->
     <section class="service-slider-section section-space bg-color-1 p-relative">
-        <div class="shape-1 float-bob-y" data-background="{{ asset('assets/main/imgs/shapes/shape-10.png') }}"></div>
-        <div class="shape-2 float-bob-y" data-background="{{ asset('assets/main/imgs/shapes/shape-9.png') }}"></div>
-        <div class="shape-3" data-background="{{ asset('assets/main/imgs/shapes/shape-11.png') }}"></div>
+        <div class="shape-1 float-bob-y" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-10.png') }}');"></div>
+        <div class="shape-2 float-bob-y" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-9.png') }}');"></div>
+        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-11.png') }}');"></div>
         <div class="small-container">
             <div class="row">
                 <div class="col-xxl-6">
@@ -223,65 +229,59 @@
                     </div>
                 </div>
             </div>
-            <div class="swiper service-active-1">
+            {{-- wire:ignore stops Livewire from touching the slider after initial render --}}
+            <div wire:ignore class="swiper service-active-1">
                 <div class="swiper-wrapper">
-                    <!-- Service 1: Custom Software Development -->
-                    <div class="swiper-slide">
-                        <div class="service-slider-area p-relative">
-                            <figure class="image w-img">
-                                <img src="{{ asset('assets/main/imgs/service/service-1.jpg') }}" alt="Custom Software">
-                            </figure>
-                            <div class="content">
-                                <div class="icon-box">
-                                    <img src="{{ asset('assets/main/imgs/icon/icon.png') }}" alt="Software icon">
+                    @forelse($services as $service)
+                        <div class="swiper-slide">
+                            <div class="service-slider-area p-relative">
+                                <figure class="image w-img">
+                                    @if($service->featured_image)
+                                        <img src="{{ asset('storage/' . $service->featured_image) }}"
+                                            alt="{{ $service->name }}">
+                                    @else
+                                        <img src="{{ asset('assets/main/imgs/service/service-' . ($loop->iteration % 3 + 1) . '.jpg') }}"
+                                            alt="{{ $service->name }}">
+                                    @endif
+                                </figure>
+                                <div class="content">
+                                    <div class="icon-box">
+                                        {{-- You can add an 'icon' field to Service model and use $service->icon --}}
+                                        <img src="{{ asset('assets/main/imgs/icon/icon-' . ($loop->iteration % 3 + 1) . '.png') }}"
+                                            alt="{{ $service->name }}">
+                                    </div>
+                                    <h4 class="mb-15">
+                                        <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}">
+                                            {{ $service->name }}
+                                        </a>
+                                    </h4>
+                                    <p class="mb-25">
+                                        {{ Str::limit($service->description ?? 'We deliver expert solutions tailored to your needs.', 120) }}
+                                    </p>
+                                    <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}"
+                                        class="service-btn">
+                                        Read More <i class="icon-arrow-right-double"></i>
+                                    </a>
                                 </div>
-                                <h4 class="mb-15"><a href="service-details.html">Custom Software Development</a></h4>
-                                <p class="mb-25">We design and build tailor‑made web, mobile, and desktop applications
-                                    that solve your unique business challenges and scale with your growth.</p>
-                                <a href="service-details.html" class="service-btn">Read More <i
-                                        class="icon-arrow-right-double"></i></a>
                             </div>
                         </div>
-                    </div>
-                    <!-- Service 2: Digital Transformation -->
-                    <div class="swiper-slide">
-                        <div class="service-slider-area p-relative">
-                            <figure class="image w-img">
-                                <img src="{{ asset('assets/main/imgs/service/service-2.jpg') }}"
-                                    alt="Digital Transformation">
-                            </figure>
-                            <div class="content">
-                                <div class="icon-box">
-                                    <img src="{{ asset('assets/main/imgs/icon/icon-2.png') }}"
-                                        alt="Transformation icon">
+                    @empty
+                        <div class="swiper-slide">
+                            <div class="service-slider-area p-relative">
+                                <figure class="image w-img">
+                                    <img src="{{ asset('assets/main/imgs/service/service-1.jpg') }}" alt="Service">
+                                </figure>
+                                <div class="content">
+                                    <div class="icon-box">
+                                        <img src="{{ asset('assets/main/imgs/icon/icon.png') }}" alt="Service">
+                                    </div>
+                                    <h4 class="mb-15"><a href="#">Service Coming Soon</a></h4>
+                                    <p class="mb-25">We are constantly adding new services. Check back later.</p>
+                                    <a href="#" class="service-btn">Read More <i class="icon-arrow-right-double"></i></a>
                                 </div>
-                                <h4 class="mb-15"><a href="service-details.html">Digital Transformation</a></h4>
-                                <p class="mb-25">We help you re‑imagine operations with modern architectures,
-                                    automation, and data‑driven insights – turning complexity into competitive
-                                    advantage.</p>
-                                <a href="service-details.html" class="service-btn">Read More <i
-                                        class="icon-arrow-right-double"></i></a>
                             </div>
                         </div>
-                    </div>
-                    <!-- Service 3: SaaS Platform Engineering -->
-                    <div class="swiper-slide">
-                        <div class="service-slider-area p-relative">
-                            <figure class="image w-img">
-                                <img src="{{ asset('assets/main/imgs/service/service-3.jpg') }}" alt="SaaS Platform">
-                            </figure>
-                            <div class="content">
-                                <div class="icon-box">
-                                    <img src="{{ asset('assets/main/imgs/icon/icon-3.png') }}" alt="SaaS icon">
-                                </div>
-                                <h4 class="mb-15"><a href="service-details.html">SaaS Platform Engineering</a></h4>
-                                <p class="mb-25">From MVP to enterprise‑grade multi‑tenant systems – we build resilient,
-                                    subscription‑ready platforms with secure APIs and seamless integrations.</p>
-                                <a href="service-details.html" class="service-btn">Read More <i
-                                        class="icon-arrow-right-double"></i></a>
-                            </div>
-                        </div>
-                    </div>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -299,7 +299,7 @@
                 </div>
                 <div class="col-xxl-6 col-lg-6">
                     <div class="content p-relative">
-                        <div class="shape-1" data-background="{{ asset('assets/main/imgs/shapes/shape-12.png') }}">
+                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-12.png') }}');">
                         </div>
                         <div class="icon-box">
                             <i class="fal fa-phone-volume"></i>
@@ -315,7 +315,9 @@
     </section>
     <!-- Cta-1 area end -->
 
-    <!-- Project slider area start -->
+    <!-- ════════════════════════════════════════════════════════════════════════
+         Project Slider – DYNAMIC from DB
+         ════════════════════════════════════════════════════════════════════════ -->
     <section class="project-slider-section section-space fix">
         <div class="small-container">
             <div class="row">
@@ -335,76 +337,56 @@
                 </div>
             </div>
         </div>
-        <div class="swiper project-active-1">
+
+        {{-- wire:ignore prevents Livewire from touching the slider after initial render --}}
+        <div wire:ignore class="swiper project-active-1">
             <div class="swiper-wrapper">
-                <!-- Project 1 -->
-                <div class="swiper-slide">
-                    <div class="project-slider-area p-relative">
-                        <figure class="image m-img">
-                            <img src="{{ asset('assets/main/imgs/project/project-1.jpg') }}" alt="FinTech Platform">
-                        </figure>
-                        <div class="content-area">
-                            <div class="title-area">
-                                <h6 class="mb-5">FinTech</h6>
-                                <h5><a href="project-details.html">Digital Banking Platform</a></h5>
-                            </div>
-                            <div class="icon-area">
-                                <a href="project-details.html"><i class="icon-arrow-up"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Project 2 -->
-                <div class="swiper-slide">
-                    <div class="project-slider-area p-relative">
-                        <figure class="image m-img">
-                            <img src="{{ asset('assets/main/imgs/project/project-2.jpg') }}" alt="Healthcare SaaS">
-                        </figure>
-                        <div class="content-area">
-                            <div class="title-area">
-                                <h6 class="mb-5">Healthcare</h6>
-                                <h5><a href="project-details.html">Telemedicine SaaS</a></h5>
-                            </div>
-                            <div class="icon-area">
-                                <a href="project-details.html"><i class="icon-arrow-up"></i></a>
+                @forelse($projects as $project)
+                    <div class="swiper-slide">
+                        <div class="project-slider-area p-relative">
+                            <figure class="image m-img">
+                                @if($project->featured_image)
+                                    <img src="{{ asset('storage/' . $project->featured_image) }}" alt="{{ $project->title }}">
+                                @else
+                                    <img src="{{ asset('assets/main/imgs/project/project-' . ($loop->iteration % 4 + 1) . '.jpg') }}"
+                                        alt="{{ $project->title }}">
+                                @endif
+                            </figure>
+                            <div class="content-area">
+                                <div class="title-area">
+                                    <h6 class="mb-5">{{ $project->service?->name ?? 'General' }}</h6>
+                                    <h5>
+                                        <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}">
+                                            {{ $project->title }}
+                                        </a>
+                                    </h5>
+                                </div>
+                                <div class="icon-area">
+                                    <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}">
+                                        <i class="icon-arrow-up"></i>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <!-- Project 3 -->
-                <div class="swiper-slide">
-                    <div class="project-slider-area p-relative">
-                        <figure class="image m-img">
-                            <img src="{{ asset('assets/main/imgs/project/project-3.jpg') }}" alt="Logistics Solution">
-                        </figure>
-                        <div class="content-area">
-                            <div class="title-area">
-                                <h6 class="mb-5">Logistics</h6>
-                                <h5><a href="project-details.html">Supply Chain Optimisation</a></h5>
-                            </div>
-                            <div class="icon-area">
-                                <a href="project-details.html"><i class="icon-arrow-up"></i></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Project 4 -->
-                <div class="swiper-slide">
-                    <div class="project-slider-area p-relative">
-                        <figure class="image m-img">
-                            <img src="{{ asset('assets/main/imgs/project/project-4.jpg') }}" alt="E-commerce">
-                        </figure>
-                        <div class="content-area">
-                            <div class="title-area">
-                                <h6 class="mb-5">Retail</h6>
-                                <h5><a href="project-details.html">Headless E‑commerce Engine</a></h5>
-                            </div>
-                            <div class="icon-area">
-                                <a href="project-details.html"><i class="icon-arrow-up"></i></a>
+                @empty
+                    <div class="swiper-slide">
+                        <div class="project-slider-area p-relative">
+                            <figure class="image m-img">
+                                <img src="{{ asset('assets/main/imgs/project/project-1.jpg') }}" alt="Project">
+                            </figure>
+                            <div class="content-area">
+                                <div class="title-area">
+                                    <h6 class="mb-5">Coming Soon</h6>
+                                    <h5><a href="#">New Projects</a></h5>
+                                </div>
+                                <div class="icon-area">
+                                    <a href="#"><i class="icon-arrow-up"></i></a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
+                @endforelse
             </div>
         </div>
     </section>
@@ -412,8 +394,8 @@
 
     <!-- Choose area start -->
     <section class="choose-section bg-color-1 section-space-top p-relative">
-        <div class="bg-image" data-background="{{ asset('assets/main/imgs/bg/choose-bg.png') }}"></div>
-        <div class="shape-image" data-background="{{ asset('assets/main/imgs/shapes/shape-15.png') }}"></div>
+        <div class="bg-image" style="background-image: url('{{ asset('assets/main/imgs/bg/choose-bg.png') }}');"></div>
+        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');"></div>
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6 p-relative section-space-medium-bottom">
@@ -470,89 +452,60 @@
 
     <!-- Team area start -->
     <section class="team-section p-relative section-space">
-        <div class="shape-1" data-background="{{ asset('assets/main/imgs/shapes/shape-13.png') }}"></div>
-        <div class="shape-2 float-bob-y" data-background="{{ asset('assets/main/imgs/shapes/shape-14.png') }}"></div>
+        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-13.png') }}');"></div>
+        <div class="shape-2 float-bob-y" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-14.png') }}');"></div>
         <div class="small-container">
             <div class="title-box text-center mb-50 wow fadeInLeft" data-wow-delay=".5s">
                 <span class="section-sub-title">Our Leadership</span>
                 <h3 class="section-title mt-10">Meet the Team</h3>
             </div>
             <div class="row g-4">
-
-                <!-- Team 1 -->
-                {{-- <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
-                    <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
-                        <figure class="image w-img p-relative">
-                            <img src="{{ asset('assets/main/imgs/team/team-1.jpg') }}" alt="CEO">
-                        </figure>
-                        <div class="content">
-                            <div class="author-info">
-                                <h5 class="mb-5"><a href="team-details.html">Alexander Reed</a></h5>
-                                <span>CEO & Co‑Founder</span>
-                            </div>
-                            <div class="social-links p-relative">
-                                <span><i class="icon-share"></i></span>
-                                <ul>
-                                    <li><a href="#"><i class="fab fa-linkedin-in"></i></a></li>
-                                    <li><a href="#"><i class="fab fa-twitter"></i></a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div> --}}
-                <div class="row g-4">
-                    @forelse($teamMembers as $member)
-                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-15">
-                            <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
-
-                                <figure class="image w-img p-relative">
-                                    {{-- Image container with fixed aspect ratio 370x451 --}}
-                                    <div class="team-image-wrapper">
-                                        <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}"
-                                            class="team-member-img">
-                                    </div>
-                                </figure>
-                                <div class="content">
-                                    <div class="author-info">
-                                        <h5 class="mb-5">
-                                            <a wire:navigate
-                                                href="{{ route('team.details', ['slug' => $member->username]) }}">
-                                                {{ $member->name }}
-                                            </a>
-                                        </h5>
-                                        <span>{{ $member->position ?? 'Team Member' }}</span>
-                                    </div>
-                                    <div class="social-links p-relative">
-                                        <span><i class="icon-share"></i></span>
-                                        <ul>
-                                            @if($member->social_links['linkedin'] ?? false)
-                                                <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"><i
-                                                            class="fab fa-linkedin-in"></i></a></li>
-                                            @endif
-                                            @if($member->social_links['github'] ?? false)
-                                                <li><a href="{{ $member->social_links['github'] }}" target="_blank"><i
-                                                            class="fab fa-github"></i></a></li>
-                                            @endif
-                                            @if($member->social_links['twitter'] ?? false)
-                                                <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"><i
-                                                            class="fab fa-twitter"></i></a></li>
-                                            @endif
-                                            @if($member->social_links['youtube'] ?? false)
-                                                <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"><i
-                                                            class="fab fa-youtube"></i></a></li>
-                                            @endif
-                                        </ul>
-                                    </div>
+                @forelse($teamMembers as $member)
+                    <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-15">
+                        <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
+                            <figure class="image w-img p-relative">
+                                <div class="team-image-wrapper">
+                                    <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}" class="team-member-img">
+                                </div>
+                            </figure>
+                            <div class="content">
+                                <div class="author-info">
+                                    <h5 class="mb-5">
+                                        <a wire:navigate href="{{ route('team.details', ['slug' => $member->username]) }}">
+                                            {{ $member->name }}
+                                        </a>
+                                    </h5>
+                                    <span>{{ $member->position ?? 'Team Member' }}</span>
+                                </div>
+                                <div class="social-links p-relative">
+                                    <span><i class="icon-share"></i></span>
+                                    <ul>
+                                        @if($member->social_links['linkedin'] ?? false)
+                                            <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"><i
+                                                        class="fab fa-linkedin-in"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['github'] ?? false)
+                                            <li><a href="{{ $member->social_links['github'] }}" target="_blank"><i
+                                                        class="fab fa-github"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['twitter'] ?? false)
+                                            <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"><i
+                                                        class="fab fa-twitter"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['youtube'] ?? false)
+                                            <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"><i
+                                                        class="fab fa-youtube"></i></a></li>
+                                        @endif
+                                    </ul>
                                 </div>
                             </div>
                         </div>
-                    @empty
-                        <div class="col-12 text-center py-5">
-                            <h4>No team members found.</h4>
-                        </div>
-                    @endforelse
-                </div>
-
+                    </div>
+                @empty
+                    <div class="col-12 text-center py-5">
+                        <h4>No team members found.</h4>
+                    </div>
+                @endforelse
             </div>
         </div>
     </section>
@@ -577,7 +530,7 @@
                 </div>
                 <div class="col-xxl-8 col-xl-8 col-lg-12">
                     <div class="testimonials-two-area section-space-medium bg-color-1 p-relative">
-                        <div class="shape-1" data-background="{{ asset('assets/main/imgs/shapes/shape-36.png') }}">
+                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-36.png') }}');">
                         </div>
                         <div class="title-box wow fadeInLeft mb-60" data-wow-delay=".5s">
                             <span class="section-sub-title">Testimonials</span>
@@ -675,35 +628,28 @@
                 <h3 class="section-title mt-10">Latest from Our Blog</h3>
             </div>
             <div class="row g-4">
-                <!-- Blog 1 -->
-
-
-                @forelse($posts as $index => $post)
-
-
+                @forelse($posts as $post)
                     <div class="col-xxl-4 col-xl-4 col-lg-6">
                         <div class="blog-style-one">
-                            <a class="blog-image w-img" href="news-details.html">
+                            <a class="blog-image w-img" href="{{ route('blog.details', $post->slug) }}">
                                 @if($post->featured_image)
                                     <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}">
                                 @else
                                     <img src="{{ asset('assets/main/imgs/blog/blog-1.jpg') }}" alt="{{ $post->title }}">
                                 @endif
-
-
                             </a>
                             <div class="blog-content">
                                 <div class="post-meta">
-
                                     <span class="p-relative">
                                         <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
                                             <i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }}
-                                        </a></span>
-
+                                        </a>
+                                    </span>
                                     <span class="p-relative">
                                         <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
                                             <i class="fal fa-calendar-alt"></i> {{ $post->published_at->format('d M, Y') }}
-                                        </a></span>
+                                        </a>
+                                    </span>
                                 </div>
                                 <hr>
                                 <h5 class="blog-title mb-30">
@@ -719,15 +665,12 @@
                             </div>
                         </div>
                     </div>
-
                 @empty
                     <div class="text-center py-5">
                         <h4>No blog posts found.</h4>
                         <p>Check back later for new content.</p>
                     </div>
                 @endforelse
-
-
             </div>
         </div>
     </section>
