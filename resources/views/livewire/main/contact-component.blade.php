@@ -263,7 +263,7 @@
                                         <p class="ps-privacy-note">
                                             <i class="fas fa-lock" aria-hidden="true"></i>
                                             Your information is safe with us. We'll never share your data.
-                                            <a href="#" class="ps-privacy-link">Privacy Policy</a>
+                                            <a wire:navigate.hover href="{{route('privacy')}}" class="ps-privacy-link">Privacy Policy</a>
                                         </p>
                                     </div>
 
