@@ -20,7 +20,7 @@
                                         Explore Our Work &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
                                     </a>
-                                    <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="play-btn popup-video">
+                                    <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="play-btn popup-video">
                                         <div class="icon-1">
                                             <i class="icon-play"></i>
                                         </div>
@@ -31,11 +31,16 @@
                         </div>
                     </div>
                     <div class="banner-shape-area">
-                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
-                        <div class="shape-2" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
-                        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
-                        <div class="shape-4" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
-                        <div class="shape-5" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
+                        <div class="shape-1"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
+                        <div class="shape-2"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
+                        <div class="shape-3"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
+                        <div class="shape-4"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
+                        <div class="shape-5"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
                     </div>
                 </div>
                 <!-- Slide 2 -->
@@ -55,7 +60,7 @@
                                         Start Your Journey &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
                                     </a>
-                                    <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="play-btn popup-video">
+                                    <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="play-btn popup-video">
                                         <div class="icon-1">
                                             <i class="icon-play"></i>
                                         </div>
@@ -66,11 +71,16 @@
                         </div>
                     </div>
                     <div class="banner-shape-area">
-                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
-                        <div class="shape-2" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
-                        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
-                        <div class="shape-4" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
-                        <div class="shape-5" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
+                        <div class="shape-1"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
+                        <div class="shape-2"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
+                        <div class="shape-3"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
+                        <div class="shape-4"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
+                        <div class="shape-5"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
                     </div>
                 </div>
                 <!-- Slide 3 -->
@@ -90,7 +100,7 @@
                                         Talk to an Expert &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
                                     </a>
-                                    <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="play-btn popup-video">
+                                    <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="play-btn popup-video">
                                         <div class="icon-1">
                                             <i class="icon-play"></i>
                                         </div>
@@ -101,11 +111,16 @@
                         </div>
                     </div>
                     <div class="banner-shape-area">
-                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
-                        <div class="shape-2" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
-                        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
-                        <div class="shape-4" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
-                        <div class="shape-5" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
+                        <div class="shape-1"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-1.png') }}');"></div>
+                        <div class="shape-2"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-2.png') }}');"></div>
+                        <div class="shape-3"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-3.png') }}');"></div>
+                        <div class="shape-4"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-4.png') }}');"></div>
+                        <div class="shape-5"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-5.png') }}');"></div>
                     </div>
                 </div>
             </div>
@@ -119,17 +134,21 @@
     <!-- About us area start -->
     <section class="about-us-section section-space p-relative">
         <div class="shape-area">
-            <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/bg/bg-shape-1.png') }}');"></div>
-            <div class="shape-2 quote-animation" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-7.png') }}');">
+            <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/bg/bg-shape-1.png') }}');">
             </div>
-            <div class="shape-3 quote-animation" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-8.png') }}');">
+            <div class="shape-2 quote-animation"
+                style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-7.png') }}');">
+            </div>
+            <div class="shape-3 quote-animation"
+                style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-8.png') }}');">
             </div>
         </div>
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6">
                     <div class="about-us-image-area p-relative wow fadeInRight" data-wow-delay=".5s">
-                        <div class="border-shape" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
+                        <div class="border-shape"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
                         </div>
                         <figure class="image-1">
                             <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}" alt="Polysphere Tech team">
@@ -140,7 +159,7 @@
                                     alt="Polysphere Tech workspace">
                                 <div class="play-btn">
                                     <div class="video_player_btn">
-                                        <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="popup-video"><i
+                                        <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"><i
                                                 class="icon-play"></i></a>
                                     </div>
                                 </div>
@@ -150,11 +169,12 @@
                             <div class="inner p-relative">
                                 <div class="icon-box">
                                     <i class="icon-prize"></i>
-                                    <h4><span class="counter">8</span>+ Years</h4>
+                                    <h4><span class="counter">5</span>+ Years</h4>
                                     <p>Delivering Excellence</p>
                                 </div>
                             </div>
-                        </div>
+                        </div>3
+                        
                     </div>
                 </div>
                 <div class="col-xxl-6 col-xl-6 col-lg-6">
@@ -209,9 +229,12 @@
          Service Slider – DYNAMIC from DB
          ════════════════════════════════════════════════════════════════════════ -->
     <section class="service-slider-section section-space bg-color-1 p-relative">
-        <div class="shape-1 float-bob-y" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-10.png') }}');"></div>
-        <div class="shape-2 float-bob-y" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-9.png') }}');"></div>
-        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-11.png') }}');"></div>
+        <div class="shape-1 float-bob-y"
+            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-10.png') }}');"></div>
+        <div class="shape-2 float-bob-y"
+            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-9.png') }}');"></div>
+        <div class="shape-3" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-11.png') }}');">
+        </div>
         <div class="small-container">
             <div class="row">
                 <div class="col-xxl-6">
@@ -229,8 +252,7 @@
                     </div>
                 </div>
             </div>
-            {{-- wire:ignore stops Livewire from touching the slider after initial render --}}
-            <div wire:ignore class="swiper service-active-1">
+            <div wire:ignore class="swiper service-active-1" data-count="{{ $services->count() }}">
                 <div class="swiper-wrapper">
                     @forelse($services as $service)
                         <div class="swiper-slide">
@@ -248,7 +270,8 @@
                                     <div class="icon-box">
                                         {{-- You can add an 'icon' field to Service model and use $service->icon --}}
                                         <img src="{{ asset('assets/main/imgs/icon/icon-' . ($loop->iteration % 3 + 1) . '.png') }}"
-                                            alt="{{ $service->name }}">
+                                            alt="{{ $service->name }}"
+                                            onerror="this.onerror=null; this.src='{{ asset('assets/main/imgs/icon/icon.png') }}';">
                                     </div>
                                     <h4 class="mb-15">
                                         <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}">
@@ -299,7 +322,8 @@
                 </div>
                 <div class="col-xxl-6 col-lg-6">
                     <div class="content p-relative">
-                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-12.png') }}');">
+                        <div class="shape-1"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-12.png') }}');">
                         </div>
                         <div class="icon-box">
                             <i class="fal fa-phone-volume"></i>
@@ -323,8 +347,8 @@
             <div class="row">
                 <div class="col-xxl-6">
                     <div class="title-box mb-50 wow fadeInLeft" data-wow-delay=".5s">
-                        <span class="section-sub-title">Case Studies</span>
-                        <h3 class="section-title mt-10">Recent Success Stories</h3>
+                        <span class="section-sub-title"> Projects</span>
+                        <h3 class="section-title mt-10">Our Latest Projects</h3>
                     </div>
                 </div>
                 <div class="col-xxl-6">
@@ -339,7 +363,7 @@
         </div>
 
         {{-- wire:ignore prevents Livewire from touching the slider after initial render --}}
-        <div wire:ignore class="swiper project-active-1">
+        <div wire:ignore class="swiper project-active-1" data-count="{{ $projects->count() }}">
             <div class="swiper-wrapper">
                 @forelse($projects as $project)
                     <div class="swiper-slide">
@@ -395,7 +419,8 @@
     <!-- Choose area start -->
     <section class="choose-section bg-color-1 section-space-top p-relative">
         <div class="bg-image" style="background-image: url('{{ asset('assets/main/imgs/bg/choose-bg.png') }}');"></div>
-        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');"></div>
+        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');">
+        </div>
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6 p-relative section-space-medium-bottom">
@@ -452,8 +477,10 @@
 
     <!-- Team area start -->
     <section class="team-section p-relative section-space">
-        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-13.png') }}');"></div>
-        <div class="shape-2 float-bob-y" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-14.png') }}');"></div>
+        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-13.png') }}');">
+        </div>
+        <div class="shape-2 float-bob-y"
+            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-14.png') }}');"></div>
         <div class="small-container">
             <div class="title-box text-center mb-50 wow fadeInLeft" data-wow-delay=".5s">
                 <span class="section-sub-title">Our Leadership</span>
@@ -522,7 +549,7 @@
                         </figure>
                         <div class="play-btn">
                             <div class="video_player_btn">
-                                <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="popup-video"><i
+                                <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"><i
                                         class="icon-play"></i></a>
                             </div>
                         </div>
@@ -530,7 +557,8 @@
                 </div>
                 <div class="col-xxl-8 col-xl-8 col-lg-12">
                     <div class="testimonials-two-area section-space-medium bg-color-1 p-relative">
-                        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-36.png') }}');">
+                        <div class="shape-1"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-36.png') }}');">
                         </div>
                         <div class="title-box wow fadeInLeft mb-60" data-wow-delay=".5s">
                             <span class="section-sub-title">Testimonials</span>

@@ -7,7 +7,7 @@
                 <span class="email p-relative">
                     <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>
                 </span>
-                <span class="time p-relative">Hours: Mon - Fri: 9.00 AM - 6.00 PM</span>
+                <span class="time p-relative">Hours: Mon - Fri: 8.00 AM - 8.00 PM</span>
             </div>
             <div class="header-top-socials">
                 <span><a href="https://web.facebook.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
@@ -93,16 +93,16 @@
                         </div>
 
                         <!-- Shopping cart (optional) -->
-                        <div class="header-shopping-cart my-auto">
+                        {{-- <div class="header-shopping-cart my-auto">
                             <div class="cart-icon">
                                 <a href="#"><i class="icon-shopping-cart"></i></a>
                             </div>
-                        </div>
+                        </div> --}}
 
                         <!-- Get a Quote button -->
                         <div class="header-action d-none d-xl-inline-flex gap-5">
                             <div class="header-link">
-                                <a class="primary-btn-1 btn-hover" href="{{ route('contact') }}">
+                                <a class="primary-btn-1 btn-hover" wire:navigate.hover href="{{ route('contact') }}">
                                     GET A QUOTE &nbsp; | <i class="icon-right-arrow"></i>
                                     <span style="top: 147.172px; left: 108.5px;"></span>
                                 </a>
@@ -117,7 +117,7 @@
                                 </div>
                                 <div class="content">
                                     <span>Call Us Now</span>
-                                    <h6><a href="tel:+1234567890">+1 (234) 567-8900</a></h6>
+                                    <h6><a href="tel:+233597563427">+233 (59) 756-3427</a></h6>
                                 </div>
                             </div>
                         </div>

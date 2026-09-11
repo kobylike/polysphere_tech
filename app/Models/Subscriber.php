@@ -93,4 +93,5 @@ class Subscriber extends Model
         $this->update(['verification_token' => $token]);
         return $token;
     }
+
 }

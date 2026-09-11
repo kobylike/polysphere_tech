@@ -223,7 +223,7 @@
                     <div class="card-body p-0">
                         <!-- Fixed height container with wire:ignore -->
                         <div wire:ignore style="height:200px;">
-                            <canvas id="overiewChart" style="width:100%; height:100%;"></canvas>
+                            <canvas id="dashboardProjectsChart" style="width:100%; height:100%;"></canvas>
                         </div>
                         <div class="ttl-project">
                             <div class="pr-data">
@@ -259,7 +259,7 @@
                     </div>
                     <div class="card-body">
                         <div wire:ignore style="height:200px;">
-                            <canvas id="projectChart" style="width:100%; height:100%;"></canvas>
+                            <canvas id="dashboardStatusChart" style="width:100%; height:100%;"></canvas>
                         </div>
                         <div class="project-date mt-3">
                             @foreach($projectStatusData['labels'] as $index => $label)
@@ -448,7 +448,7 @@
                     </div>
                     <div class="card-body">
                         <div wire:ignore style="height:150px;">
-                            <canvas id="earningChart" style="width:100%; height:100%;"></canvas>
+                            <canvas id="dashboardRegistrationsChart" style="width:100%; height:100%;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -459,15 +459,31 @@
 </div>
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('alpine:init', () => {
             Alpine.data('dashboardCharts', () => ({
                 projectChart: null,
                 statusChart: null,
                 registrationsChart: null,
+                ChartJS: null, // locally-scoped Chart.js v4 class — never touches window.Chart
 
-                initCharts() {
+                async initCharts() {
+                    // The theme's own head scripts load an OLD Chart.js v2 bundle
+                    // (Chart.bundle.min.js) with `defer`, which executes AFTER any
+                    // plain synchronous <script src="...chart.js"> tag and ends up
+                    // overwriting window.Chart back to v2 right before Alpine even
+                    // starts. Since this dashboard's config uses v3/v4-only option
+                    // syntax (plugins.legend, scales.y), that silently produced
+                    // blank canvases. Importing Chart.js as its own ES module here
+                    // sidesteps the global entirely — this reference can't be
+                    // overwritten by anything else on the page, regardless of
+                    // script load order.
+                    if (!this.ChartJS) {
+                        const mod = await import('https://cdn.jsdelivr.net/npm/chart.js@4/+esm');
+                        mod.Chart.register(...mod.registerables);
+                        this.ChartJS = mod.Chart;
+                    }
+
                     const projectData = @json($initialProjectChartData);
                     const statusData = @json($initialProjectStatusData);
                     const registrationsData = @json($initialUserRegistrationsData);
@@ -478,10 +494,10 @@
                 },
 
                 initProjectChart(data) {
-                    const ctx = document.getElementById('overiewChart');
-                    if (!ctx) return;
+                    const ctx = document.getElementById('dashboardProjectsChart');
+                    if (!ctx || !this.ChartJS) return;
                     if (this.projectChart) this.projectChart.destroy();
-                    this.projectChart = new Chart(ctx, {
+                    this.projectChart = new this.ChartJS(ctx, {
                         type: 'line',
                         data: {
                             labels: data.labels,
@@ -504,10 +520,10 @@
                 },
 
                 initStatusChart(data) {
-                    const ctx = document.getElementById('projectChart');
-                    if (!ctx) return;
+                    const ctx = document.getElementById('dashboardStatusChart');
+                    if (!ctx || !this.ChartJS) return;
                     if (this.statusChart) this.statusChart.destroy();
-                    this.statusChart = new Chart(ctx, {
+                    this.statusChart = new this.ChartJS(ctx, {
                         type: 'doughnut',
                         data: {
                             labels: data.labels,
@@ -526,10 +542,10 @@
                 },
 
                 initRegistrationsChart(data) {
-                    const ctx = document.getElementById('earningChart');
-                    if (!ctx) return;
+                    const ctx = document.getElementById('dashboardRegistrationsChart');
+                    if (!ctx || !this.ChartJS) return;
                     if (this.registrationsChart) this.registrationsChart.destroy();
-                    this.registrationsChart = new Chart(ctx, {
+                    this.registrationsChart = new this.ChartJS(ctx, {
                         type: 'bar',
                         data: {
                             labels: data.labels,
@@ -572,7 +588,14 @@
             }));
         });
 
-        // ─── Fix charts after wire:navigate and on DOM reload ──────────
+        // ─── Fix charts after wire:navigate ──────────
+        // (No separate DOMContentLoaded listener needed here — Alpine's own
+        // x-init="initCharts()" on the component root already covers hard
+        // page loads. Keeping a second DOMContentLoaded-triggered call here
+        // used to race against it: since initCharts() is now async (it
+        // dynamically imports Chart.js), both calls could interleave their
+        // chart creation/resize timing on a hard refresh, which is what was
+        // producing a canvas that locked in the wrong height.)
         document.addEventListener('livewire:navigated', function () {
             setTimeout(() => {
                 if (window.Alpine) {
@@ -582,18 +605,6 @@
                     }
                 }
             }, 50);
-        });
-
-        // Also run after hard refresh
-        document.addEventListener('DOMContentLoaded', function () {
-            setTimeout(() => {
-                if (window.Alpine) {
-                    const chartsComponent = Alpine.$data(document.querySelector('[x-data="dashboardCharts()"]'));
-                    if (chartsComponent && typeof chartsComponent.initCharts === 'function') {
-                        chartsComponent.initCharts();
-                    }
-                }
-            }, 100);
         });
     </script>
 @endpush

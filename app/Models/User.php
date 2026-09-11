@@ -17,11 +17,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use PragmaRX\Google2FA\Google2FA;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 use Spatie\Permission\Traits\HasRoles;
-
+use Illuminate\Support\Facades\Http;
 
 
 #[Fillable([
@@ -492,6 +493,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->status === 'suspended';
     }
 
+    // ─── Avatar Helpers ──────────────────────────────────────────────
+    // Http and Storage are already imported at the top of this file, so
+    // no `use` statements are needed here — inside a class, `use` is only
+    // valid for importing traits, not namespaces/facades.
+
     public function getAvatarUrlAttribute(): string
     {
         if ($this->avatar) {
@@ -500,11 +506,46 @@ class User extends Authenticatable implements MustVerifyEmail
             return asset('storage/' . $this->avatar) . '?v=' . $version;
         }
 
-        // Fallback to UI‑avatars – also bust cache when name changes
-        $name = urlencode($this->name);
-        // Use a hash of the name and updated_at to force refresh when name changes
+        return $this->generatedAvatarUrl();
+    }
+
+    /**
+     * Returns a locally-stored initials avatar, downloading and caching it
+     * the first time it's needed for this name/updated_at combination.
+     */
+    protected function generatedAvatarUrl(): string
+    {
         $hash = md5($this->name . ($this->updated_at ? $this->updated_at->timestamp : time()));
-        return 'https://ui-avatars.com/api/?name=' . $name . '&background=3b82f6&color=fff&size=100&v=' . $hash;
+        $relativePath = 'avatars/generated/' . $hash . '.png';
+
+        if (!Storage::disk('public')->exists($relativePath)) {
+            $this->downloadGeneratedAvatar($relativePath);
+        }
+
+        // If the download failed for any reason, fall back to the live link
+        // for this request rather than showing a broken image.
+        if (!Storage::disk('public')->exists($relativePath)) {
+            $name = urlencode($this->name);
+            return 'https://ui-avatars.com/api/?name=' . $name . '&background=3b82f6&color=fff&size=200&v=' . $hash;
+        }
+
+        return asset('storage/' . $relativePath) . '?v=' . $hash;
+    }
+
+    protected function downloadGeneratedAvatar(string $relativePath): void
+    {
+        $name = urlencode($this->name);
+        $sourceUrl = 'https://ui-avatars.com/api/?name=' . $name . '&background=3b82f6&color=fff&size=200';
+
+        try {
+            $response = Http::timeout(5)->get($sourceUrl);
+
+            if ($response->successful()) {
+                Storage::disk('public')->put($relativePath, $response->body());
+            }
+        } catch (\Throwable $e) {
+            report($e); // log it, but never let a slow/unreachable API break the page
+        }
     }
 
     public function getInitialsAttribute(): string

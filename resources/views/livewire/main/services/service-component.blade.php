@@ -76,16 +76,17 @@
         </div>
     </section>
 
-    <!-- Why Choose Us (static) – kept as is -->
+  <!-- Choose area start -->
     <section class="choose-section bg-color-1 section-space-top p-relative">
         <div class="bg-image" style="background-image: url('{{ asset('assets/main/imgs/bg/choose-bg.png') }}');"></div>
-        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');"></div>
+        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');">
+        </div>
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6 p-relative section-space-medium-bottom">
                     <div class="title-box mb-50 wow fadeInLeft" data-wow-delay=".5s">
-                        <span class="section-sub-title">why choose us</span>
-                        <h3 class="section-title mt-10">What's Make Us Different</h3>
+                        <span class="section-sub-title">Why Polysphere Tech</span>
+                        <h3 class="section-title mt-10">What Sets Us Apart</h3>
                     </div>
                     <!-- block -->
                     <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".5s">
@@ -93,41 +94,46 @@
                             <i class="icon-roof-4"></i>
                         </div>
                         <div class="content">
-                            <h5><a href="{{ route('services') }}">Commercial Service</a></h5>
-                            <p>Embarrassing hidden in the middle All the Lorem Ipsum generators on the Internet repeat predefined chunks</p>
+                            <h5><a href="services.html">Agile & Transparent</a></h5>
+                            <p>We work in short, iterative cycles with regular demos and clear communication – so you’re
+                                never in the dark.</p>
                         </div>
                     </div>
                     <hr>
+                    <!-- block -->
                     <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".7s">
                         <div class="icon-box p-relative">
                             <i class="icon-target"></i>
                         </div>
                         <div class="content">
-                            <h5><a href="{{ route('services') }}">Mission Statement</a></h5>
-                            <p>Embarrassing hidden in the middle All the Lorem Ipsum generators on the Internet repeat predefined chunks</p>
+                            <h5><a href="services.html">End‑to‑End Ownership</a></h5>
+                            <p>We take full responsibility – from ideation and design to deployment, support, and
+                                continuous improvement.</p>
                         </div>
                     </div>
                     <hr>
+                    <!-- block -->
                     <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".9s">
                         <div class="icon-box p-relative">
                             <i class="icon-help"></i>
                         </div>
                         <div class="content">
-                            <h5><a href="{{ route('services') }}">Safety And Reliability</a></h5>
-                            <p>Embarrassing hidden in the middle All the Lorem Ipsum generators on the Internet repeat predefined chunks</p>
+                            <h5><a href="services.html">Future‑Proof Engineering</a></h5>
+                            <p>We build with scalability, security, and maintainability in mind – so your technology
+                                evolves with your business.</p>
                         </div>
                     </div>
                     <hr>
                 </div>
                 <div class="col-xxl-6 col-xl-6 col-lg-6 wow fadeInLeft" data-wow-delay="1.2s">
                     <figure class="image m-img">
-                        <img src="{{ asset('assets/main/imgs/resources/choose-1.png') }}" alt="">
+                        <img src="{{ asset('assets/main/imgs/resources/choose-1.jpg') }}" alt="Why choose us">
                     </figure>
                 </div>
             </div>
         </div>
     </section>
-
+    <!-- Choose area end -->
     <!-- Counter stats (static) – kept as is -->
     <section class="icon-box-counter-section section-space">
         <div class="small-container">

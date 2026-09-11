@@ -16,16 +16,32 @@
   images, and dead-looking click targets.
 
   Fix: everything that touches page content (Swiper, WOW, data-background,
-  meanmenu, magnificPopup, counterUp, isotope filter, countdown, preloader,
-  before/after) now lives inside initPageJS() and is re-run on Livewire's
-  'livewire:navigated' event — which fires on the very first page load AND on
-  every subsequent wire:navigate visit, so this is a full drop-in replacement
-  for the old load/DOMContentLoaded triggers.
+  magnificPopup, counterUp, isotope filter, countdown, preloader, before/after)
+  now lives inside initPageJS() and is re-run on Livewire's 'livewire:navigated'
+  event — which fires on the very first page load AND on every subsequent
+  wire:navigate visit, so this is a full drop-in replacement for the old
+  load/DOMContentLoaded triggers.
 
   Anything bound to window/document itself (header dropdown toggles, sticky
   header on scroll, back-to-top progress on scroll, delegated icon-box hover)
   is registered exactly once via bindGlobalEventsOnce(), guarded by a flag, so
   repeated navigations never stack up duplicate listeners.
+
+  ── MOBILE MENU FIX (meanmenu triple-render bug) ────────────────────────────────
+  meanmenu doesn't just re-paint an element in place — on every call it CLONES
+  the source <nav id="mobile-menu"> markup and appends the clone into
+  `.mobile-menu` (meanMenuContainer), leaving the previous clone(s) sitting in
+  the DOM. Since the nav links are static across pages, re-running
+  `.meanmenu()` inside initPageJS on every 'livewire:navigated' visit meant
+  each navigation appended another full copy of the menu — 1 page view showed
+  the links once, 2 views showed them twice, 3 views showed them thrice, etc.
+  (exactly what showed up in the offcanvas panel).
+
+  Fix: meanmenu is now initialized exactly ONCE per browser session (same
+  pattern already used above for WOW / globalEventsBound), inside
+  bindGlobalEventsOnce(), instead of inside initPageJS(). The menu markup
+  doesn't depend on which page you're on, so it never needs to be rebuilt on
+  navigation — only bound once, the same way the scroll/dropdown listeners are.
 -----------------------------------------------------------------------------------*/
 
 /************ TABLE OF CONTENTS ***************
@@ -66,8 +82,12 @@
 (function ($) {
 	"use strict";
 
-	var globalEventsBound = false;   // guards one-time window/document listeners
-	var countdownTimerId  = null;    // guards against stacking setInterval on every nav
+	var globalEventsBound   = false; // guards one-time window/document listeners
+	var mobileMenuBound      = false; // guards one-time meanmenu init (fixes triple-render bug)
+	var countdownTimerId    = null;  // guards against stacking setInterval on every nav
+	var hasCompletedFirstLoad = false; // true after the very first page load finishes, so
+	                                    // WOW's slow entrance-delay animation only plays once
+	                                    // per browser session, not on every wire:navigate click
 
 	/* =====================================================================
 	   Runs on EVERY page view (first load + every wire:navigate visit)
@@ -100,21 +120,11 @@
 
 		/*======================================
 		Mobile Menu Js
+		MOVED to bindGlobalEventsOnce() — see header note. meanmenu clones
+		the nav markup on every call, so it must only ever run once per
+		session, not on every 'livewire:navigated' visit. (Intentionally
+		left out of initPageJS(); do not re-add the .meanmenu() calls here.)
 		========================================*/
-		if ($('#mobile-menu').length) {
-			$('#mobile-menu').meanmenu({
-				meanMenuContainer: '.mobile-menu',
-				meanScreenWidth: "991",
-				meanExpand: ['<i class="fal fa-plus"></i>'],
-			});
-		}
-		if ($("#mobile-menu-2").length) {
-			$("#mobile-menu-2").meanmenu({
-				meanMenuContainer: ".mobile-menu-2",
-				meanScreenWidth: "4000",
-				meanExpand: ['<i class="fal fa-plus"></i>'],
-			});
-		}
 
 		/*======================================
 		Sidebar Toggle / Body overlay / Search Header
@@ -210,18 +220,73 @@
 		}
 
 		/*======================================
-		Counter Js
+		Counter Js — custom, self-contained implementation.
+
+		The original relied on the counterUp plugin, which sets the
+		element's text to "0" the instant it's called and only fills in
+		the real number once a scroll-into-view (waypoint) check passes.
+		That has two problems in a wire:navigate world: (1) if it's ever
+		invoked twice in quick succession, the second call reads the
+		CURRENTLY DISPLAYED text ("0", since the first call just wrote
+		it) as the number to animate to — so it gets stuck at 0 forever
+		— and (2) it depends on an external waypoints library correctly
+		measuring layout at a moment WOW.js may still have the element
+		hidden. This version reads the true target number once and
+		caches it on the element via jQuery .data(), so even if it's
+		called more than once, every invocation always counts to the
+		correct number — and it animates immediately rather than
+		waiting on a scroll/viewport check.
 		========================================*/
-		if ($(".counter").length) {
-			$(".counter").counterUp({ delay: 10, time: 1000 });
-		}
+		$(".counter").each(function () {
+			var $el = $(this);
+
+			// Cache the real target the FIRST time we see this element,
+			// so a second/duplicate call can never read a corrupted
+			// in-progress value off the DOM.
+			if ($el.data('counterTarget') === undefined) {
+				var target = parseInt($el.text().replace(/[^0-9]/g, ''), 10);
+				if (isNaN(target)) return;
+				$el.data('counterTarget', target);
+			}
+
+			var finalValue = $el.data('counterTarget');
+			var duration = 1000; // ms
+			var startTime = null;
+
+			function step(timestamp) {
+				if (startTime === null) startTime = timestamp;
+				var progress = Math.min((timestamp - startTime) / duration, 1);
+				$el.text(Math.floor(progress * finalValue));
+				if (progress < 1) {
+					window.requestAnimationFrame(step);
+				} else {
+					$el.text(finalValue); // guarantee the exact final number
+				}
+			}
+			window.requestAnimationFrame(step);
+		});
 
 		/*======================================
 		Wow Js
+
+		WOW's own stylesheet rule hides every `.wow` element (visibility:
+		hidden) until it's scrolled into view and its data-wow-delay has
+		elapsed — great for a one-time "wow" on the very first page load,
+		but replaying that same hidden-then-fade-in-after-3-seconds delay
+		on every single wire:navigate click just looks like the page is
+		broken/slow to load. So: play the full animated entrance only on
+		the genuine first load of the session; on every navigation after
+		that, reveal .wow elements immediately with no delay so
+		navigating around the site feels instant.
 		========================================*/
 		if (typeof WOW !== 'undefined') {
-			new WOW().init();
+			if (!hasCompletedFirstLoad) {
+				new WOW().init();
+			} else {
+				$('.wow').css({ visibility: 'visible', opacity: 1 });
+			}
 		}
+		hasCompletedFirstLoad = true;
 
 		/*======================================
 		Back To Top Js — style setup for the fresh SVG path on this page.
@@ -428,8 +493,16 @@
 
 		// Project slider (home page) — links inside slides now navigate correctly
 		if ($('.project-active-1').length) {
+			// Loop mode clones slides to fill the row before it can create the
+			// "infinite scroll" illusion. With few real projects (e.g. just 1)
+			// and a slider configured to show up to 4 across, that cloning is
+			// exactly what makes a single project appear 2-4 times. Only turn
+			// looping on once there are enough real slides to fill the widest
+			// breakpoint (4-across) without needing to duplicate anything.
+			var projectSlideCount = parseInt($('.project-active-1').data('count'), 10) || 0;
 			new Swiper('.project-active-1', {
-				slidesPerView: 4, spaceBetween: 30, loop: true,
+				slidesPerView: 4, spaceBetween: 30,
+				loop: projectSlideCount > 4,
 				autoplay: { delay: 3000 },
 				navigation: { nextEl: ".project-1-button-next", prevEl: ".project-1-button-prev" },
 				breakpoints: { '1400': { slidesPerView: 4 }, '1200': { slidesPerView: 3 }, '992': { slidesPerView: 2 }, '768': { slidesPerView: 2 }, '576': { slidesPerView: 1 }, '0': { slidesPerView: 1 } },
@@ -444,8 +517,13 @@
 
 		// Service slider (home page) — links inside slides now navigate correctly
 		if ($('.service-active-1').length) {
+			// Same reasoning as the project slider above — only loop once there
+			// are enough real services to fill the widest breakpoint (3-across).
+			var serviceSlideCount = parseInt($('.service-active-1').data('count'), 10) || 0;
 			new Swiper('.service-active-1', {
-				slidesPerView: 3, spaceBetween: 30, loop: true, roundLengths: true,
+				slidesPerView: 3, spaceBetween: 30,
+				loop: serviceSlideCount > 3,
+				roundLengths: true,
 				autoplay: { delay: 3000 },
 				navigation: { nextEl: ".service-1-button-next", prevEl: ".service-1-button-prev" },
 				breakpoints: { '1400': { slidesPerView: 3 }, '1200': { slidesPerView: 3 }, '992': { slidesPerView: 2 }, '768': { slidesPerView: 1 }, '576': { slidesPerView: 1 }, '0': { slidesPerView: 1 } },
@@ -540,6 +618,36 @@
 	function bindGlobalEventsOnce() {
 		if (globalEventsBound) return;
 		globalEventsBound = true;
+
+		/*======================================
+		Mobile Menu Js — meanmenu
+
+		Init exactly once. meanmenu clones the source <nav id="mobile-menu">
+		markup into `.mobile-menu` on every call; since the menu links are
+		the same on every page there is nothing page-specific to rebuild on
+		navigation, and calling it again would just stack another clone on
+		top of the existing one (the "links showing 2x/3x" bug). Guarded
+		here with mobileMenuBound the same way this function itself is
+		guarded by globalEventsBound.
+		========================================*/
+		if (!mobileMenuBound) {
+			mobileMenuBound = true;
+
+			if ($('#mobile-menu').length) {
+				$('#mobile-menu').meanmenu({
+					meanMenuContainer: '.mobile-menu',
+					meanScreenWidth: "991",
+					meanExpand: ['<i class="fal fa-plus"></i>'],
+				});
+			}
+			if ($("#mobile-menu-2").length) {
+				$("#mobile-menu-2").meanmenu({
+					meanMenuContainer: ".mobile-menu-2",
+					meanScreenWidth: "4000",
+					meanExpand: ['<i class="fal fa-plus"></i>'],
+				});
+			}
+		}
 
 		/*======================================
 		Sticky Header Js — looks up #header-sticky fresh every tick,
@@ -661,13 +769,14 @@
 	   old $(window).on('load', ...) / top-level call in this file.
 	   ===================================================================== */
 	bindGlobalEventsOnce();
-	document.addEventListener('livewire:navigated', initPageJS);
 
-	// Fallback: if this script somehow loads on a plain non-Livewire page
-	// (or before Livewire's navigate plugin attaches), still run once.
-	if (!window.livewireNavigateAttachedFallbackRan) {
-		window.livewireNavigateAttachedFallbackRan = true;
-		$(function () { initPageJS(); });
-	}
+	// livewire:navigated fires on the very first page load AND on every
+	// subsequent wire:navigate visit — this ONE listener is all we need.
+	// (Previously this file also ran initPageJS() a second time via
+	// $(document).ready() as a "just in case" fallback — that caused
+	// WOW.js and the counter animation to both fire twice on first load,
+	// which is what was behind the flash-of-broken-content and the
+	// "+ Years" counter getting stuck at 0.)
+	document.addEventListener('livewire:navigated', initPageJS);
 
 })(jQuery);

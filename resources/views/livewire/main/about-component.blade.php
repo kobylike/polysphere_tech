@@ -62,7 +62,7 @@
                             <div class="inner p-relative">
                                 <div class="icon-box">
                                     <i class="icon-prize"></i>
-                                    <h4><span class="counter">8</span>+ Years</h4>
+                                    <h4><span class="counter">5</span>+ Years</h4>
                                     <p>Delivering Excellence</p>
                                 </div>
                             </div>
@@ -105,7 +105,7 @@
                             </div>
                         </div>
                         <div class="about-btn-box wow fadeInLeft" data-wow-delay="1s">
-                            <a class="primary-btn-1 btn-hover" href="{{ route('contact') }}">
+                            <a class="primary-btn-1 btn-hover" wire:navigate.hover href="{{ route('contact') }}">
                                 Get in Touch &nbsp; | <i class="icon-right-arrow"></i>
                                 <span style="top: 147.172px; left: 108.5px;"></span>
                             </a>
@@ -225,7 +225,7 @@
                 </div>
                 <div class="col-xxl-6 col-xl-6 col-lg-6 wow fadeInLeft" data-wow-delay="1.2s">
                     <figure class="image m-img">
-                        <img src="{{ asset('assets/main/imgs/resources/choose-1.png') }}"
+                        <img src="{{ asset('assets/main/imgs/resources/choose-1.jpg') }}"
                             alt="Why choose Polysphere Tech">
                     </figure>
                 </div>

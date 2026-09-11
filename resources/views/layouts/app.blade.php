@@ -171,6 +171,15 @@
         .bd-basic__pagination .page-item .page-link:focus {
             box-shadow: none;
         }
+
+        .swiper:not(.swiper-initialized) {
+            opacity: 0;
+        }
+
+        .swiper.swiper-initialized {
+            opacity: 1;
+            transition: opacity 0.25s ease;
+        }
     </style>
     @livewireStyles
 </head>
@@ -204,7 +213,7 @@
                     <div class="offcanvas__top mb-40 d-flex justify-content-between align-items-center">
                         <div class="offcanvas__logo">
                             <a href="index.html">
-                                <img src="{{ asset('assets/main/imgs/logo/logo-white.svg') }}"
+                                <img src="{{ asset('assets/main/imgs/logo/logo-white.png') }}"
                                     alt="Polysphere Tech Logo">
                             </a>
                         </div>
@@ -230,8 +239,7 @@
                                 </div>
                                 <div class="offcanvas__contact-text">
                                     <a target="_blank" href="#"
-                                        style="color: rgba(255,255,255,0.7); text-decoration: none;">123 Tech Hub,
-                                        Innovation District, Silicon Valley, CA</a>
+                                        style="color: rgba(255,255,255,0.7); text-decoration: none;">Accra, Ghana</a>
                                 </div>
                             </li>
                             <li class="d-flex align-items-center">
@@ -239,9 +247,8 @@
                                     <i class="far fa-phone"></i>
                                 </div>
                                 <div class="offcanvas__contact-text">
-                                    <a href="tel:+1234567890"
-                                        style="color: rgba(255,255,255,0.7); text-decoration: none;">+1 (234)
-                                        567-8900</a>
+                                    <a href="tel:+233597563427"
+                                        style="color: rgba(255,255,255,0.7); text-decoration: none;">+233 (59) 756-3427</a>
                                 </div>
                             </li>
                             <li class="d-flex align-items-center">
@@ -249,9 +256,9 @@
                                     <i class="fal fa-envelope"></i>
                                 </div>
                                 <div class="offcanvas__contact-text">
-                                    <a href="mailto:info@polyspheretech.com"
+                                    <a href="mailto:contact@polyspheretech.com"
                                         style="color: rgba(255,255,255,0.7); text-decoration: none;">
-                                        <span class="mailto:info@polyspheretech.com">info@polyspheretech.com</span>
+                                        <span class="mailto:info@polyspheretech.com">contact@polyspheretech.com</span>
                                     </a>
                                 </div>
                             </li>
@@ -259,10 +266,15 @@
                     </div>
                     <div class="offcanvas__social">
                         <ul>
-                            <li><a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
-                            <li><a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
-                            <li><a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a></li>
-                            <li><a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a></li>
+                            <li><a  href="https://web.facebook.com/polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
+                            <li><a href="https://x.com/polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
+                            <li><a href="https://www.youtube.com/@polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a></li>
+                            <li><a href="https://www.linkedin.com/company/polysphere-tech/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a></li>
+                            <li><a href="https://www.instagram.com/polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
+
+
+
+                            
                         </ul>
                     </div>
                 </div>

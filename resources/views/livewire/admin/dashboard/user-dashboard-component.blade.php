@@ -309,22 +309,38 @@
 </div>
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener('alpine:init', () => {
+        // Defined once, registered from two places below — see why underneath.
+        function registerUserDashboardChartsComponent() {
             Alpine.data('userDashboardCharts', () => ({
                 activityChart: null,
+                ChartJS: null, // locally-scoped Chart.js v4 class — never touches window.Chart
 
-                initCharts() {
+                async initCharts() {
+                    // Same fix as the Executive Dashboard: the layout's own
+                    // Chart.bundle.min.js (Chart.js v2, loaded with `defer`)
+                    // always executes after any plain synchronous script tag,
+                    // so it was silently overwriting window.Chart back to v2
+                    // right before this ran — and this component's config
+                    // uses v3/v4-only syntax (plugins.legend, scales.y).
+                    // Importing Chart.js as its own module sidesteps the
+                    // shared global entirely, so nothing else on the page can
+                    // clobber it regardless of script load order.
+                    if (!this.ChartJS) {
+                        const mod = await import('https://cdn.jsdelivr.net/npm/chart.js@4/+esm');
+                        mod.Chart.register(...mod.registerables);
+                        this.ChartJS = mod.Chart;
+                    }
+
                     const data = @json($activityChartData);
                     this.initActivityChart(data);
                 },
 
                 initActivityChart(data) {
                     const ctx = document.getElementById('userActivityChart');
-                    if (!ctx) return;
+                    if (!ctx || !this.ChartJS) return;
                     if (this.activityChart) this.activityChart.destroy();
-                    this.activityChart = new Chart(ctx, {
+                    this.activityChart = new this.ChartJS(ctx, {
                         type: 'bar',
                         data: {
                             labels: data.labels,
@@ -354,9 +370,33 @@
                     }
                 }
             }));
-        });
+        }
+
+        // `alpine:init` fires exactly ONCE per browser tab — the very first
+        // time Alpine starts, on whatever page happens to load first in the
+        // session. This script only exists on THIS page's own pushed scripts,
+        // so it only loads/runs when this page's HTML arrives. If this page
+        // is the first one visited, this listener is in place in time and
+        // everything works. But if some OTHER page loaded first (Alpine
+        // already started there), this listener registers for an event that
+        // has already fired and will never fire again — so
+        // `userDashboardCharts` never gets defined, x-data silently fails to
+        // initialize, and the chart never appears. That's exactly what
+        // "works on direct load, goes away via wire:navigate" means.
+        // Fix: register immediately if Alpine has already started, in
+        // addition to the alpine:init listener for the genuine first-load
+        // case where it hasn't started yet.
+        document.addEventListener('alpine:init', registerUserDashboardChartsComponent);
+        if (window.Alpine) {
+            registerUserDashboardChartsComponent();
+        }
 
         // Re-init after Livewire navigation
+        // (No separate DOMContentLoaded listener here, on purpose — Alpine's
+        // own x-init="initCharts()" already covers hard page loads. Adding a
+        // second trigger for that case would race against it now that
+        // initCharts() is async, the same bug that caused the Executive
+        // Dashboard's charts to stretch on refresh.)
         document.addEventListener('livewire:navigated', function () {
             setTimeout(() => {
                 if (window.Alpine) {

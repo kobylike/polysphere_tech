@@ -70,7 +70,7 @@
                     <div class="relative">
                         <div
                             class="w-12 h-12 rounded-full border-2 @if($timeLeft < 10) border-red-500 @else border-indigo-500 @endif
-                                                                                                                                        flex items-center justify-center">
+                                                                                                                                            flex items-center justify-center">
                             <span id="timer"
                                 class="text-xl font-bold @if($timeLeft < 10) text-red-500 @else text-gray-900 @endif">
                                 {{ str_pad($timeLeft, 2, '0', STR_PAD_LEFT) }}
@@ -106,33 +106,33 @@
                         <input type="text" wire:model.live="{{ $codeField }}" maxlength="1" id="code-{{ $i }}"
                             data-index="{{ $i }}"
                             class="code-input w-14 h-14 text-center text-2xl font-bold border-2 rounded-lg
-                                                         @if($errorMessage) border-red-300 bg-red-50
-                                                          @else border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
-                                                           @endif
+                                                                 @if($errorMessage) border-red-300 bg-red-50
+                                                                  @else border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200
+                                                                   @endif
 
-                                                                                                                                                                                                              transition-all duration-200"
+                                                                                                                                                                                                                      transition-all duration-200"
                             x-data
                             x-on:input="if(/^\d$/.test($event.target.value) && {{ $i }} < 6) {
-                                                                                                                                                                                                           setTimeout(() => document.getElementById('code-{{ $i + 1 }}')?.focus(), 50);
-                                                                                                                                                                                                       }"
+                                                                                                                                                                                                                   setTimeout(() => document.getElementById('code-{{ $i + 1 }}')?.focus(), 50);
+                                                                                                                                                                                                               }"
                             x-on:keydown="if($event.key === 'Backspace' && $event.target.value === '' && {{ $i }} > 1) {
-                                                                                                                                                                                                           setTimeout(() => document.getElementById('code-{{ $i - 1 }}')?.focus(), 50);
-                                                                                                                                                                                                       }"
+                                                                                                                                                                                                                   setTimeout(() => document.getElementById('code-{{ $i - 1 }}')?.focus(), 50);
+                                                                                                                                                                                                               }"
                             x-on:keydown.left="if({{ $i }} > 1) document.getElementById('code-{{ $i - 1 }}')?.focus()"
                             x-on:keydown.right="if({{ $i }} < 6) document.getElementById('code-{{ $i + 1 }}')?.focus()"
                             x-on:paste="$event.preventDefault();
-                                                                                                                                                                                                                   const pasteData = $event.clipboardData.getData('text');
-                                                                                                                                                                                                                   const digits = pasteData.replace(/\D/g, '').split('').slice(0, 6);
-                                                                                                                                                                                                                   digits.forEach((digit, index) => {
-                                                                                                                                                                                                                       const input = document.getElementById('code-' + (index + 1));
-                                                                                                                                                                                                                       if(input) {
-                                                                                                                                                                                                                           input.value = digit;
-                                                                                                                                                                                                                           $wire.set('code' + (index + 1), digit);
-                                                                                                                                                                                                                       }
-                                                                                                                                                                                                                   });
-                                                                                                                                                                                                                   if(digits.length === 6) {
-                                                                                                                                                                                                                       setTimeout(() => $wire.verifyTotp(), 300);
-                                                                                                                                                                                                                   }"
+                                                                                                                                                                                                                           const pasteData = $event.clipboardData.getData('text');
+                                                                                                                                                                                                                           const digits = pasteData.replace(/\D/g, '').split('').slice(0, 6);
+                                                                                                                                                                                                                           digits.forEach((digit, index) => {
+                                                                                                                                                                                                                               const input = document.getElementById('code-' + (index + 1));
+                                                                                                                                                                                                                               if(input) {
+                                                                                                                                                                                                                                   input.value = digit;
+                                                                                                                                                                                                                                   $wire.set('code' + (index + 1), digit);
+                                                                                                                                                                                                                               }
+                                                                                                                                                                                                                           });
+                                                                                                                                                                                                                           if(digits.length === 6) {
+                                                                                                                                                                                                                               setTimeout(() => $wire.verifyTotp(), 300);
+                                                                                                                                                                                                                           }"
                             autocomplete="off">
                     @endfor
                 </div>
@@ -145,9 +145,9 @@
                 <!-- Submit Button -->
                 <button type="button" wire:click="verifyTotp" wire:loading.attr="disabled"
                     class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm
-                                                                                                       text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600
-                                                                                                       hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2
-                                                                                                       focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                                                                                           text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600
+                                                                                                           hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2
+                                                                                                           focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                     <span wire:loading.remove wire:target="verifyTotp">
                         <i class="fas fa-check-circle mr-2"></i>
                         Verify & Continue
@@ -169,7 +169,7 @@
                     </label>
                     <input type="text" wire:model="recoveryCode" placeholder="XXXXX-XXXXX" id="recovery-input"
                         class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500
-                                                                                                          focus:border-indigo-500 text-center font-mono tracking-wider" autocomplete="off">
+                                                                                                              focus:border-indigo-500 text-center font-mono tracking-wider" autocomplete="off">
                     <p class="mt-2 text-sm text-gray-600">
                         Enter one of your 10-character recovery codes
                     </p>
@@ -177,9 +177,9 @@
 
                 <button type="button" wire:click="verifyRecovery" wire:loading.attr="disabled"
                     class="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-sm
-                                                                                                   text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600
-                                                                                                   hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2
-                                                                                                   focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                                                                                       text-sm font-medium text-white bg-gradient-to-r from-indigo-600 to-purple-600
+                                                                                                       hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2
+                                                                                                       focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                     <span wire:loading.remove wire:target="verifyRecovery">
                         <i class="fas fa-key mr-2"></i>
                         Verify Recovery Code
@@ -221,63 +221,63 @@
             </div>
         @endif
         <!-- Debug Information for Localhost -->
-        @if($debugInfo)
-            <div class="mb-4 p-3 bg-gray-100 border border-gray-300 rounded-lg">
-                <div class="flex items-center justify-between mb-2">
-                    <span class="text-xs font-semibold text-gray-700">
-                        <i class="fas fa-bug mr-1"></i> Debug Info
-                    </span>
-                    <button wire:click="$set('debugInfo', '')" class="text-gray-500 hover:text-gray-700">
+        {{-- @if($debugInfo)
+        <div class="mb-4 p-3 bg-gray-100 border border-gray-300 rounded-lg">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-gray-700">
+                    <i class="fas fa-bug mr-1"></i> Debug Info
+                </span>
+                <button wire:click="$set('debugInfo', '')" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <p class="text-xs text-gray-600 font-mono break-all">{{ $debugInfo }}</p>
+        </div>
+        @endif --}}
+
+        <!-- Time Synchronization Warning -->
+        {{-- @if($showTimeSyncInfo)
+        <div class="mb-6 animate-slide-down">
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-clock text-blue-500"></i>
+                    </div>
+                    <div class="ml-3 flex-1">
+                        @if($isLocalhost)
+                        <p class="text-sm text-blue-700 font-medium">Localhost Detected</p>
+                        <p class="text-xs text-blue-600 mt-1">
+                            Time sync issues are common in local development. Using extended verification window.
+                        </p>
+                        @else
+                        <p class="text-sm text-blue-700 font-medium">Time Synchronization Issue</p>
+                        <p class="text-xs text-blue-600 mt-1">
+                            {{ $timeSyncStatus }}
+                        </p>
+                        @endif
+                        <div class="mt-2 flex space-x-2">
+                            <button type="button" wire:click="checkTimeSync" wire:loading.attr="disabled"
+                                class="text-xs text-blue-700 hover:text-blue-800 font-medium underline">
+                                Check Server Time
+                            </button>
+                            <button type="button" wire:click="getExpectedCode" wire:loading.attr="disabled"
+                                class="text-xs text-blue-700 hover:text-blue-800 font-medium underline">
+                                Get Expected Code
+                            </button>
+                            <button type="button" wire:click="resetTimeOffset" wire:loading.attr="disabled"
+                                class="text-xs text-blue-700 hover:text-blue-800 font-medium underline">
+                                Reset Time Offset
+                            </button>
+                        </div>
+                    </div>
+                    <button type="button" wire:click="$set('showTimeSyncInfo', false)"
+                        class="text-blue-500 hover:text-blue-700">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
-                <p class="text-xs text-gray-600 font-mono break-all">{{ $debugInfo }}</p>
             </div>
-        @endif
-
-        <!-- Time Synchronization Warning -->
-        @if($showTimeSyncInfo)
-            <div class="mb-6 animate-slide-down">
-                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r">
-                    <div class="flex">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-clock text-blue-500"></i>
-                        </div>
-                        <div class="ml-3 flex-1">
-                            @if($isLocalhost)
-                                <p class="text-sm text-blue-700 font-medium">Localhost Detected</p>
-                                <p class="text-xs text-blue-600 mt-1">
-                                    Time sync issues are common in local development. Using extended verification window.
-                                </p>
-                            @else
-                                <p class="text-sm text-blue-700 font-medium">Time Synchronization Issue</p>
-                                <p class="text-xs text-blue-600 mt-1">
-                                    {{ $timeSyncStatus }}
-                                </p>
-                            @endif
-                            <div class="mt-2 flex space-x-2">
-                                <button type="button" wire:click="checkTimeSync" wire:loading.attr="disabled"
-                                    class="text-xs text-blue-700 hover:text-blue-800 font-medium underline">
-                                    Check Server Time
-                                </button>
-                                <button type="button" wire:click="getExpectedCode" wire:loading.attr="disabled"
-                                    class="text-xs text-blue-700 hover:text-blue-800 font-medium underline">
-                                    Get Expected Code
-                                </button>
-                                <button type="button" wire:click="resetTimeOffset" wire:loading.attr="disabled"
-                                    class="text-xs text-blue-700 hover:text-blue-800 font-medium underline">
-                                    Reset Time Offset
-                                </button>
-                            </div>
-                        </div>
-                        <button type="button" wire:click="$set('showTimeSyncInfo', false)"
-                            class="text-blue-500 hover:text-blue-700">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        @endif
+        </div>
+        @endif --}}
         <!-- Help Section -->
         <div class="mt-8 pt-6 border-t border-gray-200">
             <button type="button" wire:click="toggleHelp"
@@ -380,22 +380,22 @@
                         const container = document.querySelector('.animate-fade-in');
                         if (container) {
                             container.innerHTML = `
-                                                                <div class="text-center py-12">
-                                                                    <div class="inline-block mb-6">
-                                                                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                                                            <i class="fas fa-check text-green-600 text-3xl"></i>
+                                                                    <div class="text-center py-12">
+                                                                        <div class="inline-block mb-6">
+                                                                            <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                                                <i class="fas fa-check text-green-600 text-3xl"></i>
+                                                                            </div>
+                                                                            <div class="absolute inset-0 rounded-full border-4 border-green-500 opacity-50 animate-ping"></div>
                                                                         </div>
-                                                                        <div class="absolute inset-0 rounded-full border-4 border-green-500 opacity-50 animate-ping"></div>
-                                                                    </div>
-                                                                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Verification Successful!</h3>
-                                                                    <p class="text-gray-600">Redirecting to your dashboard...</p>
-                                                                    <div class="mt-6">
-                                                                        <div class="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
-                                                                            <div class="h-full bg-green-500 rounded-full animate-progress"></div>
+                                                                        <h3 class="text-2xl font-bold text-gray-900 mb-2">Verification Successful!</h3>
+                                                                        <p class="text-gray-600">Redirecting to your dashboard...</p>
+                                                                        <div class="mt-6">
+                                                                            <div class="w-48 h-1 bg-gray-200 rounded-full mx-auto overflow-hidden">
+                                                                                <div class="h-full bg-green-500 rounded-full animate-progress"></div>
+                                                                            </div>
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                            `;
+                                                                `;
                         }
                     });
 
@@ -405,11 +405,11 @@
                         toast.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg text-white z-50 ${data.type === 'info' ? 'bg-blue-500' : 'bg-green-500'
                             }`;
                         toast.innerHTML = `
-                                                            <div class="flex items-center">
-                                                                <i class="fas fa-${data.type === 'info' ? 'info-circle' : 'check-circle'} mr-2"></i>
-                                                                <span>${data.message}</span>
-                                                            </div>
-                                                        `;
+                                                                <div class="flex items-center">
+                                                                    <i class="fas fa-${data.type === 'info' ? 'info-circle' : 'check-circle'} mr-2"></i>
+                                                                    <span>${data.message}</span>
+                                                                </div>
+                                                            `;
                         document.body.appendChild(toast);
 
                         setTimeout(() => {
@@ -425,10 +425,10 @@
                             const firstInput = document.getElementById('code-1');
                             if (firstInput) firstInput.focus();
                         @else
-                                                                                                                                        const recoveryInput = document.getElementById('recovery-input');
+                                                                                                                                                const recoveryInput = document.getElementById('recovery-input');
                             if (recoveryInput) recoveryInput.focus();
                         @endif
-                                                    }, 100);
+                                                        }, 100);
                 });
 
                 // Keyboard shortcuts

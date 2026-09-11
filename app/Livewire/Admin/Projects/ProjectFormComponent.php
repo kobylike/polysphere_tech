@@ -519,7 +519,8 @@ class ProjectFormComponent extends Component
             session()->flash('success', 'Project created successfully!');
         }
 
-        return redirect()->route('admin.projects.index');
+
+        return $this->redirectRoute('admin.projects.index', navigate: true);
     }
 
     public function getServicesProperty()

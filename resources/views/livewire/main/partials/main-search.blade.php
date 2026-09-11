@@ -7,12 +7,21 @@
                         <button class="df-search-close-btn" @click="closeSearch()" aria-label="Close search"></button>
                     </div>
 
-                    <form @submit.prevent="performSearch()" wire:keydown.enter.prevent="performSearch">
+                    <!--
+                        Only ONE trigger for performSearch now:
+                        @submit.prevent on the form already covers both
+                        pressing Enter in the input and clicking the
+                        submit button below — no need for separate
+                        wire:keydown.enter / wire:click handlers that
+                        were calling the PHP method a second time.
+                    -->
+                    <form @submit.prevent="performSearch()">
                         <div class="df-search-input mb-10">
+                          
                             <input type="text" placeholder="Search services, case studies, blog posts..."
-                                wire:model.live.debounce.300ms="searchQuery" x-ref="searchInput"
+                                wire:model="searchQuery" x-ref="searchInput"
                                 @keydown.escape="closeSearch()">
-                            <button type="submit" wire:click="performSearch">
+                            <button type="submit">
                                 <i class="icon-search"></i>
                             </button>
                         </div>

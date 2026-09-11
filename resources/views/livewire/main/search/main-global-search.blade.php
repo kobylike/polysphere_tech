@@ -1,124 +1,123 @@
-<div x-data="searchApp()" x-init="init()">
-    {{-- Page Banner --}}
-    <section class="page-title-area"
-        style="background-image: url('{{ asset('assets/main/imgs/bg/page-title-bg.png') }}');">
-        <div class="container">
-            <div class="row">
-                <div class="col-xl-12">
-                    <div class="page-title-content text-center">
-                        <h1 class="page-title">Search Results</h1>
-                        <div class="breadcrumb">
-                            <nav aria-label="Breadcrumb">
-                                <ol class="breadcrumb">
-                                    <li class="breadcrumb-item"><a href="{{ route('index') }}"
-                                            wire:navigate.hover>Home</a></li>
-                                    <li class="breadcrumb-item active" aria-current="page">Search</li>
-                                </ol>
+<div x-data="searchApp()" x-init="init()" class="gsearch">
+
+    <div wire:ignore class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
+        <div class="breadcrumb__thumb"
+            style="background-image: url('{{ asset('assets/main/imgs/resources/search.jpg') }}');"></div>
+        <div class="breadcrumb__thumb_2"
+            style="background-image: url('{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}');"></div>
+        <div class="small-container">
+            <div class="row justify-content-center">
+                <div class="col-xxl-12">
+                    <div class="breadcrumb__wrapper p-relative">
+                        <h2 class="breadcrumb__title">Search Results</h2>
+                        <div class="breadcrumb__menu">
+                            <nav>
+                                <ul>
+                                    <li><span><a wire:navigate.hover href="{{ route('index') }}">Home</a></span></li>
+                                    <li><span>Search Results</span></li>
+                                </ul>
                             </nav>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    {{-- ─── Search console — deliberately overlaps the hero/content boundary ─── --}}
+    <section class="gsearch-console-wrap">
+        <div class="gsearch-console">
+
+            <div class="gsearch-input-row">
+                <span class="gsearch-input-icon" wire:loading.class="gsearch-input-icon--spin"
+                    wire:target="query, category">
+                    <i class="fas fa-search" wire:loading.remove wire:target="query, category"></i>
+                    <i class="fas fa-circle-notch" wire:loading wire:target="query, category"></i>
+                </span>
+                <input type="text" class="gsearch-input" placeholder="Search services, projects, articles, people…"
+                    wire:model.live.debounce.300ms="query" x-ref="searchInput">
+                <button type="button" class="gsearch-submit" wire:click="performSearch" aria-label="Search">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <div class="gsearch-filters">
+                @foreach($categories as $cat)
+                    <button type="button" class="gsearch-filter {{ $category === $cat ? 'is-active' : '' }}"
+                        wire:click="$set('category', '{{ $cat }}')">
+                        {{ ucfirst($cat) }}
+                    </button>
+                @endforeach
+            </div>
+        </div>
     </section>
 
-    {{-- Search Section --}}
-    <section class="blog-area pt-120 pb-90">
-        <div class="container">
+    {{-- ─── Results ─── --}}
+    <section class="gsearch-results-area">
+        <div class="small-container">
             <div class="row justify-content-center">
-                <div class="col-xl-10 col-lg-12">
+                <div class="col-xl-8 col-lg-10">
 
-                    {{-- Search Bar --}}
-                    <div class="card border-0 shadow-lg mb-5">
-                        <div class="card-body p-4">
-                            <div class="search-wrapper">
-                                <div class="input-group input-group-lg">
-                                    <span class="input-group-text bg-white border-end-0">
-                                        <i class="fas fa-search text-muted"></i>
-                                    </span>
-                                    <input type="text" class="form-control border-start-0 py-3"
-                                        placeholder="Search services, projects, blog posts, team members..."
-                                        wire:model.live.debounce.300ms="query" x-ref="searchInput">
-                                    <button class="btn btn-primary px-4" wire:click="performSearch">
-                                        <i class="fas fa-arrow-right"></i>
-                                    </button>
-                                </div>
+                    @if(!empty($query))
+                        <p class="gsearch-status">
+                            @if(!empty($results))
+                                {{ count($results) }} {{ Str::plural('result', count($results)) }} for
+                                <strong>&ldquo;{{ $query }}&rdquo;</strong>
+                            @else
+                                Nothing yet for <strong>&ldquo;{{ $query }}&rdquo;</strong>
+                            @endif
+                        </p>
+                    @endif
 
-                                {{-- Category Filters --}}
-                                <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center">
-                                    @foreach($categories as $cat)
-                                        <button
-                                            class="btn btn-sm rounded-pill px-3 {{ $category === $cat ? 'btn-primary' : 'btn-outline-secondary' }}"
-                                            wire:click="$set('category', '{{ $cat }}')">
-                                            {{ ucfirst($cat) }}
-                                        </button>
-                                    @endforeach
-                                </div>
-                            </div>
-                        </div>
+                    <div wire:loading wire:target="query, category" class="gsearch-loading">
+                        <div class="gsearch-loading-bar"></div>
                     </div>
 
-                    {{-- Results --}}
-                    <div class="card border-0 shadow-lg">
-                        <div class="card-header bg-white border-0 py-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h5 class="mb-0">
-                                    @if(!empty($query))
-                                        Results for "<span class="text-primary">{{ $query }}</span>"
-                                    @else
-                                        Search
-                                    @endif
-                                </h5>
-                                @if(!empty($results) && count($results) > 0)
-                                    <span class="badge bg-secondary">{{ count($results) }} results</span>
-                                @endif
+                    <div wire:loading.remove wire:target="query, category">
+                        @if(empty($results) && strlen($query) >= 2)
+                            {{-- No matches --}}
+                            <div class="gsearch-empty">
+                                <i class="fas fa-compass"></i>
+                                <h5>No matches for &ldquo;{{ $query }}&rdquo;</h5>
+                                <p>Try a shorter term, check the spelling, or search a different category.</p>
                             </div>
-                        </div>
-                        <div class="card-body p-0">
-                            {{-- Loading --}}
-                            <div wire:loading wire:target="query, category" class="text-center py-5">
-                                <div class="spinner-border text-primary" role="status">
-                                    <span class="visually-hidden">Loading...</span>
-                                </div>
-                                <p class="text-muted mt-2">Searching...</p>
+                        @elseif(empty($results))
+                            {{-- Nothing typed yet --}}
+                            <div class="gsearch-empty">
+                                <i class="fas fa-layer-group"></i>
+                                <h5>Search across the whole site</h5>
+                                <p>Find services, case studies, articles, and people in one place.</p>
                             </div>
+                        @else
+                            @php
+                                $grouped = collect($results)->groupBy('category');
+                                $labels = ['services' => 'Services', 'projects' => 'Projects', 'blog' => 'Blog', 'team' => 'Team'];
+                            @endphp
 
-                            {{-- Results --}}
-                            <div wire:loading.remove wire:target="query, category">
-                                @if(empty($results) && strlen($query) >= 2)
-                                    <div class="text-center py-5">
-                                        <i class="fas fa-search fa-4x text-muted mb-3"></i>
-                                        <h5>No results found</h5>
-                                        <p class="text-muted">Try adjusting your search terms or filters.</p>
-                                    </div>
-                                @elseif(empty($results))
-                                    <div class="text-center py-5">
-                                        <i class="fas fa-search fa-4x text-muted mb-3"></i>
-                                        <h5>Start searching</h5>
-                                        <p class="text-muted">Type at least 2 characters to see results.</p>
-                                    </div>
-                                @else
-                                    <div class="list-group list-group-flush">
-                                        @foreach($results as $result)
+                            @foreach($grouped as $groupKey => $items)
+                                <div class="gsearch-group">
+                                    @if($grouped->count() > 1)
+                                        <h6 class="gsearch-group-label">{{ $labels[$groupKey] ?? ucfirst($groupKey) }}</h6>
+                                    @endif
+
+                                    <div class="gsearch-list">
+                                        @foreach($items as $result)
                                             <a href="{{ $result['url'] }}" wire:navigate.hover
-                                                class="list-group-item list-group-item-action d-flex align-items-center py-3">
-                                                <div class="icon-box me-3 bg-{{ $result['color'] }}-light rounded-circle"
-                                                    style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;">
-                                                    <i class="fas {{ $result['icon'] }} text-{{ $result['color'] }}"></i>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="fw-semibold">{{ $result['title'] }}</div>
-                                                    <small class="text-muted">{{ $result['subtitle'] }}</small>
-                                                    <span
-                                                        class="badge bg-{{ $result['color'] }} ms-2">{{ ucfirst($result['category']) }}</span>
-                                                </div>
-                                                <i class="fas fa-chevron-right ms-3 text-muted"></i>
+                                                class="gsearch-row gsearch-row--{{ $result['color'] }}">
+                                                <span class="gsearch-row-icon">
+                                                    <i class="fas {{ $result['icon'] }}"></i>
+                                                </span>
+                                                <span class="gsearch-row-body">
+                                                    <span class="gsearch-row-title">{{ $result['title'] }}</span>
+                                                    <span class="gsearch-row-subtitle">{{ $result['subtitle'] }}</span>
+                                                </span>
+                                                <i class="fas fa-chevron-right gsearch-row-chevron"></i>
                                             </a>
                                         @endforeach
                                     </div>
-                                @endif
-                            </div>
-                        </div>
+                                </div>
+                            @endforeach
+                        @endif
                     </div>
 
                 </div>
@@ -127,7 +126,6 @@
     </section>
 </div>
 
-{{-- Alpine integration for live updates --}}
 @push('scripts')
     <script>
         document.addEventListener('alpine:init', () => {
@@ -145,31 +143,304 @@
     </script>
 @endpush
 
-{{-- Custom styles --}}
 <style>
-    .list-group-item-action {
-        transition: all 0.2s ease;
+    /* ── Tokens ─────────────────────────────────────────────────────────── */
+    .gsearch {
+        --gs-ink: #0d1b2e;
+        --gs-accent: #2f6fed;
+        --gs-surface: #ffffff;
+        --gs-bg: #f6f7fb;
+        --gs-border: #e7e9f2;
+        --gs-text: #101828;
+        --gs-muted: #667085;
+        --gs-services: #0ea5a4;
+        --gs-projects: #d97706;
+        --gs-blog: #7c5cff;
+        --gs-team: #e0567a;
     }
 
-    .list-group-item-action:hover {
-        background-color: var(--bs-light);
-        transform: translateX(4px);
+    /* ── Console — pulled up so it straddles the dark hero / light section ── */
+    .gsearch-console-wrap {
+        background: var(--gs-bg);
+        padding: 0 20px 10px;
     }
 
-    .icon-box {
+    .gsearch-console {
+        max-width: 720px;
+        margin: -58px auto 0;
+        background: var(--gs-surface);
+        border-radius: 16px;
+        box-shadow: 0 20px 48px rgba(13, 27, 46, 0.16);
+        padding: 10px 10px 16px;
+        position: relative;
+        z-index: 3;
+    }
+
+    .gsearch-input-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 10px 14px;
+        border-bottom: 1px solid var(--gs-border);
+    }
+
+    .gsearch-input-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        color: var(--gs-muted);
+        font-size: 16px;
+    }
+
+    .gsearch-input-icon--spin i {
+        animation: gsearch-spin 0.8s linear infinite;
+        color: var(--gs-accent);
+    }
+
+    @keyframes gsearch-spin {
+        to {
+            transform: rotate(360deg);
+        }
+    }
+
+    .gsearch-input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 17px;
+        color: var(--gs-text);
+        background: transparent;
+        padding: 6px 0;
+    }
+
+    .gsearch-input::placeholder {
+        color: #a0a6b8;
+    }
+
+    .gsearch-submit {
+        border: none;
+        background: var(--gs-accent);
+        color: #fff;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         flex-shrink: 0;
-        transition: all 0.2s ease;
+        transition: background 0.15s ease;
     }
 
-    .list-group-item-action:hover .icon-box {
-        transform: scale(1.05);
+    .gsearch-submit:hover {
+        background: #2559c7;
     }
 
-    .input-group .form-control:focus {
-        box-shadow: none;
+    .gsearch-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 12px 10px 2px;
     }
 
-    .shadow-lg {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, .08) !important;
+    .gsearch-filter {
+        border: 1px solid var(--gs-border);
+        background: transparent;
+        color: var(--gs-muted);
+        font-size: 13.5px;
+        font-weight: 500;
+        padding: 6px 14px;
+        border-radius: 999px;
+        transition: all 0.15s ease;
+    }
+
+    .gsearch-filter:hover {
+        border-color: var(--gs-accent);
+        color: var(--gs-accent);
+    }
+
+    .gsearch-filter.is-active {
+        background: var(--gs-ink);
+        border-color: var(--gs-ink);
+        color: #fff;
+    }
+
+    /* ── Results area ──────────────────────────────────────────────────── */
+    .gsearch-results-area {
+        background: var(--gs-bg);
+        padding: 40px 0 100px;
+    }
+
+    .gsearch-status {
+        color: var(--gs-muted);
+        font-size: 14.5px;
+        margin: 0 4px 22px;
+    }
+
+    .gsearch-status strong {
+        color: var(--gs-text);
+    }
+
+    .gsearch-loading-bar {
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--gs-accent), transparent);
+        background-size: 200% 100%;
+        animation: gsearch-loading-sweep 1.1s ease-in-out infinite;
+        border-radius: 2px;
+        margin-bottom: 22px;
+    }
+
+    @keyframes gsearch-loading-sweep {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    .gsearch-empty {
+        text-align: center;
+        padding: 70px 20px;
+        color: var(--gs-muted);
+    }
+
+    .gsearch-empty i {
+        font-size: 34px;
+        color: #c7cbdb;
+        margin-bottom: 14px;
+        display: block;
+    }
+
+    .gsearch-empty h5 {
+        color: var(--gs-text);
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    .gsearch-empty p {
+        margin: 0;
+        font-size: 14.5px;
+    }
+
+    .gsearch-group {
+        margin-bottom: 28px;
+    }
+
+    .gsearch-group-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--gs-muted);
+        margin: 0 4px 10px;
+    }
+
+    .gsearch-list {
+        background: var(--gs-surface);
+        border: 1px solid var(--gs-border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .gsearch-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px 18px;
+        text-decoration: none;
+        border-bottom: 1px solid var(--gs-border);
+        transition: background 0.15s ease;
+    }
+
+    .gsearch-list .gsearch-row:last-child {
+        border-bottom: none;
+    }
+
+    .gsearch-row:hover {
+        background: #fbfcfe;
+    }
+
+    .gsearch-row:hover .gsearch-row-chevron {
+        transform: translateX(3px);
+        color: var(--gs-accent);
+    }
+
+    .gsearch-row-icon {
+        flex-shrink: 0;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        color: #fff;
+    }
+
+    .gsearch-row--info .gsearch-row-icon,
+    .gsearch-row--services .gsearch-row-icon {
+        background: var(--gs-services);
+    }
+
+    .gsearch-row--success .gsearch-row-icon,
+    .gsearch-row--projects .gsearch-row-icon {
+        background: var(--gs-projects);
+    }
+
+    .gsearch-row--warning .gsearch-row-icon,
+    .gsearch-row--blog .gsearch-row-icon {
+        background: var(--gs-blog);
+    }
+
+    .gsearch-row--primary .gsearch-row-icon,
+    .gsearch-row--team .gsearch-row-icon {
+        background: var(--gs-team);
+    }
+
+    .gsearch-row-body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .gsearch-row-title {
+        font-weight: 600;
+        color: var(--gs-text);
+        font-size: 15px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .gsearch-row-subtitle {
+        font-size: 13.5px;
+        color: var(--gs-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .gsearch-row-chevron {
+        color: #c7cbdb;
+        font-size: 12px;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 576px) {
+        .gsearch-console {
+            margin-top: -40px;
+            padding: 8px 8px 12px;
+        }
+
+        .gsearch-input {
+            font-size: 15px;
+        }
+
+        .gsearch-row-subtitle {
+            display: none;
+        }
     }
 </style>
