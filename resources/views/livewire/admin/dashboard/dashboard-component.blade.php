@@ -460,12 +460,41 @@
 
 @push('scripts')
     <script>
-        document.addEventListener('alpine:init', () => {
+        // Defined once, registered from two places below — see why underneath.
+        function registerDashboardChartsComponent() {
             Alpine.data('dashboardCharts', () => ({
                 projectChart: null,
                 statusChart: null,
                 registrationsChart: null,
                 ChartJS: null, // locally-scoped Chart.js v4 class — never touches window.Chart
+                _initInFlight: false, // guards against overlapping concurrent initCharts() runs
+
+                // Waits for a canvas element to actually exist before handing
+                // it to the callback, instead of giving up after a single
+                // check. initCharts() awaits a dynamic import before it does
+                // anything else — by the time that resolves, Livewire's DOM
+                // swap and Alpine's tree-walk for this new page may still be
+                // finishing up in the background, so the very first canvas
+                // looked up right after that await can occasionally not be
+                // attached yet (this is what was making the Projects Overview
+                // chart intermittently render blank after wire:navigate, while
+                // Project Status — created a beat later in the same call —
+                // usually had just enough extra time to succeed). Retrying
+                // across a few animation frames costs nothing when the
+                // element is already there (resolves on the very first check)
+                // and makes the rare case unconditionally correct instead of
+                // silently failing.
+                waitForElement(id, maxTries = 20) {
+                    return new Promise((resolve) => {
+                        const tryFind = (attemptsLeft) => {
+                            const el = document.getElementById(id);
+                            if (el) return resolve(el);
+                            if (attemptsLeft <= 0) return resolve(null);
+                            requestAnimationFrame(() => tryFind(attemptsLeft - 1));
+                        };
+                        tryFind(maxTries);
+                    });
+                },
 
                 async initCharts() {
                     // The theme's own head scripts load an OLD Chart.js v2 bundle
@@ -488,15 +517,24 @@
                     const statusData = @json($initialProjectStatusData);
                     const registrationsData = @json($initialUserRegistrationsData);
 
-                    this.initProjectChart(projectData);
-                    this.initStatusChart(statusData);
-                    this.initRegistrationsChart(registrationsData);
+                    await this.initProjectChart(projectData);
+                    await this.initStatusChart(statusData);
+                    await this.initRegistrationsChart(registrationsData);
                 },
 
-                initProjectChart(data) {
-                    const ctx = document.getElementById('dashboardProjectsChart');
+                async initProjectChart(data) {
+                    const ctx = await this.waitForElement('dashboardProjectsChart');
                     if (!ctx || !this.ChartJS) return;
-                    if (this.projectChart) this.projectChart.destroy();
+                    // Ask Chart.js itself if a chart is already attached to this
+                    // exact canvas, rather than trusting our own component's
+                    // `this.projectChart` — that resets to null on every fresh
+                    // Alpine mount, even on a navigation where Livewire reused
+                    // this same physical canvas node. Without this, Chart.js's
+                    // own "canvas already in use" safeguard silently blocks
+                    // creating a new chart on it, which is what was making the
+                    // chart work the first time then go blank on later visits.
+                    const existing = this.ChartJS.getChart(ctx);
+                    if (existing) existing.destroy();
                     this.projectChart = new this.ChartJS(ctx, {
                         type: 'line',
                         data: {
@@ -519,10 +557,11 @@
                     });
                 },
 
-                initStatusChart(data) {
-                    const ctx = document.getElementById('dashboardStatusChart');
+                async initStatusChart(data) {
+                    const ctx = await this.waitForElement('dashboardStatusChart');
                     if (!ctx || !this.ChartJS) return;
-                    if (this.statusChart) this.statusChart.destroy();
+                    const existing = this.ChartJS.getChart(ctx);
+                    if (existing) existing.destroy();
                     this.statusChart = new this.ChartJS(ctx, {
                         type: 'doughnut',
                         data: {
@@ -541,10 +580,11 @@
                     });
                 },
 
-                initRegistrationsChart(data) {
-                    const ctx = document.getElementById('dashboardRegistrationsChart');
+                async initRegistrationsChart(data) {
+                    const ctx = await this.waitForElement('dashboardRegistrationsChart');
                     if (!ctx || !this.ChartJS) return;
-                    if (this.registrationsChart) this.registrationsChart.destroy();
+                    const existing = this.ChartJS.getChart(ctx);
+                    if (existing) existing.destroy();
                     this.registrationsChart = new this.ChartJS(ctx, {
                         type: 'bar',
                         data: {
@@ -586,25 +626,38 @@
                     }
                 }
             }));
-        });
+        }
 
-        // ─── Fix charts after wire:navigate ──────────
-        // (No separate DOMContentLoaded listener needed here — Alpine's own
-        // x-init="initCharts()" on the component root already covers hard
-        // page loads. Keeping a second DOMContentLoaded-triggered call here
-        // used to race against it: since initCharts() is now async (it
-        // dynamically imports Chart.js), both calls could interleave their
-        // chart creation/resize timing on a hard refresh, which is what was
-        // producing a canvas that locked in the wrong height.)
-        document.addEventListener('livewire:navigated', function () {
-            setTimeout(() => {
-                if (window.Alpine) {
-                    const chartsComponent = Alpine.$data(document.querySelector('[x-data="dashboardCharts()"]'));
-                    if (chartsComponent && typeof chartsComponent.initCharts === 'function') {
-                        chartsComponent.initCharts();
-                    }
-                }
-            }, 50);
-        });
+        // `alpine:init` fires exactly ONCE per browser tab — the very first
+        // time Alpine starts, on whatever page happens to load first in the
+        // session. This script only exists on THIS page's own pushed scripts,
+        // so it only loads/runs when this page's HTML arrives. If this page
+        // is the first one visited, this listener is in place in time and
+        // everything works. But if some OTHER page loaded first (Alpine
+        // already started there), this listener registers for an event that
+        // has already fired and will never fire again — so `dashboardCharts`
+        // never gets defined, x-data silently fails to initialize, and
+        // nothing on this page renders. That's exactly what "works on direct
+        // load, doesn't show via wire:navigate" means.
+        // Fix: register immediately if Alpine has already started, in
+        // addition to the alpine:init listener for the genuine first-load
+        // case where it hasn't started yet.
+        document.addEventListener('alpine:init', registerDashboardChartsComponent);
+        if (window.Alpine) {
+            registerDashboardChartsComponent();
+        }
+
+        // No manual livewire:navigated listener needed anymore. That used to
+        // be a workaround for the OLD bug where Alpine.data('dashboardCharts')
+        // sometimes never registered in time (see the alpine:init/window.Alpine
+        // dual registration above, which actually fixes that). Now that
+        // registration is reliable, Alpine's own x-init="initCharts()" on the
+        // component root fires correctly every time this component mounts —
+        // including every wire:navigate arrival, not just the first load. A
+        // second manual trigger on the same event was calling initCharts()
+        // twice per navigation; since it's async, those two calls interleaved
+        // and corrupted whichever chart got caught mid-recreation (Projects
+        // Overview rendering blank while Project Status happened to survive).
+        // One trigger, fired natively by Alpine, is the correct fix.
     </script>
 @endpush

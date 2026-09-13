@@ -31,27 +31,15 @@ var W3Crm = function(){
 	}
 
 	/*
-	FIXED: was `if(jQuery('#menu').length > 0 ){ $("#menu").metisMenu(); }`
-	called only once via jQuery(document).ready(). Since #menu is now
-	wrapped in Livewire's @persist('sidebar'), it's the SAME DOM node
-	across every wire:navigate — so it needs to be re-initialized after
-	each navigation (see the `livewire:navigated` listener at the bottom
-	of this file), otherwise clicking dropdowns like "Account" does
-	nothing because metisMenu's internal open/closed state gets out of
-	sync with the DOM.
-
-	Calling `.metisMenu()` a second time on the same node without first
-	disposing the old instance double-binds click handlers (one open +
-	one close firing per click = looks like nothing happens). The
-	`mm-initialized` data flag + `.metisMenu('dispose')` guard below
-	makes this function safe to call as many times as needed.
+	#menu is @persist('sidebar')'d — same DOM node across every Livewire
+	navigation. metisMenu only ever needs to be initialized ONCE; the
+	`mm-initialized` guard makes this safe to call again without disposing
+	(disposing + reiniting on every navigation was the earlier bug that
+	made dropdowns flash open then collapse).
 	*/
 	var handleMetisMenu = function() {
 		var $menu = jQuery('#menu');
-		if ($menu.length > 0) {
-			if ($menu.data('mm-initialized')) {
-				$menu.metisMenu('dispose');
-			}
+		if ($menu.length > 0 && !$menu.data('mm-initialized')) {
 			$menu.metisMenu();
 			$menu.data('mm-initialized', true);
 		}
@@ -75,35 +63,20 @@ var W3Crm = function(){
 		});
 	}
 
-	/*
-	FIXED: was bound directly to `.nav-control` with $(".nav-control").on('click', ...).
-	`.nav-control` lives inside @livewire('admin.partials.navbar'), which gets
-	fully re-rendered (new DOM node) on every wire:navigate. A direct binding
-	attaches to the OLD node and is lost the moment Livewire swaps it in,
-	which is why the sidebar collapse toggle stopped responding after
-	navigating and only worked again after a hard refresh (which re-runs
-	W3Crm.init() and rebinds to the then-current node).
-
-	Delegating the handler to `document` fixes this permanently: the
-	listener stays on `document` and is re-evaluated against whatever
-	`.nav-control` element currently exists in the DOM at click time, so it
-	keeps working across any number of wire:navigate swaps with no
-	re-init needed.
-	*/
 	var handleNavigation = function() {
-		$(document).on('click', '.nav-control', function() {
+		$(document).off('click.navControl').on('click.navControl', '.nav-control', function() {
 			$('#main-wrapper').toggleClass("menu-toggle");
 			$(".hamburger").toggleClass("is-active");
 		});
 	}
 
 	/*
-	FIXED: previously only ever ADDED mm-active/mm-show classes, never
-	removed them. That was fine when #menu was rebuilt fresh on every
-	page load. Now that #menu is @persist'd (same DOM node across
-	wire:navigate), stale classes from the PREVIOUS page would just
-	stack up on top of the new ones instead of being replaced — so we
-	reset first, then reapply based on the current URL.
+	Resets then reapplies mm-active/mm-show based on the current URL.
+	This sets the DEFAULT open/closed state for dropdowns the user has
+	never manually touched. applyStoredMenuState() (below) then overrides
+	this default for any dropdown the user HAS explicitly opened/closed,
+	using localStorage — that's what makes a manual open/close survive a
+	genuine hard reload, not just a Livewire wire:navigate.
 	*/
 	var handleCurrentActive = function() {
 		jQuery('ul#menu a').removeClass('mm-active');
@@ -124,6 +97,109 @@ var W3Crm = function(){
 				.parent()
 				.addClass("mm-active");
 		}
+	}
+
+	/*
+	═══════════════════════════════════════════════════════════════════
+	SIDEBAR DROPDOWN OPEN/CLOSED STATE PERSISTENCE
+	═══════════════════════════════════════════════════════════════════
+	Problem: @persist('sidebar') keeps state across Livewire SPA
+	navigations, but a genuine hard reload (F5 / browser refresh) tears
+	the whole DOM down and rebuilds it fresh from Blade — @persist can't
+	help there. handleCurrentActive() above only opens whichever dropdown
+	contains the current route, so every OTHER dropdown the user had
+	manually opened (or the current one if they'd manually closed it)
+	snapped back to that route-only default on every reload.
+
+	Fix: store each dropdown's open/closed state in localStorage — which
+	DOES survive a hard reload — keyed by the `data-menu-key` attribute
+	on each dropdown <li> in sidebar.blade.php. The user's last manual
+	toggle always wins over the route-based default, in either direction
+	(stays open even if it's not the active route; stays closed even if
+	it IS the active route).
+	═══════════════════════════════════════════════════════════════════
+	*/
+	var MENU_STATE_STORAGE_KEY = 'ptech_sidebar_menu_state';
+
+	var getStoredMenuState = function() {
+		try {
+			return JSON.parse(localStorage.getItem(MENU_STATE_STORAGE_KEY)) || {};
+		} catch (e) {
+			return {};
+		}
+	}
+
+	var setStoredMenuState = function(key, isOpen) {
+		var state = getStoredMenuState();
+		state[key] = isOpen;
+		try {
+			localStorage.setItem(MENU_STATE_STORAGE_KEY, JSON.stringify(state));
+		} catch (e) {
+			/* localStorage unavailable (private browsing / quota) — state just won't persist, fail silently */
+		}
+	}
+
+	/*
+	bootstrap-metisMenu fires 'shown.metisMenu' / 'hidden.metisMenu' on
+	the toggled <li> itself whenever a dropdown opens/closes — whether
+	that's from a real user click OR from applyStoredMenuState() below
+	triggering a click programmatically. Delegated off `document` +
+	namespaced + `.off()` guarded so this is safe to call repeatedly
+	without ever double-binding.
+
+	`e.target !== this` guards against the event bubbling up from a
+	nested submenu inside a different <li> that happens to be inside
+	this one (not currently the case in this sidebar, but safe either way).
+	*/
+	var handleMenuStateTracking = function() {
+		jQuery(document)
+			.off('shown.metisMenu.stateTrack')
+			.on('shown.metisMenu.stateTrack', '#menu li[data-menu-key]', function(e) {
+				if (e.target !== this) return;
+				setStoredMenuState(jQuery(this).attr('data-menu-key'), true);
+			})
+			.off('hidden.metisMenu.stateTrack')
+			.on('hidden.metisMenu.stateTrack', '#menu li[data-menu-key]', function(e) {
+				if (e.target !== this) return;
+				setStoredMenuState(jQuery(this).attr('data-menu-key'), false);
+			});
+	}
+
+	/*
+	Applies stored state on top of whatever handleCurrentActive() just
+	set. Only touches dropdowns that have an explicit entry in storage —
+	one the user has never toggled keeps the route-based default.
+
+	Reuses metisMenu's own click handler (via .trigger('click')) rather
+	than manually setting mm-show/mm-active/aria-expanded ourselves, so
+	arrow-rotation and any other internal bookkeeping the plugin does
+	stays perfectly in sync — this is exactly what a real user click
+	does. jQuery.fx.off is flipped on for the duration so the
+	slideDown/slideUp metisMenu normally animates resolves instantly,
+	so reloading doesn't show a visible slide as stored state reapplies.
+	*/
+	var applyStoredMenuState = function() {
+		var $menu = jQuery('#menu');
+		if ($menu.length === 0) return;
+
+		var state = getStoredMenuState();
+		var previousFxOff = jQuery.fx.off;
+		jQuery.fx.off = true;
+
+		$menu.find('> li[data-menu-key]').each(function() {
+			var $li = jQuery(this);
+			var key = $li.attr('data-menu-key');
+			if (!Object.prototype.hasOwnProperty.call(state, key)) return;
+
+			var desiredOpen = state[key];
+			var isCurrentlyOpen = $li.children('ul').hasClass('mm-show');
+
+			if (desiredOpen !== isCurrentlyOpen) {
+				$li.children('a.has-arrow').trigger('click');
+			}
+		});
+
+		jQuery.fx.off = previousFxOff;
 	}
 
 	var handleMiniSidebar = function() {
@@ -225,14 +301,15 @@ var W3Crm = function(){
 		/* Main navigation fixed on top  when scroll down function custom end*/
 	}
 
-	var handleChatbox = function() {
-		jQuery('.bell-link').on('click',function(){
-			jQuery('.chatbox').addClass('active');
-		});
-		jQuery('.chatbox-close').on('click',function(){
-			jQuery('.chatbox').removeClass('active');
-		});
-	}
+	/*
+	REMOVED: handleChatbox()
+	Bound directly to `.bell-link` / `.chatbox-close`, both of which live
+	in the navbar (not @persist'd) and get destroyed/rebuilt on every
+	wire:navigate — this handler would silently stop working after the
+	first navigation. The chat widget uses Alpine's store
+	($store.chat.open) as the single source of truth for open/close, so
+	no jQuery binding is needed here.
+	*/
 
 	var handleBtnNumber = function() {
 		$('.btn-number').on('click', function(e) {
@@ -254,25 +331,21 @@ var W3Crm = function(){
 	}
 
 	var handleDzChatUser = function() {
-		jQuery('.dz-chat-user-box .dz-chat-user').on('click',function(){
+		jQuery(document).off('click.dzChatUserOpen').on('click.dzChatUserOpen', '.dz-chat-user-box .dz-chat-user', function(){
 			jQuery('.dz-chat-user-box').addClass('d-none');
 			jQuery('.dz-chat-history-box').removeClass('d-none');
 		});
 
-		jQuery('.dz-chat-history-back').on('click',function(){
+		jQuery(document).off('click.dzChatUserBack').on('click.dzChatUserBack', '.dz-chat-history-back', function(){
 			jQuery('.dz-chat-user-box').removeClass('d-none');
 			jQuery('.dz-chat-history-box').addClass('d-none');
-		});
-
-		jQuery('.dz-fullscreen').on('click',function(){
-			jQuery('.dz-fullscreen').toggleClass('active');
 		});
 	}
 
 	var handleDzFullScreen = function() {
-		jQuery('.dz-fullscreen').on('click',function(e){
+		jQuery(document).off('click.dzFullscreenToggle').on('click.dzFullscreenToggle', '.dz-fullscreen', function(e){
 			if(document.fullscreenElement||document.webkitFullscreenElement||document.mozFullScreenElement||document.msFullscreenElement) {
-				/* Enter fullscreen */
+				/* exit fullscreen */
 				if(document.exitFullscreen) {
 					document.exitFullscreen();
 				} else if(document.msExitFullscreen) {
@@ -283,7 +356,7 @@ var W3Crm = function(){
 					document.webkitExitFullscreen(); /* Chrome, Safari & Opera */
 				}
 			}
-			else { /* exit fullscreen */
+			else { /* enter fullscreen */
 				if(document.documentElement.requestFullscreen) {
 					document.documentElement.requestFullscreen();
 				} else if(document.documentElement.webkitRequestFullscreen) {
@@ -294,6 +367,7 @@ var W3Crm = function(){
 					document.documentElement.msRequestFullscreen();
 				}
 			}
+			jQuery('.dz-fullscreen').toggleClass('active');
 		});
 	}
 
@@ -597,12 +671,13 @@ var W3Crm = function(){
 			handleAllChecked();
 			handleNavigation();
 			handleCurrentActive();
+			handleMenuStateTracking();
+			applyStoredMenuState();
 			handleMiniSidebar();
 			handleMinHeight();
 			handleDataAction();
 			handleHeaderHight();
 			handleMenuTabs();
-			handleChatbox();
 			handleBtnNumber();
 			handleDzChatUser();
 			handleDzFullScreen();
@@ -640,16 +715,18 @@ var W3Crm = function(){
 		},
 
 		/*
-		Re-syncs the sidebar's open/active state after a wire:navigate
-		swap. #menu is @persist'd in Livewire, so it survives navigation
-		as the same DOM node — this just needs metisMenu (dispose+reinit)
-		and the active-link matching to re-evaluate against the new URL,
-		instead of re-running the full init() (which would needlessly
-		rebind every other handler on the page too).
+		Re-sync after a Livewire navigation: reapply the route-based
+		default, then reapply any stored manual state on top of it.
+		metisMenu itself is never disposed/reinitialized here (see
+		handleMetisMenu's comment above) — only classes and, where
+		stored state disagrees with the default, a simulated click on
+		the affected dropdown(s).
 		*/
 		refresh:function(){
-			handleMetisMenu();
 			handleCurrentActive();
+			handleMenuStateTracking();
+			applyStoredMenuState();
+			handleNavigation();
 		},
 	}
 
@@ -701,8 +778,8 @@ jQuery(window).on('resize',function () {
 /*
 Re-sync sidebar active/open state after every Livewire navigation.
 #menu is @persist'd (see sidebar.blade.php), so it's the same DOM node
-across pages — this just needs W3Crm.refresh() to tell metisMenu and
-the active-link logic to re-evaluate against the new URL.
+across pages — W3Crm.refresh() reapplies the route default then any
+stored manual open/closed state on top of it.
 */
 document.addEventListener('livewire:navigated', function () {
 	W3Crm.refresh();

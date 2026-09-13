@@ -254,6 +254,69 @@
             @livewire('admin.partials.navbar')
             @endpersist
             @livewire('admin.partials.sidebar')
+
+            <script>
+                // ═══════════════════════════════════════════════════════════════
+                // SIDEBAR DROPDOWN STATE — apply BEFORE first paint.
+                //
+                // Synchronous and non-deferred, placed immediately after the
+                // sidebar's own markup so #menu already exists in the DOM
+                // when this runs, and placed here (not in deznav-init.js)
+                // specifically because deznav-init.js is loaded with `defer`
+                // — meaning it only runs after the whole page has parsed,
+                // by which point the browser has ALREADY painted whatever
+                // Blade rendered server-side (route-based mm-show/mm-active
+                // classes). That gap is exactly why a saved "closed"
+                // preference used to visually flash: open (Blade's
+                // route-based default) -> closed (deznav-init.js's saved
+                // state correction, arriving a beat later).
+                //
+                // Running this synchronously, right here, means the saved
+                // preference is already applied to the DOM before the
+                // browser gets a chance to paint it — same technique as the
+                // tablet-menu-toggle script above, same reason.
+                //
+                // Deliberately vanilla JS, no jQuery: jQuery itself is
+                // loaded via a deferred vendor script and is not guaranteed
+                // to be available yet at this point in parsing.
+                //
+                // Keep this key ('sidebarMenuOpenState') and its shape in
+                // sync with deznav-init.js — deznav-init.js's own
+                // applySavedMenuState() re-applies the same logic later as
+                // a harmless, idempotent safety net (e.g. in case this
+                // script ever fails silently), and handleMenuStatePersistence()
+                // there is what keeps writing to this same storage key
+                // whenever the user actually toggles a dropdown.
+                (function () {
+                    try {
+                        var raw = localStorage.getItem('sidebarMenuOpenState');
+                        if (!raw) return;
+                        var state = JSON.parse(raw) || {};
+
+                        var menu = document.getElementById('menu');
+                        if (!menu) return;
+
+                        var items = menu.querySelectorAll(':scope > li[data-menu-key]');
+                        items.forEach(function (li) {
+                            var key = li.getAttribute('data-menu-key');
+                            if (!Object.prototype.hasOwnProperty.call(state, key)) return;
+
+                            var submenu = li.querySelector(':scope > ul');
+                            if (state[key]) {
+                                li.classList.add('mm-active');
+                                if (submenu) submenu.classList.add('mm-show');
+                            } else {
+                                li.classList.remove('mm-active');
+                                if (submenu) submenu.classList.remove('mm-show');
+                            }
+                        });
+                    } catch (e) {
+                        // localStorage unavailable/corrupt — silently fall
+                        // back to Blade's server-rendered route-based
+                        // classes, exactly as if no preference existed.
+                    }
+                })();
+            </script>
         @endauth
         <div class="content-body">
             @if(isset($slot))

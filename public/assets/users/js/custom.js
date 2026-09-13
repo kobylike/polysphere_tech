@@ -29,16 +29,36 @@ var W3Crm = function(){
 		$_SELECT_PICKER.selectpicker();
 	}
 
+	// ═══════════════════════════════════════════════════════════════════════
+	// FIXED: this used to run on EVERY livewire:navigated event (via
+	// refresh()), and would dispose()+reinitialize metisMenu each time.
+	// Because the sidebar is @persist('sidebar')'d, it is the exact same
+	// DOM node across every navigation — it never needs to be
+	// disposed/reinitialized at all after the very first page load.
+	//
+	// The old flow was:
+	//   1. DOMContentLoaded -> init() -> handleMetisMenu() -> correct
+	//      mm-active/mm-show read from Blade's server-rendered classes.
+	//   2. livewire:navigated ALSO fires once on a plain hard refresh
+	//      (this is normal Livewire behavior, not a bug) -> refresh()
+	//      -> handleMetisMenu() AGAIN.
+	//   3. Because $menu.data('mm-initialized') was already true,
+	//      metisMenu('dispose') ran first — wiping the active/open
+	//      state and setting inline display:none on submenus.
+	//   4. handleCurrentActive() then re-added the mm-active/mm-show
+	//      CLASSES, but by then metisMenu had already set an inline
+	//      style="display:none" on the submenu, which beats the CSS
+	//      class rule -> the dropdown LOOKED collapsed even though the
+	//      "active" class was technically present again.
+	//
+	// That's the "opens then closes right after it finishes loading"
+	// symptom. Fix: only ever call handleMetisMenu() once, from init().
+	// refresh() now only re-highlights the current route link; it never
+	// touches the metisMenu plugin instance.
+	// ═══════════════════════════════════════════════════════════════════════
 	var handleMetisMenu = function() {
 		var $menu = jQuery('#menu');
-		if ($menu.length > 0) {
-			if ($menu.data('mm-initialized')) {
-				try {
-					$menu.metisMenu('dispose');
-				} catch (e) {
-					console.warn('metisMenu dispose failed, continuing:', e);
-				}
-			}
+		if ($menu.length > 0 && !$menu.data('mm-initialized')) {
 			$menu.metisMenu();
 			$menu.data('mm-initialized', true);
 		}
@@ -647,8 +667,18 @@ var W3Crm = function(){
 			handleMenuPosition();
 		},
 
+		// FIXED: no longer calls handleMetisMenu(). The sidebar is
+		// @persist('sidebar')'d, so it is the SAME DOM node across every
+		// Livewire navigation — metisMenu is initialized exactly once
+		// (in init(), on the very first DOMContentLoaded) and never needs
+		// to be disposed/reinitialized here. The old dispose()+reinit
+		// cycle on every livewire:navigated (which also fires once on a
+		// plain hard refresh) was wiping the open/active submenu state
+		// and setting inline display:none on it, which is what made
+		// dropdowns visually collapse right after the page finished
+		// loading. Re-highlighting the current-route link is all that's
+		// ever needed on navigation.
 		refresh:function(){
-			handleMetisMenu();
 			handleCurrentActive();
 			handleNavigation();
 		},

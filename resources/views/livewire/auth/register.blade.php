@@ -199,8 +199,8 @@
             <input id="terms" type="checkbox" wire:model="terms"
                 class="mt-1 h-4 w-4 text-polysphere-600 focus:ring-polysphere-500 border-gray-300 rounded">
             <label for="terms" class="ml-2 text-sm text-gray-700">
-                I agree to the <a href="#" class="text-polysphere-600 hover:underline">Terms of Service</a> and
-                <a href="#" class="text-polysphere-600 hover:underline">Privacy Policy</a>
+                I agree to the <a  href="{{route('terms')}}" class="text-polysphere-600 hover:underline">Terms of Service</a> and
+                <a  href="{{route('privacy')}}" class="text-polysphere-600 hover:underline">Privacy Policy</a>
                 <span class="text-red-500">*</span>
             </label>
         </div>

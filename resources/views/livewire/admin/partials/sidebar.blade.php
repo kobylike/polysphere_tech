@@ -18,7 +18,7 @@ Sidebar start
 
             @if($isAdmin)
                 {{-- Admin: Dropdown with two dashboards --}}
-                <li>
+                <li data-menu-key="dashboard">
                     <a class="has-arrow {{ $anyDashboardActive ? 'mm-active' : '' }}" href="javascript:void(0);"
                         aria-expanded="{{ $anyDashboardActive ? 'true' : 'false' }}">
                         <div class="menu-icon">
@@ -88,7 +88,7 @@ Sidebar start
 
             {{-- User Management: Users / Roles / Permissions --}}
             @canany(['View Users', 'manage-roles', 'manage-permissions'], $authUser)
-                <li>
+                <li data-menu-key="user-management">
                     <a class="has-arrow {{ request()->routeIs('users', 'roles', 'permissions') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
                         aria-expanded="{{ request()->routeIs('users', 'roles', 'permissions') ? 'true' : 'false' }}">
@@ -195,7 +195,7 @@ Sidebar start
 
             {{-- Projects --}}
             @canany(['View Projects', 'Create Projects'], $authUser)
-                <li>
+                <li data-menu-key="projects">
                     <a class="has-arrow {{ request()->routeIs('admin.projects.*') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
                         aria-expanded="{{ request()->routeIs('admin.projects.*') ? 'true' : 'false' }}">
@@ -237,7 +237,7 @@ Sidebar start
 
             {{-- Services --}}
             @canany(['View Services', 'Create Services'], $authUser)
-                <li>
+                <li data-menu-key="services">
                     <a class="has-arrow {{ request()->routeIs('admin.services.*') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
                         aria-expanded="{{ request()->routeIs('admin.services.*') ? 'true' : 'false' }}">
@@ -275,7 +275,7 @@ Sidebar start
 
             {{-- CMS: Blog / Categories --}}
             @canany(['View Posts', 'Create Posts', 'View Categories', 'Create Categories'], $authUser)
-                <li>
+                <li data-menu-key="cms">
                     <a class="has-arrow {{ request()->routeIs('manage.posts', 'create.post', 'edit.post', 'manage.categories', 'create.categories', 'edit.categories') ? 'mm-active' : '' }}"
                         href="javascript:void(0);"
                         aria-expanded="{{ request()->routeIs('manage.posts', 'create.post', 'edit.post', 'manage.categories', 'create.categories', 'edit.categories') ? 'true' : 'false' }}">
@@ -357,7 +357,7 @@ Sidebar start
             <li class="menu-title">ACCOUNT</li>
 
             {{-- Account – always visible --}}
-            <li>
+            <li data-menu-key="account">
                 <a class="has-arrow {{ request()->routeIs('account') ? 'mm-active' : '' }}" href="javascript:void(0);"
                     aria-expanded="{{ request()->routeIs('account') ? 'true' : 'false' }}">
                     <div class="menu-icon">

@@ -316,30 +316,70 @@
                 activityChart: null,
                 ChartJS: null, // locally-scoped Chart.js v4 class — never touches window.Chart
 
-                async initCharts() {
-                    // Same fix as the Executive Dashboard: the layout's own
-                    // Chart.bundle.min.js (Chart.js v2, loaded with `defer`)
-                    // always executes after any plain synchronous script tag,
-                    // so it was silently overwriting window.Chart back to v2
-                    // right before this ran — and this component's config
-                    // uses v3/v4-only syntax (plugins.legend, scales.y).
-                    // Importing Chart.js as its own module sidesteps the
-                    // shared global entirely, so nothing else on the page can
-                    // clobber it regardless of script load order.
-                    if (!this.ChartJS) {
-                        const mod = await import('https://cdn.jsdelivr.net/npm/chart.js@4/+esm');
-                        mod.Chart.register(...mod.registerables);
-                        this.ChartJS = mod.Chart;
-                    }
+                _initInFlight: false, // guards against overlapping concurrent initCharts() runs
 
-                    const data = @json($activityChartData);
-                    this.initActivityChart(data);
+                waitForElement(id, maxTries = 20) {
+                    return new Promise((resolve) => {
+                        const tryFind = (attemptsLeft) => {
+                            const el = document.getElementById(id);
+                            if (el) return resolve(el);
+                            if (attemptsLeft <= 0) return resolve(null);
+                            requestAnimationFrame(() => tryFind(attemptsLeft - 1));
+                        };
+                        tryFind(maxTries);
+                    });
                 },
 
-                initActivityChart(data) {
-                    const ctx = document.getElementById('userActivityChart');
+                async initCharts() {
+                    // Guard against two overlapping calls stepping on each other —
+                    // both x-init (fresh mount) and the livewire:navigated listener
+                    // below can legitimately fire for the same visit, and since
+                    // this function is async, letting both run concurrently would
+                    // corrupt the chart. Only one actual run happens at a time.
+                    if (this._initInFlight) return;
+                    this._initInFlight = true;
+
+                    try {
+                        // Same fix as the Executive Dashboard: the layout's own
+                        // Chart.bundle.min.js (Chart.js v2, loaded with `defer`)
+                        // always executes after any plain synchronous script tag,
+                        // so it was silently overwriting window.Chart back to v2
+                        // right before this ran — and this component's config
+                        // uses v3/v4-only syntax (plugins.legend, scales.y).
+                        // Importing Chart.js as its own module sidesteps the
+                        // shared global entirely, so nothing else on the page can
+                        // clobber it regardless of script load order.
+                        if (!this.ChartJS) {
+                            const mod = await import('https://cdn.jsdelivr.net/npm/chart.js@4/+esm');
+                            mod.Chart.register(...mod.registerables);
+                            this.ChartJS = mod.Chart;
+                        }
+
+                        const data = @json($activityChartData);
+                        await this.initActivityChart(data);
+                    } finally {
+                        this._initInFlight = false;
+                    }
+                },
+
+                async initActivityChart(data) {
+                    // Waits for the canvas to actually exist rather than giving
+                    // up after one check — covers the moment right after a
+                    // wire:navigate visit where Livewire's DOM swap can still be
+                    // finishing up in the background when this runs.
+                    const ctx = await this.waitForElement('userActivityChart');
                     if (!ctx || !this.ChartJS) return;
-                    if (this.activityChart) this.activityChart.destroy();
+
+                    // Ask Chart.js itself if a chart is already attached to this
+                    // exact canvas, rather than trusting our own component's
+                    // `this.activityChart` — that resets to null on every fresh
+                    // Alpine mount, even on a navigation where Livewire reused
+                    // this same physical canvas node. Without this, Chart.js's
+                    // own "canvas already in use" safeguard silently blocks
+                    // creating a new chart on it.
+                    const existing = this.ChartJS.getChart(ctx);
+                    if (existing) existing.destroy();
+
                     this.activityChart = new this.ChartJS(ctx, {
                         type: 'bar',
                         data: {
@@ -374,38 +414,30 @@
 
         // `alpine:init` fires exactly ONCE per browser tab — the very first
         // time Alpine starts, on whatever page happens to load first in the
-        // session. This script only exists on THIS page's own pushed scripts,
-        // so it only loads/runs when this page's HTML arrives. If this page
-        // is the first one visited, this listener is in place in time and
-        // everything works. But if some OTHER page loaded first (Alpine
-        // already started there), this listener registers for an event that
-        // has already fired and will never fire again — so
-        // `userDashboardCharts` never gets defined, x-data silently fails to
-        // initialize, and the chart never appears. That's exactly what
-        // "works on direct load, goes away via wire:navigate" means.
-        // Fix: register immediately if Alpine has already started, in
-        // addition to the alpine:init listener for the genuine first-load
-        // case where it hasn't started yet.
+        // session. Registering both here AND immediately if Alpine has
+        // already started (below) covers both "this page loaded first" and
+        // "reached via wire:navigate after Alpine already started elsewhere".
         document.addEventListener('alpine:init', registerUserDashboardChartsComponent);
         if (window.Alpine) {
             registerUserDashboardChartsComponent();
         }
 
-        // Re-init after Livewire navigation
-        // (No separate DOMContentLoaded listener here, on purpose — Alpine's
-        // own x-init="initCharts()" already covers hard page loads. Adding a
-        // second trigger for that case would race against it now that
-        // initCharts() is async, the same bug that caused the Executive
-        // Dashboard's charts to stretch on refresh.)
+        // Explicit re-init on every wire:navigate arrival. Necessary because
+        // Livewire's navigate can preserve the outer x-data element across a
+        // same-route revisit (rather than tearing it down), which means
+        // Alpine's x-init — which only ever runs once per element's lifetime —
+        // does NOT fire again even though the inner HTML (including the chart
+        // canvas) gets freshly re-rendered with new server data. The
+        // _initInFlight guard above makes this safe to run alongside x-init
+        // on a genuine fresh mount, rather than racing it — no setTimeout
+        // needed anymore.
         document.addEventListener('livewire:navigated', function () {
-            setTimeout(() => {
-                if (window.Alpine) {
-                    const chartsComponent = Alpine.$data(document.querySelector('[x-data="userDashboardCharts()"]'));
-                    if (chartsComponent && typeof chartsComponent.initCharts === 'function') {
-                        chartsComponent.initCharts();
-                    }
-                }
-            }, 50);
+            const el = document.querySelector('[x-data="userDashboardCharts()"]');
+            if (!el) return;
+            const component = Alpine.$data(el);
+            if (component && typeof component.initCharts === 'function') {
+                component.initCharts();
+            }
         });
     </script>
 @endpush

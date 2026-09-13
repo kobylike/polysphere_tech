@@ -576,7 +576,7 @@
                                         <div class="icon-1">
                                             <i class="icon-comma-double"></i>
                                         </div>
-                                        <h4>Sarah Mitchell</h4>
+                                        <h4>Gideon Mensah</h4>
                                         <span>CTO, FinVault</span>
                                         <ul class="ratings">
                                             <li><i class="fa fa-star"></i></li>
@@ -600,7 +600,7 @@
                                         <div class="icon-1">
                                             <i class="icon-comma-double"></i>
                                         </div>
-                                        <h4>James Okafor</h4>
+                                        <h4>James Sarpong</h4>
                                         <span>Director, HealthBridge</span>
                                         <ul class="ratings">
                                             <li><i class="fa fa-star"></i></li>
@@ -617,13 +617,13 @@
                                 <div class="swiper-slide">
                                     <div class="testimonials-two-box">
                                         <div class="author-image">
-                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-1.png') }}"
+                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-3.png') }}"
                                                 alt="Client">
                                         </div>
                                         <div class="icon-1">
                                             <i class="icon-comma-double"></i>
                                         </div>
-                                        <h4>Elena Rodriguez</h4>
+                                        <h4>Elena Ansah</h4>
                                         <span>VP of Product, LogiMove</span>
                                         <ul class="ratings">
                                             <li><i class="fa fa-star"></i></li>
