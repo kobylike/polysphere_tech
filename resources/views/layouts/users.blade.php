@@ -253,70 +253,12 @@
             @persist('navbar')
             @livewire('admin.partials.navbar')
             @endpersist
+            @persist('chat-widget')
+            @livewire('admin.messenger.chat-messenger-component')
+            @endpersist
+            @persist('sidebar')
             @livewire('admin.partials.sidebar')
-
-            <script>
-                // ═══════════════════════════════════════════════════════════════
-                // SIDEBAR DROPDOWN STATE — apply BEFORE first paint.
-                //
-                // Synchronous and non-deferred, placed immediately after the
-                // sidebar's own markup so #menu already exists in the DOM
-                // when this runs, and placed here (not in deznav-init.js)
-                // specifically because deznav-init.js is loaded with `defer`
-                // — meaning it only runs after the whole page has parsed,
-                // by which point the browser has ALREADY painted whatever
-                // Blade rendered server-side (route-based mm-show/mm-active
-                // classes). That gap is exactly why a saved "closed"
-                // preference used to visually flash: open (Blade's
-                // route-based default) -> closed (deznav-init.js's saved
-                // state correction, arriving a beat later).
-                //
-                // Running this synchronously, right here, means the saved
-                // preference is already applied to the DOM before the
-                // browser gets a chance to paint it — same technique as the
-                // tablet-menu-toggle script above, same reason.
-                //
-                // Deliberately vanilla JS, no jQuery: jQuery itself is
-                // loaded via a deferred vendor script and is not guaranteed
-                // to be available yet at this point in parsing.
-                //
-                // Keep this key ('sidebarMenuOpenState') and its shape in
-                // sync with deznav-init.js — deznav-init.js's own
-                // applySavedMenuState() re-applies the same logic later as
-                // a harmless, idempotent safety net (e.g. in case this
-                // script ever fails silently), and handleMenuStatePersistence()
-                // there is what keeps writing to this same storage key
-                // whenever the user actually toggles a dropdown.
-                (function () {
-                    try {
-                        var raw = localStorage.getItem('sidebarMenuOpenState');
-                        if (!raw) return;
-                        var state = JSON.parse(raw) || {};
-
-                        var menu = document.getElementById('menu');
-                        if (!menu) return;
-
-                        var items = menu.querySelectorAll(':scope > li[data-menu-key]');
-                        items.forEach(function (li) {
-                            var key = li.getAttribute('data-menu-key');
-                            if (!Object.prototype.hasOwnProperty.call(state, key)) return;
-
-                            var submenu = li.querySelector(':scope > ul');
-                            if (state[key]) {
-                                li.classList.add('mm-active');
-                                if (submenu) submenu.classList.add('mm-show');
-                            } else {
-                                li.classList.remove('mm-active');
-                                if (submenu) submenu.classList.remove('mm-show');
-                            }
-                        });
-                    } catch (e) {
-                        // localStorage unavailable/corrupt — silently fall
-                        // back to Blade's server-rendered route-based
-                        // classes, exactly as if no preference existed.
-                    }
-                })();
-            </script>
+            @endpersist
         @endauth
         <div class="content-body">
             @if(isset($slot))
@@ -900,6 +842,93 @@
 
                     if (document.readyState !== 'loading') {
                         bindDropdowns();
+                    }
+                })();
+            </script>
+
+            {{--
+            ═══════════════════════════════════════════════════════════════════════════
+            CHAT WIDGET TOGGLE — fixes the messenger bell not responding after
+            wire:navigate. Replaces the earlier Alpine-store approach
+            (`onclick="Alpine.store('chat').open = true"` on the bell +
+            `x-show="$store.chat.open"` on .chatbox), which relied on Alpine keeping
+            a live, per-node reactive effect bound to .chatbox across every
+            wire:navigate page swap — that could go stale even though @persist kept
+            the physical node itself intact, leaving the bell able to update the
+            store but nothing visually reacting to it until a hard refresh.
+
+            Same proven pattern as the hamburger/fullscreen/profile-dropdown above:
+            delegated jQuery handlers bound once to `document`, plain DOM class
+            toggling instead of Alpine reactivity, PLUS explicit e.stopPropagation()
+            on both handlers (mirroring the dropdown toggle exactly) and a plain JS
+            state flag (window.__chatOpen) re-applied on every livewire:navigated —
+            since that variable lives in page memory rather than the DOM, it isn't
+            affected by whatever Livewire does to the underlying nodes during a
+            page swap, and acts as a safety net even if something else were to
+            strip the `.active` class during the transition.
+
+            Requires two small changes outside this file:
+            - navbar partial: bell link's `onclick="Alpine.store('chat').open=true"`
+            replaced with `class="... js-chat-toggle"` (no onclick).
+            - chat-messenger-component: `.chatbox`'s `x-show`/`:class` Alpine
+            bindings removed (now a plain `class="chatbox"`), and
+            `.chatbox-close`'s `@click="$store.chat.open=false"` Alpine binding
+            removed (now a plain `class="chatbox-close"` with no attribute) —
+            both handled below instead.
+            ═══════════════════════════════════════════════════════════════════════════ --}}
+            <script>
+                (function () {
+                    function bindChatToggle() {
+                        // The theme's own vendor JS (custom.js) ships its own native
+                        // click handlers for this exact .chatbox widget, bound under
+                        // the 'dzChatUserOpen' / 'dzChatUserBack' namespaces. Since
+                        // those load in <head> before this script runs, they're
+                        // registered on `document` BEFORE our own handler — and
+                        // jQuery fires delegated handlers on the same element in
+                        // binding order. If that vendor handler calls
+                        // stopImmediatePropagation() (which stock "open/close panel"
+                        // toggles commonly do), it silently blocks every handler
+                        // bound after it for that same click — including ours —
+                        // no matter how correctly ours is written. Confirmed via
+                        // even a direct jQuery .trigger('click') simulation never
+                        // reaching our code.
+                        //
+                        // Fix: explicitly remove the theme's own conflicting
+                        // handlers first, since we're intentionally replacing that
+                        // native behavior with our own wire:navigate-safe version.
+                        jQuery(document).off('click.dzChatUserOpen click.dzChatUserBack');
+
+                        jQuery(document).off('click.chatToggle').on('click.chatToggle', '.js-chat-toggle', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            jQuery('.chatbox').addClass('active');
+                            window.__chatOpen = true;
+                        });
+
+                        jQuery(document).off('click.chatClose').on('click.chatClose', '.chatbox-close', function (e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+
+                            jQuery('.chatbox').removeClass('active');
+                            window.__chatOpen = false;
+                        });
+                    }
+
+                    function restoreChatState() {
+                        if (window.__chatOpen) {
+                            jQuery('.chatbox').addClass('active');
+                        }
+                    }
+
+                    document.addEventListener('DOMContentLoaded', bindChatToggle);
+                    document.addEventListener('livewire:navigated', function () {
+                        bindChatToggle();
+                        restoreChatState();
+                    });
+
+                    if (document.readyState !== 'loading') {
+                        bindChatToggle();
                     }
                 })();
             </script>

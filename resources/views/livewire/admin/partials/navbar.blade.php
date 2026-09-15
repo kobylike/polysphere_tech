@@ -89,12 +89,7 @@
         }
     </style>
 
-    {{-- Chat Widget (persisted) --}}
-    @persist('chat-widget')
-    @auth
-        @livewire('admin.messenger.chat-messenger-component')
-    @endauth
-    @endpersist
+
 
     <!-- Header -->
     <div class="header">
@@ -192,10 +187,34 @@
                             @livewire('admin.partials.notification-bell')
                         @endauth
 
-                        {{-- Chat Messenger Icon --}}
+                        {{-- Chat Messenger Icon
+                        FIXED: was `onclick="Alpine.store('chat').open = true"`.
+                        Setting the store itself always worked fine (it's a
+                        plain JS object living in memory, unaffected by
+                        wire:navigate) — the problem was on the RECEIVING
+                        end: .chatbox's `x-show="$store.chat.open"` depends
+                        on Alpine having kept a live, subscribed reactive
+                        effect bound to that exact DOM node, and that can go
+                        stale across a wire:navigate page swap even though
+                        @persist kept the physical node itself intact (not
+                        helped by @persist('chat-widget') being nested
+                        inside @persist('navbar') in chat-messenger-component's
+                        view, which isn't really a supported pattern). Net
+                        result: clicking the bell after navigating updated
+                        the store but nothing visually reacted to it.
+
+                        Now driven by the same delegated, document-level
+                        jQuery pattern already used for the hamburger,
+                        fullscreen toggle, and profile dropdown elsewhere in
+                        this layout — see the `.js-chat-toggle` /
+                        `.chatbox-close` handlers added to layout.blade.php.
+                        That pattern doesn't depend on Alpine's per-node
+                        reactivity surviving navigation at all; it's plain
+                        DOM class toggling, delegated once on `document`,
+                        which we've already proven survives wire:navigate
+                        reliably. --}}
                         <li class="nav-item dropdown notification_dropdown">
-                            <a class="nav-link bell-link" href="javascript:void(0);"
-                                onclick="Alpine.store('chat').open = true">
+                            <a class="nav-link bell-link js-chat-toggle" href="javascript:void(0);">
                                 <svg width="20" height="22" viewBox="0 0 22 20" fill="none"
                                     xmlns="http://www.w3.org/2000/svg">
                                     <path
@@ -207,17 +226,9 @@
                                         stroke="white" stroke-width="1.5" stroke-linecap="round"
                                         stroke-linejoin="round" />
                                 </svg>
-                                @php
-                                    $__unreadCount = auth()->check()
-                                        ? \App\Models\Message::where('receiver_id', auth()->id())
-                                            ->where('read', false)
-                                            ->count()
-                                        : 0;
-                                @endphp
-                                <span id="dz-msg-unread-badge" class="dz-msg-badge"
-                                    style="{{ $__unreadCount > 0 ? '' : 'display:none;' }}">
-                                    {{ $__unreadCount > 99 ? '99+' : $__unreadCount }}
-                                </span>
+                                @auth
+                                    @livewire('admin.partials.message-unread-badge')
+                                @endauth
                             </a>
                         </li>
 

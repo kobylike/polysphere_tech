@@ -1,7 +1,7 @@
 {{--**********************************
 Sidebar start
 ***********************************--}}
-@persist('sidebar')
+
 <div class="deznav">
     <div class="deznav-scroll">
         <ul class="metismenu" id="menu">
@@ -412,7 +412,7 @@ Sidebar start
         </div>
     </div>
 </div>
-@endpersist
+
 {{--**********************************
 Sidebar end
 ***********************************--}}

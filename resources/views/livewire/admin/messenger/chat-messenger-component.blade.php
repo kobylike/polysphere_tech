@@ -81,19 +81,33 @@
     </style>
 
     {{--
-    FIX: added :class="{ active: $store.chat.open }" alongside the existing
-    x-show. The theme's CSS toggles visibility off the `.active` class
-    (opacity/visibility transitions), while x-show only toggles inline
-    `display`. Previously only a stale, non-delegated jQuery handler in
-    w3crm.js (`handleChatbox()`) added/removed `.active`, and that handler
-    died on every wire:navigate because it was bound directly to the old
-    `.bell-link` node instead of delegated. Now Alpine is the single
-    source of truth for both `display` and `.active`, so this persisted
-    widget reacts correctly regardless of navigation state.
+    FIXED: removed x-show="$store.chat.open" entirely, and the class list
+    is now a static "chatbox" (no Alpine binding, no x-transition). Both
+    used to depend on Alpine having kept a live, subscribed reactive
+    effect bound to this exact DOM node across wire:navigate — and while
+    @persist keeps the physical node itself intact, that per-node Alpine
+    reactivity could still go stale during the SPA-style page swap (not
+    helped by this whole widget being wrapped in @persist('chat-widget')
+    nested INSIDE the outer layout's @persist('navbar'), which isn't
+    really a supported pattern — the outer persist boundary already takes
+    over the entire subtree, making the inner one redundant). Net result
+    before this fix: clicking the bell after navigating updated the store,
+    but nothing visually reacted to it until a hard refresh re-ran
+    Alpine's initial tree walk.
+
+    Visibility is now driven entirely by the same delegated,
+    document-level jQuery pattern already used for the hamburger,
+    fullscreen toggle, and profile dropdown elsewhere in this app: a
+    `.js-chat-toggle` click (the navbar bell) adds `.active` here, and
+    `.chatbox-close` below removes it — see layout.blade.php. No Alpine
+    store is involved in showing/hiding this panel anymore. Alpine still
+    runs everything else inside it (message input, friend list search,
+    emoji, calls) — none of that depended on cross-navigation
+    persistence the way the open/close switch did, so none of it needed
+    to change.
     --}}
-    <div class="chatbox" :class="{ active: $store.chat.open }" x-show="$store.chat.open" wire:ignore.self
-        x-transition:enter.duration.300ms>
-        <div class="chatbox-close" @click="$store.chat.open = false"></div>
+    <div class="chatbox" wire:ignore.self>
+        <div class="chatbox-close"></div>
 
         <div class="custom-tab-1">
             <ul class="nav nav-tabs">
@@ -598,19 +612,29 @@
     @push('scripts')
         <script>
             document.addEventListener('alpine:init', () => {
-                if (!Alpine.store('chat')) {
-                    // Defaults closed now that this widget is persisted across
-                    // wire:navigate — it no longer needs to render pre-emptively.
-                    Alpine.store('chat', { open: false });
-                }
                 window.chatState = chatState;
+                // NOTE: Alpine.store('chat', {open:...}) is no longer
+                // registered here. It's no longer read by anything in this
+                // file — visibility of .chatbox is now handled entirely by
+                // plain jQuery class toggling in layout.blade.php (see the
+                // `.js-chat-toggle` / `.chatbox-close` handlers there),
+                // which doesn't depend on Alpine's per-node reactivity
+                // surviving wire:navigate the way x-show did.
             });
 
             document.addEventListener('livewire:init', () => {
                 Livewire.hook('morph.updated', ({ el }) => {
-                    if (el && el.classList && el.classList.contains('chatbox') && window.Alpine?.store('chat')) {
-                        el.style.display = Alpine.store('chat').open ? '' : 'none';
-                    }
+                    // FIXED: this hook used to also force
+                    // `el.style.display` on `.chatbox` to match
+                    // `Alpine.store('chat').open` on every Livewire morph.
+                    // Now that visibility is driven by the `.active` class
+                    // (toggled via delegated jQuery, not Alpine), that part
+                    // was actively harmful: it would silently re-hide an
+                    // open chatbox the next time ANY Livewire morph fired
+                    // (e.g. sending a message), since the store's `open`
+                    // value is no longer being kept in sync with the real
+                    // visible state. Removed — only the unrelated Bootstrap
+                    // dropdown re-init below is still needed.
                     if (el && el.querySelectorAll && window.bootstrap?.Dropdown) {
                         el.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (toggle) {
                             bootstrap.Dropdown.getOrCreateInstance(toggle);
@@ -619,20 +643,7 @@
                 });
             });
 
-            window.addEventListener('unread-count-updated', function (e) {
-                const badge = document.getElementById('dz-msg-unread-badge');
-                if (!badge) return;
-                const count = e.detail?.count ?? 0;
-                if (count > 0) {
-                    badge.textContent = count > 99 ? '99+' : count;
-                    badge.style.display = '';
-                    badge.classList.remove('dz-msg-badge-pop');
-                    void badge.offsetWidth;
-                    badge.classList.add('dz-msg-badge-pop');
-                } else {
-                    badge.style.display = 'none';
-                }
-            });
+
 
             // ═══════════════════════════════════════════════════════
             // NOTE: All Echo subscription logic now lives ONCE in the
@@ -679,10 +690,11 @@
                         });
 
                         // NOTE: the old 'open-chatbox' window-event listener has been
-                        // removed. The navbar's message icon now sets
-                        // Alpine.store('chat').open = true directly, so this widget
-                        // no longer needs to relay that event to itself — which
-                        // also removes the dependency on this init() having already
+                        // removed. The navbar's message icon now toggles a plain
+                        // `.active` class on `.chatbox` via delegated jQuery (see
+                        // layout.blade.php), so this widget no longer needs to
+                        // relay any open/close event to itself — which also
+                        // removes the dependency on this init() having already
                         // run by the time the icon is clicked.
 
                         this.$nextTick(() => window.forceBot());
