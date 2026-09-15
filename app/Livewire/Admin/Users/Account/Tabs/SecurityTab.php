@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Admin\Users\Account\Tabs;
 
-use App\Helpers\ActivityLogger; // <-- Added
+use App\Helpers\ActivityLogger;
 use App\Helpers\NotificationHelper;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
+use App\Mail\TwoFactorDisabledMail;
+use App\Mail\TwoFactorEnabledMail;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Component;
 
 class SecurityTab extends Component
@@ -29,6 +32,7 @@ class SecurityTab extends Component
     // ─── Deactivation ───────────────────────────────────────────────
     public bool $confirmingDeactivation = false;
     public bool $deactivationAcknowledged = false;
+
 
     protected function rules()
     {
@@ -261,6 +265,12 @@ class SecurityTab extends Component
                 'email'   => $user->email,
             ], 'security');
 
+            //  Email the user
+            try {
+                Mail::to($user->email)->queue(new TwoFactorEnabledMail($user));
+            } catch (\Throwable $e) {
+                report($e);
+            }
             // 🔥 Send notification (2FA enabled)
             NotificationHelper::sendToUser($user, [
                 'title' => 'Two-Factor Authentication Enabled',
@@ -299,6 +309,12 @@ class SecurityTab extends Component
                 'email'   => $user->email,
             ], 'security');
 
+            //  Email the user (security alert)
+            try {
+                Mail::to($user->email)->queue(new TwoFactorDisabledMail($user));
+            } catch (\Throwable $e) {
+                report($e);
+            }
             // 🔥 Send notification (2FA disabled)
             NotificationHelper::sendToUser($user, [
                 'title' => 'Two-Factor Authentication Disabled',
