@@ -141,7 +141,7 @@
                                     </div>
                                     @if($showCountryDropdown)
                                         <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
-                                            x-data x-on:click.away="$wire.closeCountryDropdown()">
+                                            data-lw-managed="true" x-data x-on:click.away="$wire.closeCountryDropdown()">
                                             <div class="sticky-top bg-white p-2 border-bottom">
                                                 <input type="text" wire:model.live.debounce.200ms="search"
                                                     placeholder="Search country…" class="form-control form-control-sm"
@@ -274,16 +274,17 @@
                                                 class="form-control phone-number-input @error('emergency_contact_phone_local') is-invalid @enderror"
                                                 style="border-radius: 0 0.5rem 0.5rem 0; font-size: 0.85rem; padding: 0.35rem 0.65rem;"
                                                 x-data x-on:input="
-                                                                   let v = $el.value.replace(/[^0-9]/g, '');
-                                                                   let max = {{ $emergency_countryInfo['maxLength'] ?? 15 }};
-                                                                   if (v.length > max) v = v.substring(0, max);
-                                                                   $el.value = v;
-                                                                   $wire.emergency_setPhone(v);
-                                                               ">
+                                                                                   let v = $el.value.replace(/[^0-9]/g, '');
+                                                                                   let max = {{ $emergency_countryInfo['maxLength'] ?? 15 }};
+                                                                                   if (v.length > max) v = v.substring(0, max);
+                                                                                   $el.value = v;
+                                                                                   $wire.emergency_setPhone(v);
+                                                                               ">
                                         </div>
                                         @if($emergency_showCountryDropdown)
                                             <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
-                                                x-data x-on:click.away="$wire.emergency_closeCountryDropdown()">
+                                                data-lw-managed="true" x-data
+                                                x-on:click.away="$wire.emergency_closeCountryDropdown()">
                                                 <div class="sticky-top bg-white p-2 border-bottom">
                                                     <input type="text" wire:model.live.debounce.200ms="emergency_search"
                                                         placeholder="Search country…" class="form-control form-control-sm"
@@ -386,12 +387,12 @@
                                 @php $yearOptions = range(date('Y') + 5, 1950); @endphp
                                 @foreach($education as $index => $edu)
                                     <div class="row g-1 mb-2 align-items-end" wire:key="edu-{{ $index }}" x-data="{
-                                                    startYear: @entangle('education.' . $index . '.start_year'),
-                                                    get endYearOptions() {
-                                                        if (!this.startYear) return @js($yearOptions);
-                                                        return @js($yearOptions).filter(y => y >= this.startYear);
-                                                    }
-                                                }">
+                                                                    startYear: @entangle('education.' . $index . '.start_year'),
+                                                                    get endYearOptions() {
+                                                                        if (!this.startYear) return @js($yearOptions);
+                                                                        return @js($yearOptions).filter(y => y >= this.startYear);
+                                                                    }
+                                                                }">
                                         <div class="col-sm-3 col-6">
                                             <input type="text" class="form-control form-control-sm"
                                                 wire:model="education.{{ $index }}.institution" placeholder="Institution">

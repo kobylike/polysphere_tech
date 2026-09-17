@@ -1268,7 +1268,8 @@
                                     </div>
                                     @if($emp_emergency_showCountryDropdown)
                                         <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
-                                            x-data x-on:click.away="$wire.emp_emergency_closeCountryDropdown()">
+                                            data-lw-managed="true" x-data
+                                            x-on:click.away="$wire.emp_emergency_closeCountryDropdown()">
                                             <div class="sticky-top bg-white p-2 border-bottom">
                                                 <div class="position-relative">
                                                     <i class="fas fa-search position-absolute text-muted"
@@ -1327,9 +1328,12 @@
                     <div class="modal-footer">
                         <button class="btn btn-secondary"
                             wire:click="$set('showConvertEmployeeModal', false)">Cancel</button>
-                        <button class="btn btn-success" wire:click="saveConvertedEmployee" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fas fa-briefcase me-1"></i> Convert to Employee</span>
-                            <span wire:loading><i class="fas fa-spinner fa-spin me-1"></i> Converting…</span>
+                        <button class="btn btn-success" wire:click="saveConvertedEmployee" wire:loading.attr="disabled"
+                            wire:target="saveConvertedEmployee">
+                            <span wire:loading.remove wire:target="saveConvertedEmployee"><i
+                                    class="fas fa-briefcase me-1"></i> Convert to Employee</span>
+                            <span wire:loading wire:target="saveConvertedEmployee"><i
+                                    class="fas fa-spinner fa-spin me-1"></i> Converting…</span>
                         </button>
                     </div>
                 </div>

@@ -11,10 +11,10 @@ Reset your password using the link below:
 
 -------------------------------------------
 Requested : {{ $sentAt }}
-Expires   : in {{ $expiresInMinutes }} minutes
+Expires : in {{ $expiresInMinutes }} minutes
 -------------------------------------------
 
 If you didn't request this, you can safely ignore this email —
 your password will not be changed.
 
-© {{ date('Y') }} Polysphere Tech · 123 Tech Hub, Innovation District, Silicon Valley, CA 94025
+© {{ date('Y') }} Polysphere Tech · Accra, Ghana

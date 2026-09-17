@@ -197,6 +197,19 @@
         #main-wrapper.menu-toggle .brand-logo-icon-only {
         display: inline-block !important;
         }
+
+        /* Country dropdown in the emergency-contact phone field: cap its height
+        so a 190+ country list doesn't blow past the modal — the list itself
+        scrolls, the search box stays pinned via its existing sticky-top. */
+        .phone-country-dropdown {
+        max-height: 320px;
+        overflow-y: auto;
+        }
+        @media (max-width: 480px) {
+        .phone-country-dropdown {
+        max-height: 240px;
+        }
+        }
         </style>
 
         @livewireStyles
@@ -726,7 +739,13 @@
 
                 // Close any dropdown left in an inconsistent "show" state
                 // without its trigger (which Livewire may have replaced).
+                // Skip panels that are driven by Livewire/Alpine state directly
+                // (data-lw-managed="true") — those aren't real Bootstrap dropdowns,
+                // so they have no aria-expanded trigger and would otherwise get
+                // their "show" class stripped a beat after every render.
                 document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    if (menu.hasAttribute('data-lw-managed')) return;
+
                     const trigger = menu.previousElementSibling;
                     if (!trigger || trigger.getAttribute('aria-expanded') !== 'true') {
                         menu.classList.remove('show');

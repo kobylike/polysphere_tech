@@ -9,7 +9,9 @@
     <meta name="supported-color-schemes" content="light dark">
     <title>Reset your password — Polysphere Tech</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -20,10 +22,23 @@
             color: #1e1b2e;
         }
 
-        table { border-spacing: 0; border-collapse: collapse; }
-        td { padding: 0; }
-        img { display: block; border: 0; }
-        a { color: inherit; }
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 0;
+        }
+
+        img {
+            display: block;
+            border: 0;
+        }
+
+        a {
+            color: inherit;
+        }
     </style>
 </head>
 
@@ -46,20 +61,24 @@
                                     <td style="padding-right:12px; vertical-align:middle;">
                                         <svg width="30" height="30" viewBox="0 0 30 30" fill="none"
                                             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                            <circle cx="15" cy="15" r="14" stroke="rgba(255,255,255,0.35)" stroke-width="1.4"/>
-                                            <circle cx="15" cy="15" r="9" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"/>
-                                            <circle cx="15" cy="15" r="4" fill="#ffffff"/>
+                                            <circle cx="15" cy="15" r="14" stroke="rgba(255,255,255,0.35)"
+                                                stroke-width="1.4" />
+                                            <circle cx="15" cy="15" r="9" stroke="rgba(255,255,255,0.6)"
+                                                stroke-width="1.4" />
+                                            <circle cx="15" cy="15" r="4" fill="#ffffff" />
                                         </svg>
                                     </td>
                                     <td style="vertical-align:middle;">
-                                        <span style="font-family:'Segoe UI',Arial,sans-serif; font-weight:700; font-size:21px; color:#fff; letter-spacing:-.4px;">
+                                        <span
+                                            style="font-family:'Segoe UI',Arial,sans-serif; font-weight:700; font-size:21px; color:#fff; letter-spacing:-.4px;">
                                             Polysphere Tech
                                         </span>
                                     </td>
                                 </tr>
                             </table>
 
-                            <p style="margin: 14px 0 0; color: rgba(255,255,255,0.65); font-size:13px; letter-spacing:.02em;">
+                            <p
+                                style="margin: 14px 0 0; color: rgba(255,255,255,0.65); font-size:13px; letter-spacing:.02em;">
                                 Password reset request
                             </p>
                         </td>
@@ -93,8 +112,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
                                 <tr>
                                     <td style="border-radius:50px; overflow:hidden;">
-                                        <a href="{{ $resetUrl }}"
-                                           style="display:inline-block; padding:13px 32px;
+                                        <a href="{{ $resetUrl }}" style="display:inline-block; padding:13px 32px;
                                                   background:linear-gradient(120deg,#312E81,#4338CA);
                                                   color:#ffffff; text-decoration:none; font-size:15px;
                                                   font-weight:700; border-radius:50px; letter-spacing:-.1px;">
@@ -105,8 +123,7 @@
                             </table>
 
                             {{-- Meta table --}}
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-                                style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px;
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC; border:1px solid #E2E8F0; border-radius:10px;
                                        margin-bottom:20px; overflow:hidden;">
                                 <tr>
                                     <td style="padding:14px 18px; border-bottom:1px solid #E2E8F0;">
@@ -119,14 +136,16 @@
                                     <td style="padding:14px 18px;">
                                         <p style="margin:0 0 3px; font-size:11px; text-transform:uppercase; letter-spacing:.1em;
                                                   color:#94A3B8; font-weight:600;">Link expires</p>
-                                        <p style="margin:0; font-size:14px; color:#475569;">In {{ $expiresInMinutes }} minutes</p>
+                                        <p style="margin:0; font-size:14px; color:#475569;">In {{ $expiresInMinutes }}
+                                            minutes</p>
                                     </td>
                                 </tr>
                             </table>
 
                             <p style="margin:0; font-size:13px; line-height:1.6; color:#94A3B8;">
                                 If the button doesn't work, copy and paste this URL into your browser:<br>
-                                <a href="{{ $resetUrl }}" style="color:#4338CA; word-break:break-all;">{{ $resetUrl }}</a>
+                                <a href="{{ $resetUrl }}"
+                                    style="color:#4338CA; word-break:break-all;">{{ $resetUrl }}</a>
                             </p>
 
                             <p style="margin:20px 0 0; font-size:13px; line-height:1.6; color:#94A3B8;">
@@ -147,7 +166,7 @@
                                 </a>
                             </p>
                             <p style="margin:0; font-size:12px; color:#CBD5E1;">
-                                &copy; {{ date('Y') }} Polysphere Tech · 123 Tech Hub, Innovation District, Silicon Valley, CA
+                                &copy; {{ date('Y') }} Polysphere Tech · Accra, Ghana
                             </p>
                         </td>
                     </tr>

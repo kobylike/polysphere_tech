@@ -199,8 +199,7 @@
                                 <a href="{{ config('app.url') }}" class="footer-link">Polysphere Tech</a> newsletter.
                             </p>
                             <p style="margin:0; font-size:12px; color:#CBD5E1;">
-                                &copy; {{ date('Y') }} Polysphere Tech · 123 Tech Hub, Innovation District, Silicon
-                                Valley, CA
+                                &copy; {{ date('Y') }} Polysphere Tech · Accra,Ghana
                             </p>
                         </td>
                     </tr>

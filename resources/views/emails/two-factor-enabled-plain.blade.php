@@ -21,5 +21,5 @@ Didn't enable 2FA? Contact support immediately — your account may be at risk.
 
 ---
 {{ $companyName }}
-123 Tech Hub, Innovation District, Silicon Valley, CA 94025
+Accra, Ghana
 © {{ date('Y') }} {{ $companyName }}

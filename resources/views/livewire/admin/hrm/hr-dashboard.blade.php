@@ -584,7 +584,7 @@
                                     </div>
                                     @if($showCountryDropdown)
                                         <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
-                                            x-data x-on:click.away="$wire.closeCountryDropdown()">
+                                            data-lw-managed="true" x-data x-on:click.away="$wire.closeCountryDropdown()">
                                             <div class="sticky-top bg-white p-2 border-bottom">
                                                 <div class="position-relative">
                                                     <i class="fas fa-search position-absolute text-muted"
@@ -782,7 +782,8 @@
                                     </div>
                                     @if($emergency_showCountryDropdown)
                                         <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
-                                            x-data x-on:click.away="$wire.emergency_closeCountryDropdown()">
+                                            data-lw-managed="true" x-data
+                                            x-on:click.away="$wire.emergency_closeCountryDropdown()">
                                             <div class="sticky-top bg-white p-2 border-bottom">
                                                 <div class="position-relative">
                                                     <i class="fas fa-search position-absolute text-muted"

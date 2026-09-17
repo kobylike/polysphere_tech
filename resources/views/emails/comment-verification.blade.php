@@ -9,7 +9,9 @@
     <meta name="supported-color-schemes" content="light dark">
     <title>Verify Your Comment — Polysphere Tech</title>
     <style>
-        * { box-sizing: border-box; }
+        * {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
@@ -20,10 +22,23 @@
             color: #1e1b2e;
         }
 
-        table { border-spacing: 0; border-collapse: collapse; }
-        td { padding: 0; }
-        img { display: block; border: 0; }
-        a { color: inherit; }
+        table {
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 0;
+        }
+
+        img {
+            display: block;
+            border: 0;
+        }
+
+        a {
+            color: inherit;
+        }
     </style>
 </head>
 
@@ -47,20 +62,24 @@
                                     <td style="padding-right:12px; vertical-align:middle;">
                                         <svg width="28" height="28" viewBox="0 0 30 30" fill="none"
                                             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                                            <circle cx="15" cy="15" r="14" stroke="rgba(255,255,255,0.35)" stroke-width="1.4"/>
-                                            <circle cx="15" cy="15" r="9" stroke="rgba(255,255,255,0.6)" stroke-width="1.4"/>
-                                            <circle cx="15" cy="15" r="4" fill="#ffffff"/>
+                                            <circle cx="15" cy="15" r="14" stroke="rgba(255,255,255,0.35)"
+                                                stroke-width="1.4" />
+                                            <circle cx="15" cy="15" r="9" stroke="rgba(255,255,255,0.6)"
+                                                stroke-width="1.4" />
+                                            <circle cx="15" cy="15" r="4" fill="#ffffff" />
                                         </svg>
                                     </td>
                                     <td style="vertical-align:middle;">
-                                        <span style="font-family:'Segoe UI',Arial,sans-serif; font-weight:700; font-size:20px; color:#fff; letter-spacing:-.4px;">
+                                        <span
+                                            style="font-family:'Segoe UI',Arial,sans-serif; font-weight:700; font-size:20px; color:#fff; letter-spacing:-.4px;">
                                             Polysphere Tech
                                         </span>
                                     </td>
                                 </tr>
                             </table>
 
-                            <p style="margin: 12px 0 0; color: rgba(255,255,255,0.6); font-size:13px; letter-spacing:.02em;">
+                            <p
+                                style="margin: 12px 0 0; color: rgba(255,255,255,0.6); font-size:13px; letter-spacing:.02em;">
                                 Confirm your comment on <strong style="color:#fff;">{{ $comment->post->title }}</strong>
                             </p>
                         </td>
@@ -71,11 +90,13 @@
                         <td style="background:#ffffff; padding: 36px 40px;">
 
                             {{-- Greeting --}}
-                            <h1 style="margin:0 0 6px; font-size:22px; font-weight:700; color:#0f172a; letter-spacing:-.3px;">
+                            <h1
+                                style="margin:0 0 6px; font-size:22px; font-weight:700; color:#0f172a; letter-spacing:-.3px;">
                                 Hi {{ $comment->guest_name }},
                             </h1>
                             <p style="margin:0 0 24px; font-size:15px; color:#475569; line-height:1.6;">
-                                You've left a comment on our blog post. To make it visible to everyone, we just need you to confirm your email address.
+                                You've left a comment on our blog post. To make it visible to everyone, we just need you
+                                to confirm your email address.
                             </p>
 
                             {{-- Comment preview card --}}
@@ -85,7 +106,8 @@
                                     <td style="padding:16px 20px; border-bottom:1px solid #E2E8F0;">
                                         <p style="margin:0 0 3px; font-size:11px; text-transform:uppercase; letter-spacing:.1em;
                                                   color:#94A3B8; font-weight:600;">Your comment</p>
-                                        <p style="margin:0; font-size:15px; color:#1e293b; line-height:1.6; white-space:pre-wrap;">
+                                        <p
+                                            style="margin:0; font-size:15px; color:#1e293b; line-height:1.6; white-space:pre-wrap;">
                                             {{ $comment->body }}
                                         </p>
                                     </td>
@@ -105,8 +127,7 @@
                             <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
                                 <tr>
                                     <td style="border-radius:50px; overflow:hidden;">
-                                        <a href="{{ $url }}"
-                                           style="display:inline-block; padding:14px 40px;
+                                        <a href="{{ $url }}" style="display:inline-block; padding:14px 40px;
                                                   background:linear-gradient(120deg,#312E81,#4338CA);
                                                   color:#ffffff; text-decoration:none; font-size:16px;
                                                   font-weight:700; border-radius:50px; letter-spacing:-.1px;">
@@ -116,7 +137,8 @@
                                 </tr>
                             </table>
 
-                            <p style="margin:20px 0 0; font-size:13px; color:#94A3B8; text-align:center; line-height:1.6;">
+                            <p
+                                style="margin:20px 0 0; font-size:13px; color:#94A3B8; text-align:center; line-height:1.6;">
                                 If you didn't leave this comment, you can safely ignore this email.<br>
                                 The link will expire in 24 hours.
                             </p>
@@ -131,12 +153,12 @@
                             <p style="margin:0 0 6px; font-size:12px; color:#94A3B8;">
                                 This verification was requested at
                                 <a href="{{ config('app.url') }}{{ route('blog.details', $comment->post->slug) }}"
-                                   style="color:#4338CA; text-decoration:none;">
+                                    style="color:#4338CA; text-decoration:none;">
                                     {{ config('app.url') }}{{ route('blog.details', $comment->post->slug) }}
                                 </a>
                             </p>
                             <p style="margin:0; font-size:12px; color:#CBD5E1;">
-                                &copy; {{ date('Y') }} Polysphere Tech · 123 Tech Hub, Innovation District, Silicon Valley, CA
+                                &copy; {{ date('Y') }} Polysphere Tech · 1Accra,Ghana
                             </p>
                         </td>
                     </tr>

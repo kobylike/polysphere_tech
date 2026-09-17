@@ -115,7 +115,8 @@
                                             style="margin:0 0 3px; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:#94A3B8; font-weight:600;">
                                             Email</p>
                                         <p style="margin:0; font-size:15px; font-weight:600; color:#1e293b;">
-                                            {{ $user->email }}</p>
+                                            {{ $user->email }}
+                                        </p>
                                     </td>
                                 </tr>
                                 @if($positionName)
@@ -125,7 +126,8 @@
                                                 style="margin:0 0 3px; font-size:11px; text-transform:uppercase; letter-spacing:.1em; color:#94A3B8; font-weight:600;">
                                                 Position</p>
                                             <p style="margin:0; font-size:15px; font-weight:600; color:#1e293b;">
-                                                {{ $positionName }}</p>
+                                                {{ $positionName }}
+                                            </p>
                                         </td>
                                     </tr>
                                 @endif
@@ -149,7 +151,8 @@
                                             Your Temporary Password</p>
                                         <p
                                             style="margin:0 0 10px; font-size:20px; font-weight:700; color:#78350F; font-family:'Courier New',monospace; letter-spacing:.5px;">
-                                            {{ $temporaryPassword }}</p>
+                                            {{ $temporaryPassword }}
+                                        </p>
                                         <p style="margin:0; font-size:13px; color:#92400E; line-height:1.5;">
                                             ⚠️ For your security, please sign in and change this password immediately.
                                         </p>
@@ -181,8 +184,8 @@
                         <td
                             style="background:#F8FAFC; border-top:1px solid #E2E8F0; border-radius:0 0 16px 16px; padding:20px 40px; text-align:center;">
                             <p style="margin:0; font-size:12px; color:#CBD5E1;">
-                                &copy; {{ date('Y') }} {{ $companyName }} · 123 Tech Hub, Innovation District, Silicon
-                                Valley, CA
+                                &copy; {{ date('Y') }} {{ $companyName }} · Accra,Ghana
+
                             </p>
                         </td>
                     </tr>

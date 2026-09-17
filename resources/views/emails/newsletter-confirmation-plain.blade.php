@@ -22,4 +22,4 @@ What you'll receive:
 • 💡 Expert tips & case studies
 
 ---
-© {{ date('Y') }} Polysphere Tech · 123 Tech Hub, Innovation District, Silicon Valley, CA
+© {{ date('Y') }} Polysphere Tech · Accra,Ghana

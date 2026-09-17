@@ -182,8 +182,7 @@
                                 <strong style="color:#475569;">{{ $user->email }}</strong>
                             </p>
                             <p style="margin:0; font-size:12px; color:#CBD5E1;">
-                                &copy; {{ date('Y') }} {{ $companyName }} · 123 Tech Hub, Innovation District, Silicon
-                                Valley, CA
+                                &copy; {{ date('Y') }} {{ $companyName }} · Accra, Ghana
                             </p>
                         </td>
                     </tr>
