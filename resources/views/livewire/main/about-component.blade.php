@@ -2,7 +2,8 @@
 
     <!-- Breadcrumb area start -->
     <div wire:ignore class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
-        <div class="breadcrumb__thumb" style="background-image: url('{{ asset('assets/main/imgs/resources/about.jpg') }}');">
+        <div class="breadcrumb__thumb"
+            style="background-image: url('{{ asset('assets/main/imgs/resources/about.jpg') }}');">
         </div>
         <div class="breadcrumb__thumb_2"
             style="background-image: url('{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}');"></div>
@@ -29,10 +30,13 @@
     <!-- About us area start -->
     <section class="about-us-section section-space p-relative">
         <div class="shape-area">
-            <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/bg/bg-shape-1.png') }}');"></div>
-            <div class="shape-2 quote-animation" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-7.png') }}');">
+            <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/bg/bg-shape-1.png') }}');">
             </div>
-            <div class="shape-3 quote-animation" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-8.png') }}');">
+            <div class="shape-2 quote-animation"
+                style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-7.png') }}');">
+            </div>
+            <div class="shape-3 quote-animation"
+                style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-8.png') }}');">
             </div>
         </div>
         <div class="small-container">
@@ -40,7 +44,8 @@
                 <div class="col-xxl-6 col-xl-6 col-lg-6">
                     <!-- image area start -->
                     <div class="about-us-image-area p-relative wow fadeInRight" data-wow-delay=".5s">
-                        <div class="border-shape" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
+                        <div class="border-shape"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
                         </div>
                         <figure class="image-1">
                             <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}"
@@ -154,7 +159,7 @@
                     <div class="stat-item">
                         <h2
                             style="font-size: 48px; font-weight: 800; color: #fff; margin: 0; background: linear-gradient(135deg, #3b82f6, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                            <span class="counter">8</span>+
+                            <span class="counter">5</span>+
                         </h2>
                         <p style="color: rgba(255,255,255,0.6); margin: 0; font-size: 16px;">Years of Excellence</p>
                     </div>
@@ -166,7 +171,8 @@
     <!-- Choose area start (Why Choose Us) -->
     <section class="choose-section bg-color-1 section-space-top p-relative">
         <div class="bg-image" style="background-image: url('{{ asset('assets/main/imgs/bg/choose-bg.png') }}');"></div>
-        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');"></div>
+        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');">
+        </div>
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6 p-relative section-space-medium-bottom">
@@ -293,8 +299,10 @@
 
     <!-- Team area start -->
     <section class="team-section p-relative section-space">
-        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-13.png') }}');"></div>
-        <div class="shape-2 float-bob-y" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-14.png') }}');"></div>
+        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-13.png') }}');">
+        </div>
+        <div class="shape-2 float-bob-y"
+            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-14.png') }}');"></div>
         <div class="small-container">
             <div class="title-box text-center mb-50 wow fadeInLeft" data-wow-delay=".5s">
                 <span class="section-sub-title">Our Leadership</span>

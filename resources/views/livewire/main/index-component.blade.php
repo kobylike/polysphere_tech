@@ -173,8 +173,8 @@
                                     <p>Delivering Excellence</p>
                                 </div>
                             </div>
-                        </div>3
-                        
+                        </div>
+
                     </div>
                 </div>
                 <div class="col-xxl-6 col-xl-6 col-lg-6">

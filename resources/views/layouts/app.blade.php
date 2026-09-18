@@ -248,7 +248,8 @@
                                 </div>
                                 <div class="offcanvas__contact-text">
                                     <a href="tel:+233597563427"
-                                        style="color: rgba(255,255,255,0.7); text-decoration: none;">+233 (59) 756-3427</a>
+                                        style="color: rgba(255,255,255,0.7); text-decoration: none;">+233 (59)
+                                        756-3427</a>
                                 </div>
                             </li>
                             <li class="d-flex align-items-center">
@@ -266,15 +267,24 @@
                     </div>
                     <div class="offcanvas__social">
                         <ul>
-                            <li><a  href="https://web.facebook.com/polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
-                            <li><a href="https://x.com/polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
-                            <li><a href="https://www.youtube.com/@polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a></li>
-                            <li><a href="https://www.linkedin.com/company/polysphere-tech/" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a></li>
-                            <li><a href="https://www.instagram.com/polyspheretech" target="_blank" rel="noopener noreferrer" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
+                            <li><a href="https://web.facebook.com/polyspheretech" target="_blank"
+                                    rel="noopener noreferrer" aria-label="Facebook"><i
+                                        class="fab fa-facebook-f"></i></a></li>
+                            <li><a href="https://x.com/polyspheretech" target="_blank" rel="noopener noreferrer"
+                                    aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
+                            <li><a href="https://www.youtube.com/@polyspheretech" target="_blank"
+                                    rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                            </li>
+                            <li><a href="https://www.linkedin.com/company/polysphere-tech/" target="_blank"
+                                    rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin"></i></a>
+                            </li>
+                            <li><a href="https://www.instagram.com/polyspheretech" target="_blank"
+                                    rel="noopener noreferrer" aria-label="Instagram"><i
+                                        class="fab fa-instagram"></i></a></li>
 
 
 
-                            
+
                         </ul>
                     </div>
                 </div>
@@ -299,7 +309,7 @@
     @livewire('main.chat-widget')
     <!-- Footer Component -->
     @livewire('main.partials.footer')
-
+    @livewire('main.partials.cookie-consent')
     @livewireScripts
     @vite('resources/js/app.js')
     @stack('scripts')
