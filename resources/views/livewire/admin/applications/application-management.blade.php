@@ -4,12 +4,18 @@
             <li>
                 <h5 class="bc-title">Applications</h5>
             </li>
-            <li class="breadcrumb-item">
-                <a href="{{ route('dashboard') }}">Home</a>
-            </li>
+            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
             <li class="breadcrumb-item active"><a href="javascript:void(0)">Applications</a></li>
         </ol>
         <div class="d-flex gap-2">
+            @can('viewAny', App\Models\Application::class)
+                <button class="btn btn-outline-primary btn-sm" wire:click="export" wire:loading.attr="disabled">
+                    <span wire:loading.remove wire:target="export"><i class="fa-regular fa-file-export me-1"></i> Export
+                        CSV</span>
+                    <span wire:loading wire:target="export"><i class="fa-regular fa-spinner fa-spin me-1"></i>
+                        Exporting…</span>
+                </button>
+            @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
                 <i class="fa-regular fa-undo me-1"></i> Reset
             </button>
@@ -17,7 +23,7 @@
     </div>
 
     <div class="container-fluid">
-        {{-- ─── Stats ──────────────────────────────────────────────── --}}
+        {{-- ─── Stats ───────────────────────────────────────────── --}}
         <div class="row g-3 mb-3">
             <div class="col-xl-2 col-sm-4">
                 <div class="card bg-primary text-white">
@@ -69,9 +75,9 @@
             </div>
         </div>
 
-        {{-- ─── Filters ────────────────────────────────────────────── --}}
+        {{-- ─── Filters ─────────────────────────────────────────── --}}
         <div class="row align-items-center mb-3">
-            <div class="col-12">
+            <div class="col-xl-8 col-lg-6">
                 <div class="d-flex flex-wrap gap-2">
                     <div class="search-box">
                         <input type="text" class="form-control form-control-sm"
@@ -90,32 +96,112 @@
                             <option value="{{ $s->value }}">{{ $s->label() }}</option>
                         @endforeach
                     </select>
+                    <select class="form-control form-control-sm w-auto" wire:model.live="perPage">
+                        <option value="15">15 / page</option>
+                        <option value="25">25 / page</option>
+                        <option value="50">50 / page</option>
+                    </select>
                 </div>
             </div>
+
+            {{-- Bulk toolbar --}}
+            @if(count($selectedApplications) > 0)
+                <div class="col-xl-4 col-lg-6 text-end">
+                    <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
+                        <span class="badge bg-dark text-white p-2">{{ count($selectedApplications) }} selected</span>
+
+                        @can('update', App\Models\Application::class)
+                            <select class="form-control form-control-sm w-auto"
+                                wire:change="bulkSetStatus($event.target.value)">
+                                <option value="">Set status…</option>
+                                @foreach($statuses as $s)
+                                    <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                                @endforeach
+                            </select>
+                        @endcan
+
+                        @can('delete', App\Models\Application::class)
+                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
+                                <i class="fa-regular fa-trash"></i> Delete
+                            </button>
+                        @endcan
+                    </div>
+                </div>
+            @endif
         </div>
 
-        {{-- ─── Table ──────────────────────────────────────────────── --}}
+        {{-- ─── Table ───────────────────────────────────────────── --}}
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th wire:click="sort('name')" style="cursor:pointer;">Candidate</th>
+                                <th style="width:40px">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="selectAll"
+                                            wire:model.live="selectAll">
+                                        <label class="form-check-label" for="selectAll"></label>
+                                    </div>
+                                </th>
+                                <th wire:click="sort('name')" style="cursor:pointer;">
+                                    Candidate
+                                    <span class="ms-1">
+                                        @if($sortBy === 'name' && $sortDir === 'asc') <i
+                                            class="fa-regular fa-sort-up"></i>
+                                        @elseif($sortBy === 'name' && $sortDir === 'desc') <i
+                                            class="fa-regular fa-sort-down"></i>
+                                        @else <i class="fa-regular fa-sort"></i> @endif
+                                    </span>
+                                </th>
                                 <th>Applied for</th>
                                 <th>Experience</th>
-                                <th wire:click="sort('status')" style="cursor:pointer;">Status</th>
-                                <th wire:click="sort('created_at')" style="cursor:pointer;">Applied</th>
+                                <th wire:click="sort('status')" style="cursor:pointer;">
+                                    Status
+                                    <span class="ms-1">
+                                        @if($sortBy === 'status' && $sortDir === 'asc') <i
+                                            class="fa-regular fa-sort-up"></i>
+                                        @elseif($sortBy === 'status' && $sortDir === 'desc') <i
+                                            class="fa-regular fa-sort-down"></i>
+                                        @else <i class="fa-regular fa-sort"></i> @endif
+                                    </span>
+                                </th>
+                                <th wire:click="sort('created_at')" style="cursor:pointer;">
+                                    Applied
+                                    <span class="ms-1">
+                                        @if($sortBy === 'created_at' && $sortDir === 'asc') <i
+                                            class="fa-regular fa-sort-up"></i>
+                                        @elseif($sortBy === 'created_at' && $sortDir === 'desc') <i
+                                            class="fa-regular fa-sort-down"></i>
+                                        @else <i class="fa-regular fa-sort"></i> @endif
+                                    </span>
+                                </th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($applications as $app)
-                                <tr>
+                                @php
+                                    $isNew = $app->status === 'new';
+                                    $daysAgo = $app->created_at->diffInDays(now());
+                                @endphp
+                                <tr class="{{ in_array((string) $app->id, $selectedApplications) ? 'table-active' : '' }}">
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                wire:model.live="selectedApplications" value="{{ $app->id }}">
+                                            <label class="form-check-label"></label>
+                                        </div>
+                                    </td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar avatar-md me-2">
+                                            <div class="avatar avatar-md me-2 position-relative">
                                                 <span class="avatar-text bg-primary">{{ strtoupper($app->initials) }}</span>
+                                                @if($isNew)
+                                                    <span class="position-absolute"
+                                                        style="top:-2px; right:-2px; width:10px; height:10px; background:#10b981; border:2px solid #fff; border-radius:50%;"
+                                                        title="New application"></span>
+                                                @endif
                                             </div>
                                             <div>
                                                 <h6 class="mb-0">{{ $app->name }}</h6>
@@ -138,7 +224,15 @@
                                     <td>
                                         <div class="d-flex flex-column">
                                             <span>{{ $app->created_at->format('M d, Y') }}</span>
-                                            <span class="text-muted small">{{ $app->created_at->diffForHumans() }}</span>
+                                            <span class="text-muted small">
+                                                @if($daysAgo === 0)
+                                                    Today
+                                                @elseif($daysAgo === 1)
+                                                    Yesterday
+                                                @else
+                                                    {{ $daysAgo }} days ago
+                                                @endif
+                                            </span>
                                         </div>
                                     </td>
                                     <td>
@@ -148,12 +242,21 @@
                                                     wire:click="viewApplication({{ $app->id }})" title="Review">
                                                     <i class="fa-regular fa-eye"></i>
                                                 </button>
-                                            @endcan
-
-                                            @can('view', $app)
                                                 <button class="btn btn-sm btn-outline-secondary"
                                                     wire:click="downloadCv({{ $app->id }})" title="Download CV">
                                                     <i class="fa-regular fa-download"></i>
+                                                </button>
+                                            @endcan
+
+                                            <a href="mailto:{{ $app->email }}?subject={{ urlencode('Re: Your application for ' . ($app->vacancy?->title ?? 'the role')) }}"
+                                                class="btn btn-sm btn-outline-info" title="Email candidate">
+                                                <i class="fa-regular fa-envelope"></i>
+                                            </a>
+
+                                            @can('delete', $app)
+                                                <button class="btn btn-sm btn-danger" wire:click="confirmDelete({{ $app->id }})"
+                                                    title="Delete">
+                                                    <i class="fa-regular fa-trash"></i>
                                                 </button>
                                             @endcan
                                         </div>
@@ -161,7 +264,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-5">
+                                    <td colspan="7" class="text-center py-5">
                                         <i class="fa-regular fa-inbox fs-2 d-block mb-2 text-muted"></i>
                                         <h5>No applications yet</h5>
                                         <p class="text-muted">When candidates apply, they'll appear here.</p>
@@ -184,7 +287,7 @@
         </div>
     </div>
 
-    {{-- ─── Review modal ──────────────────────────────────────────── --}}
+    {{-- ─── Review modal ─────────────────────────────────────── --}}
     @if($showViewModal && $viewingApplication)
         @can('view', $viewingApplication)
             <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.5);" wire:ignore.self>
@@ -202,21 +305,27 @@
                                     {{ trim(($viewingApplication->location ?? '') . ($viewingApplication->country ? ', ' . $viewingApplication->country : '')) ?: '—' }}
                                 </div>
                                 <div class="col-md-6"><strong>Experience:</strong>
-                                    {{ $viewingApplication->years_experience_label }}</div>
+                                    {{ $viewingApplication->years_experience_label }}
+                                </div>
                                 <div class="col-md-6"><strong>Current role:</strong>
-                                    {{ $viewingApplication->current_role ?: '—' }}</div>
+                                    {{ $viewingApplication->current_role ?: '—' }}
+                                </div>
                                 <div class="col-md-6"><strong>Company:</strong>
-                                    {{ $viewingApplication->current_company ?: '—' }}</div>
+                                    {{ $viewingApplication->current_company ?: '—' }}
+                                </div>
                                 <div class="col-md-6"><strong>Availability:</strong>
-                                    {{ $viewingApplication->availability ?: '—' }}</div>
+                                    {{ $viewingApplication->availability ?: '—' }}
+                                </div>
                                 <div class="col-md-6"><strong>Salary expectation:</strong>
-                                    {{ $viewingApplication->salary_expectation ?: '—' }}</div>
+                                    {{ $viewingApplication->salary_expectation ?: '—' }}
+                                </div>
                                 @if($viewingApplication->timezone)
                                     <div class="col-md-6"><strong>Timezone:</strong> {{ $viewingApplication->timezone }}</div>
                                 @endif
                                 @if($viewingApplication->work_authorization)
                                     <div class="col-md-6"><strong>Work authorization:</strong>
-                                        {{ $viewingApplication->work_authorization }}</div>
+                                        {{ $viewingApplication->work_authorization }}
+                                    </div>
                                 @endif
                             </div>
 
@@ -224,13 +333,13 @@
                                 <strong>Links:</strong>
                                 <div class="d-flex flex-wrap gap-2 mt-1">
                                     @foreach([
-                                            'LinkedIn'  => $viewingApplication->linkedin_url,
+                                            'LinkedIn' => $viewingApplication->linkedin_url,
                                             'Portfolio' => $viewingApplication->portfolio_url,
-                                            'GitHub'    => $viewingApplication->github_url,
-                                            'Site'      => $viewingApplication->personal_site_url,
-                                            'Behance'   => $viewingApplication->behance_url,
-                                            'Dribbble'  => $viewingApplication->dribbble_url,
-                                            'Writing'   => $viewingApplication->writing_samples_url,
+                                            'GitHub' => $viewingApplication->github_url,
+                                            'Site' => $viewingApplication->personal_site_url,
+                                            'Behance' => $viewingApplication->behance_url,
+                                            'Dribbble' => $viewingApplication->dribbble_url,
+                                            'Writing' => $viewingApplication->writing_samples_url,
                                         ] as $label => $url)
                                         @if($url)
                                             <a href="{{ $url }}" target="_blank" rel="noopener"
@@ -254,7 +363,6 @@
                             <hr>
 
                             <div class="row g-3">
-                                {{-- Status dropdown – only if the user can update --}}
                                 @can('update', $viewingApplication)
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold small">Status</label>
@@ -268,7 +376,8 @@
                                     <div class="col-md-6">
                                         <label class="form-label fw-bold small">Status</label>
                                         <div>
-                                            <span class="badge badge-{{ $viewingApplication->statusEnum()->color() }} light border-0">
+                                            <span
+                                                class="badge badge-{{ $viewingApplication->statusEnum()->color() }} light border-0">
                                                 {{ $viewingApplication->statusEnum()->label() }}
                                             </span>
                                         </div>
@@ -285,7 +394,6 @@
                                     </div>
                                 </div>
 
-                                {{-- Internal notes – only if the user can update --}}
                                 @can('update', $viewingApplication)
                                     <div class="col-12">
                                         <label class="form-label fw-bold small">Internal notes</label>
@@ -300,22 +408,116 @@
                                         </div>
                                     </div>
                                 @endcan
+
+                                @if($viewingApplication->reviewed_at)
+                                    <div class="col-12">
+                                        <div class="text-muted small">
+                                            <i class="fa-regular fa-clock me-1"></i>
+                                            Last reviewed {{ $viewingApplication->reviewed_at->diffForHumans() }}
+                                            @if($viewingApplication->reviewer)
+                                                by {{ $viewingApplication->reviewer->name }}
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
+                        <div class="modal-footer justify-content-between">
+                            <div>
+                                @can('delete', $viewingApplication)
+                                    <button class="btn btn-outline-danger"
+                                        wire:click="confirmDelete({{ $viewingApplication->id }}); $set('showViewModal', false)">
+                                        <i class="fa-regular fa-trash"></i> Delete
+                                    </button>
+                                @endcan
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
 
-                            @can('update', $viewingApplication)
-                                <button class="btn btn-primary" wire:click="saveStatus" wire:loading.attr="disabled">
-                                    <span wire:loading.remove>Save changes</span>
-                                    <span wire:loading><i class="fa-solid fa-circle-notch fa-spin"></i> Saving…</span>
-                                </button>
-                            @endcan
+                                @can('update', $viewingApplication)
+                                    <button class="btn btn-primary" wire:click="saveStatus" wire:loading.attr="disabled">
+                                        <span wire:loading.remove>Save changes</span>
+                                        <span wire:loading><i class="fa-solid fa-circle-notch fa-spin"></i> Saving…</span>
+                                    </button>
+                                @endcan
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         @endcan
+    @endif
+
+    {{-- ─── Single delete modal ─────────────────────────────────── --}}
+    @if($showDeleteModal)
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.6);" wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title text-danger"><i class="fa-regular fa-triangle-exclamation me-2"></i>Delete
+                            this application?</h5>
+                        <button type="button" class="btn-close" wire:click="$set('showDeleteModal', false)"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                            style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239,68,68,.1);">
+                            <i class="fa-regular fa-trash-can fs-2 text-danger"></i>
+                        </div>
+                        <h5 class="mb-2">This cannot be undone.</h5>
+                        <p class="text-muted mb-0">
+                            The application and its uploaded CV will be permanently removed.
+                            The candidate is <strong>not</strong> notified.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center">
+                        <button class="btn btn-secondary" wire:click="$set('showDeleteModal', false)">Cancel</button>
+                        <button class="btn btn-danger" wire:click="deleteApplication" wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="deleteApplication"><i class="fa-regular fa-trash"></i>
+                                Yes, delete</span>
+                            <span wire:loading wire:target="deleteApplication"><i class="fa-regular fa-spinner fa-spin"></i>
+                                Deleting…</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ─── Bulk delete modal ───────────────────────────────────── --}}
+    @if($showBulkDeleteModal)
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.6);" wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title text-danger">
+                            <i class="fa-regular fa-triangle-exclamation me-2"></i>
+                            Delete {{ count($selectedApplications) }} application(s)?
+                        </h5>
+                        <button type="button" class="btn-close" wire:click="$set('showBulkDeleteModal', false)"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                            style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239,68,68,.1);">
+                            <i class="fa-regular fa-trash-can fs-2 text-danger"></i>
+                        </div>
+                        <h5 class="mb-2">You're about to delete {{ count($selectedApplications) }} applications.</h5>
+                        <p class="text-muted mb-0">
+                            Every selected application and its uploaded CV will be permanently removed.
+                            Candidates are <strong>not</strong> notified.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center">
+                        <button class="btn btn-secondary" wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
+                        <button class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="bulkDelete"><i class="fa-regular fa-trash"></i> Delete
+                                all</span>
+                            <span wire:loading wire:target="bulkDelete"><i class="fa-regular fa-spinner fa-spin"></i>
+                                Deleting…</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     @endif
 </div>
 

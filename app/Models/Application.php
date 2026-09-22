@@ -81,10 +81,7 @@ class Application extends Model
 
     // ─── Scopes ────────────────────────────────────────────
 
-    public function scopeForVacancy($q, int $vacancyId)
-    {
-        return $q->where('vacancy_id', $vacancyId);
-    }
+
 
     public function scopeWithStatus($q, ApplicationStatus|string $status)
     {
@@ -149,5 +146,33 @@ class Application extends Model
             ->map(fn($p) => mb_substr($p, 0, 1))
             ->take(2)
             ->implode('');
+    }
+    public function scopeForVacancy($query, int $vacancyId)
+    {
+        return $query->where('vacancy_id', $vacancyId);
+    }
+
+
+    public function scopeForEmail($query, string $email)
+    {
+        return $query->whereRaw('LOWER(email) = ?', [strtolower(trim($email))]);
+    }
+
+    /**
+     * Applications whose current state should block a new submission
+     * to the same vacancy by the same candidate.
+     */
+    public function scopeBlockingReapplication($query)
+    {
+        $statuses = collect(ApplicationStatus::cases())
+            ->filter(fn(ApplicationStatus $s) => $s->blocksReapplication())
+            ->map(fn(ApplicationStatus $s) => $s->value)
+            ->all();
+
+        return $query->whereIn('status', $statuses);
+    }
+    public function blocksReapplication(): bool
+    {
+        return $this->statusEnum()->blocksReapplication();
     }
 }

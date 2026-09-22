@@ -46,6 +46,22 @@ enum ApplicationStatus: string
         return in_array($this, [self::Hired, self::Rejected, self::Withdrawn], true);
     }
 
+    /**
+     * Whether an application in this state should block a new submission
+     * to the same vacancy from the same email address.
+     *
+     * ── New, Reviewing, Shortlisted, Interviewing, Offer → yes, actively in play.
+     * ── Hired                                            → yes, already onboarded.
+     * ── Rejected, Withdrawn                              → no, let them re-apply.
+     */
+    public function blocksReapplication(): bool
+    {
+        return match ($this) {
+            self::Rejected, self::Withdrawn => false,
+            default                          => true,
+        };
+    }
+
     /** @return array<string, string> */
     public static function options(): array
     {

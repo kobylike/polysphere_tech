@@ -21,6 +21,16 @@
             <li class="breadcrumb-item active"><a href="javascript:void(0)">Vacancy Management</a></li>
         </ol>
         <div class="d-flex gap-2">
+            @can('viewAny', App\Models\Vacancy::class)
+                <button class="btn btn-outline-primary btn-sm" wire:click="export" wire:loading.attr="disabled">
+                    <span wire:loading.remove wire:target="export">
+                        <i class="fa-regular fa-file-export me-1"></i> Export CSV
+                    </span>
+                    <span wire:loading wire:target="export">
+                        <i class="fa-regular fa-spinner fa-spin me-1"></i> Exporting…
+                    </span>
+                </button>
+            @endcan
             @can('create', App\Models\Vacancy::class)
                 <button class="btn btn-primary btn-sm" wire:click="openCreate">
                     <i class="fa-regular fa-plus me-1"></i> Post Vacancy
@@ -168,14 +178,20 @@
                     <div class="d-flex flex-wrap gap-1 justify-content-end">
                         <span class="badge bg-dark text-white p-2">{{ count($selectedVacancies) }} selected</span>
                         @can('update', App\Models\Vacancy::class)
-                            <button class="btn btn-success btn-sm" wire:click="bulkPublish"><i
-                                    class="fa-regular fa-circle-check"></i> Publish</button>
-                            <button class="btn btn-warning btn-sm" wire:click="bulkClose"><i class="fa-regular fa-lock"></i>
-                                Close</button>
+                            <button class="btn btn-success btn-sm" wire:click="bulkPublish">
+                                <i class="fa-regular fa-circle-check"></i> Publish
+                            </button>
+                            <button class="btn btn-warning btn-sm" wire:click="bulkClose">
+                                <i class="fa-regular fa-lock"></i> Close
+                            </button>
+                            <button class="btn btn-dark btn-sm" wire:click="confirmBulkArchive">
+                                <i class="fa-regular fa-box-archive"></i> Archive
+                            </button>
                         @endcan
                         @can('delete', App\Models\Vacancy::class)
-                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete"><i
-                                    class="fa-regular fa-trash"></i> Delete</button>
+                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
+                                <i class="fa-regular fa-trash"></i> Delete
+                            </button>
                         @endcan
                     </div>
                 </div>
@@ -249,6 +265,18 @@
                                                 @endif
                                             </span>
                                         </th>
+                                        <th wire:click="sort('applications_count')" style="cursor:pointer;">
+                                            Applications
+                                            <span class="ms-1">
+                                                @if($sortBy === 'applications_count' && $sortDir === 'asc')
+                                                    <i class="fa-regular fa-sort-up"></i>
+                                                @elseif($sortBy === 'applications_count' && $sortDir === 'desc')
+                                                    <i class="fa-regular fa-sort-down"></i>
+                                                @else
+                                                    <i class="fa-regular fa-sort"></i>
+                                                @endif
+                                            </span>
+                                        </th>
                                         <th wire:click="sort('created_at')" style="cursor:pointer;">
                                             Posted
                                             <span class="ms-1">
@@ -274,6 +302,7 @@
                                                 'archived' => 'dark',
                                             ];
                                             $statusColor = $statusColors[$vacancy->status->value] ?? 'secondary';
+                                            $appCount = $vacancy->applications_count ?? 0;
                                         @endphp
                                         <tr
                                             class="{{ in_array((string) $vacancy->id, $selectedVacancies) ? 'table-active' : '' }}">
@@ -319,10 +348,22 @@
                                                 </span>
                                                 @if($vacancy->closing_date)
                                                     <div class="text-muted small">Closes
-                                                        {{ $vacancy->closing_date->format('M d, Y') }}</div>
+                                                        {{ $vacancy->closing_date->format('M d, Y') }}
+                                                    </div>
                                                 @endif
                                             </td>
                                             <td>{{ number_format($vacancy->views_count) }}</td>
+                                            <td>
+                                                @if($appCount > 0)
+                                                    <a href="{{ route('admin.applications') }}?vacancyFilter={{ $vacancy->id }}"
+                                                        class="badge bg-primary text-white text-decoration-none"
+                                                        title="View applications for this role">
+                                                        {{ number_format($appCount) }}
+                                                    </a>
+                                                @else
+                                                    <span class="text-muted small">0</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 <div class="d-flex flex-column">
                                                     <span>{{ $vacancy->created_at->format('M d, Y') }}</span>
@@ -385,7 +426,7 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="9" class="text-center py-5">
+                                            <td colspan="10" class="text-center py-5">
                                                 <i class="fa-regular fa-briefcase fs-2 d-block mb-2 text-muted"></i>
                                                 <h5>No vacancies found</h5>
                                                 <p class="text-muted">Try adjusting your search filters, or post a new
@@ -854,6 +895,45 @@
                         <button class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular fa-trash"></i> Delete All</span>
                             <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- BULK ARCHIVE MODAL --}}
+    @if($showBulkArchiveModal)
+        <div class="modal fade show d-block" id="bulkArchiveVacancyModal" tabindex="-1" style="background: rgba(0,0,0,.6);"
+            wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header border-0">
+                        <h5 class="modal-title">
+                            <i class="fa-regular fa-box-archive me-2"></i>
+                            Archive {{ count($selectedVacancies) }} vacancies?
+                        </h5>
+                        <button type="button" class="btn-close" wire:click="$set('showBulkArchiveModal', false)"></button>
+                    </div>
+                    <div class="modal-body text-center py-4">
+                        <div class="d-inline-flex align-items-center justify-content-center mb-3"
+                            style="width:72px; height:72px; border-radius:50%; background:rgba(15,23,42,.06);">
+                            <i class="fa-regular fa-box-archive fs-2 text-dark"></i>
+                        </div>
+                        <p class="text-muted mb-0">
+                            Archived roles are hidden from the public careers page but stay in your records.
+                            You can un-archive them later.
+                        </p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center">
+                        <button class="btn btn-secondary" wire:click="$set('showBulkArchiveModal', false)">Cancel</button>
+                        <button class="btn btn-dark" wire:click="bulkArchive" wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="bulkArchive">
+                                <i class="fa-regular fa-box-archive"></i> Archive all
+                            </span>
+                            <span wire:loading wire:target="bulkArchive">
+                                <i class="fa-regular fa-spinner fa-spin"></i> Archiving…
+                            </span>
                         </button>
                     </div>
                 </div>

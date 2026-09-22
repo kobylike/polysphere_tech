@@ -282,4 +282,9 @@ class Vacancy extends Model
     {
         $this->increment('views_count');
     }
+
+    public function applications()
+    {
+        return $this->hasMany(Application::class);
+    }
 }

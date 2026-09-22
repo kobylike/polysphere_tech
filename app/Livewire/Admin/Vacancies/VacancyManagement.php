@@ -14,6 +14,7 @@ use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Layout('layouts.users')]
 class VacancyManagement extends Component
@@ -38,6 +39,7 @@ class VacancyManagement extends Component
     public bool $showViewModal = false;
     public bool $showDeleteModal = false;
     public bool $showBulkDeleteModal = false;
+    public bool $showBulkArchiveModal = false;
     public bool $showPublishModal = false;
     public bool $showCloseModal = false;
     public bool $showArchiveModal = false;
@@ -89,7 +91,7 @@ class VacancyManagement extends Component
 
     public function mount(): void
     {
-        //
+        $this->authorize('viewAny', Vacancy::class);
     }
 
     // ─── Validation ─────────────────────────────────────────────────────
@@ -153,27 +155,22 @@ class VacancyManagement extends Component
     {
         $this->resetPage();
     }
-
     public function updatingStatusFilter(): void
     {
         $this->resetPage();
     }
-
     public function updatingDepartmentFilter(): void
     {
         $this->resetPage();
     }
-
     public function updatingEmploymentTypeFilter(): void
     {
         $this->resetPage();
     }
-
     public function updatingWorkplaceTypeFilter(): void
     {
         $this->resetPage();
     }
-
     public function updatingFeaturedFilter(): void
     {
         $this->resetPage();
@@ -199,6 +196,8 @@ class VacancyManagement extends Component
             'employmentTypeFilter',
             'workplaceTypeFilter',
             'featuredFilter',
+            'selectedVacancies',
+            'selectAll',
         ]);
         $this->sortBy = 'created_at';
         $this->sortDir = 'desc';
@@ -442,7 +441,7 @@ class VacancyManagement extends Component
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Deleted', 'message' => 'Vacancy deleted successfully.']);
     }
 
-    // ─── Bulk Actions ─────────────────────────────────────────────────────
+    // ─── Bulk selection ──────────────────────────────────────────────────
 
     public function updatedSelectAll(bool $value): void
     {
@@ -450,6 +449,14 @@ class VacancyManagement extends Component
             ? $this->getQuery()->pluck('id')->map(fn($id) => (string) $id)->toArray()
             : [];
     }
+
+    public function updatedSelectedVacancies(): void
+    {
+        $total = $this->getQuery()->count();
+        $this->selectAll = $total > 0 && count($this->selectedVacancies) === $total;
+    }
+
+    // ─── Bulk Delete ──────────────────────────────────────────────────────
 
     public function confirmBulkDelete(): void
     {
@@ -481,11 +488,11 @@ class VacancyManagement extends Component
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Deleted', 'message' => count($ids) . ' vacancy(ies) deleted.']);
     }
 
+    // ─── Bulk Publish / Close / Archive ──────────────────────────────────
+
     public function bulkPublish(): void
     {
-        if (empty($this->selectedVacancies)) {
-            return;
-        }
+        if (empty($this->selectedVacancies)) return;
         $this->authorize('update', Vacancy::class);
 
         Vacancy::whereIn('id', $this->selectedVacancies)->get()->each->publish();
@@ -503,9 +510,7 @@ class VacancyManagement extends Component
 
     public function bulkClose(): void
     {
-        if (empty($this->selectedVacancies)) {
-            return;
-        }
+        if (empty($this->selectedVacancies)) return;
         $this->authorize('update', Vacancy::class);
 
         Vacancy::whereIn('id', $this->selectedVacancies)->get()->each->close();
@@ -521,6 +526,34 @@ class VacancyManagement extends Component
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Closed', 'message' => "{$count} vacancy(ies) closed."]);
     }
 
+    public function confirmBulkArchive(): void
+    {
+        if (empty($this->selectedVacancies)) {
+            return;
+        }
+        $this->authorize('update', Vacancy::class);
+        $this->showBulkArchiveModal = true;
+    }
+
+    public function bulkArchive(): void
+    {
+        if (empty($this->selectedVacancies)) return;
+        $this->authorize('update', Vacancy::class);
+
+        Vacancy::whereIn('id', $this->selectedVacancies)->get()->each->archive();
+
+        $this->logActivity('Vacancies archived (bulk)', [
+            'vacancy_ids' => $this->selectedVacancies,
+            'archived_by' => Auth::id(),
+        ]);
+
+        $count = count($this->selectedVacancies);
+        $this->selectedVacancies = [];
+        $this->selectAll = false;
+        $this->showBulkArchiveModal = false;
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Archived', 'message' => "{$count} vacancy(ies) archived."]);
+    }
+
     // ─── Publish / Close / Archive (single, confirmed) ────────────────────
 
     public function confirmPublish(int $id): void
@@ -533,9 +566,7 @@ class VacancyManagement extends Component
 
     public function publishConfirmed(): void
     {
-        if (! $this->publishVacancyId) {
-            return;
-        }
+        if (! $this->publishVacancyId) return;
         $vacancy = Vacancy::findOrFail($this->publishVacancyId);
         $this->authorize('update', $vacancy);
         $vacancy->publish();
@@ -561,9 +592,7 @@ class VacancyManagement extends Component
 
     public function closeConfirmed(): void
     {
-        if (! $this->closeVacancyId) {
-            return;
-        }
+        if (! $this->closeVacancyId) return;
         $vacancy = Vacancy::findOrFail($this->closeVacancyId);
         $this->authorize('update', $vacancy);
         $vacancy->close();
@@ -589,9 +618,7 @@ class VacancyManagement extends Component
 
     public function archiveConfirmed(): void
     {
-        if (! $this->archiveVacancyId) {
-            return;
-        }
+        if (! $this->archiveVacancyId) return;
         $vacancy = Vacancy::findOrFail($this->archiveVacancyId);
         $this->authorize('update', $vacancy);
         $vacancy->archive();
@@ -632,12 +659,74 @@ class VacancyManagement extends Component
         ]);
     }
 
+    // ─── Export CSV ────────────────────────────────────────────────────────
+
+    public function export(): StreamedResponse
+    {
+        $this->authorize('viewAny', Vacancy::class);
+
+        $vacancies = $this->getQuery()->get();
+        $filename  = 'vacancies-' . now()->format('Y-m-d-His') . '.csv';
+
+        return response()->streamDownload(function () use ($vacancies) {
+            $out = fopen('php://output', 'w');
+
+            fputcsv($out, [
+                'Title',
+                'Department',
+                'Location',
+                'Country',
+                'Employment type',
+                'Experience level',
+                'Workplace',
+                'Salary min',
+                'Salary max',
+                'Currency',
+                'Salary visible',
+                'Positions',
+                'Status',
+                'Featured',
+                'Views',
+                'Applications',
+                'Published at',
+                'Closing date',
+                'Created at',
+            ]);
+
+            foreach ($vacancies as $v) {
+                fputcsv($out, [
+                    $v->title,
+                    $v->department?->name,
+                    $v->location,
+                    $v->country,
+                    $v->employment_type->label(),
+                    $v->experience_level->label(),
+                    $v->workplace_type->label(),
+                    $v->salary_min,
+                    $v->salary_max,
+                    $v->salary_currency,
+                    $v->is_salary_visible ? 'Yes' : 'No',
+                    $v->positions_available,
+                    $v->status->label(),
+                    $v->is_featured ? 'Yes' : 'No',
+                    $v->views_count,
+                    $v->applications_count ?? 0,
+                    $v->published_at?->toDateTimeString(),
+                    $v->closing_date?->toDateTimeString(),
+                    $v->created_at->toDateTimeString(),
+                ]);
+            }
+            fclose($out);
+        }, $filename, ['Content-Type' => 'text/csv']);
+    }
+
     // ─── Query ─────────────────────────────────────────────────────────────
 
     private function getQuery()
     {
         return Vacancy::query()
             ->with(['department', 'creator'])
+            ->withCount('applications')
             ->search($this->search)
             ->when($this->statusFilter, fn($q) => $q->where('status', $this->statusFilter))
             ->when($this->departmentFilter, fn($q) => $q->where('department_id', $this->departmentFilter))
