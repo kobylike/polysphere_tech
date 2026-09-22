@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CallController;
 use App\Http\Controllers\CKEditorController;
+use App\Livewire\Admin\Applications\ApplicationManagement;
 use App\Livewire\Admin\Blog\Category\CategoryComponent;
 use App\Livewire\Admin\Blog\Category\CategoryFormComponent;
 use App\Livewire\Admin\Blog\Post\PostFormComponent;
@@ -52,6 +53,8 @@ use App\Livewire\Main\Services\ServiceComponent;
 use App\Livewire\Main\Services\ServiceDetails;
 use App\Livewire\Main\Team\TeamComponent;
 use App\Livewire\Main\Team\TeamDetails;
+use App\Livewire\Main\Vacancies\ApplicationStatus;
+use App\Livewire\Main\Vacancies\ApplicationWizard;
 use App\Livewire\Main\Vacancies\VacancyComponent;
 use App\Livewire\Main\Vacancies\VacancyDetails;
 use App\Models\Comment;
@@ -169,6 +172,8 @@ Route::get('/search', MainGlobalSearch::class)->name('main.search');
 Route::get('/careers', VacancyComponent::class)->name('vacancies');
 Route::get('/careers/{slug}', VacancyDetails::class)->name('vacancy.details');
 
+Route::get('/careers/{slug}/apply', ApplicationWizard::class)->name('vacancies.apply');
+Route::get('/applications/{token}', ApplicationStatus::class)->name('applications.status');
 Route::get('/force-password-change', ForcePasswordChange::class)
     ->middleware('auth')
     ->name('password.change.force');
@@ -292,8 +297,15 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
 
 
 
-        Route::get('/vacancies-management', VacancyManagement::class)
-            ->middleware('can:View Vacancies')
-            ->name('admin.vacancies.index');
+        // ─── Vacancy Management ──────────────────────────────────────────────
+        Route::prefix('vacancies-management')->group(function () {
+            Route::get('/', VacancyManagement::class)
+                ->middleware('can:View Vacancies')
+                ->name('admin.vacancies.index');
+        });
+
+        Route::get('/applications', ApplicationManagement::class)
+            ->middleware('can:View Applications')
+            ->name('admin.applications');
     });
 });

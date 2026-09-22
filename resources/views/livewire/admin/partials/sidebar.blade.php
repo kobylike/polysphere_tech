@@ -273,6 +273,49 @@ Sidebar start
                 </li>
             @endcanany
 
+            {{-- Vacancies: Vacancy Management + Applications --}}
+            @canany(['View Vacancies', 'View Applications'], $authUser)
+                <li data-menu-key="vacancies">
+                    <a class="has-arrow {{ request()->routeIs('admin.vacancies.*', 'admin.applications') ? 'mm-active' : '' }}"
+                        href="javascript:void(0);"
+                        aria-expanded="{{ request()->routeIs('admin.vacancies.*', 'admin.applications') ? 'true' : 'false' }}">
+                        <div class="menu-icon">
+                            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M14.6667 6.41667V4.58333C14.6667 3.57081 13.8459 2.75 12.8333 2.75H9.16667C8.15414 2.75 7.33333 3.57081 7.33333 4.58333V6.41667"
+                                    stroke="#888888" stroke-linecap="round" stroke-linejoin="round" />
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M18.3333 9.16667V15.5833C18.3333 17.0561 17.1394 18.25 15.6667 18.25H6.33333C4.86057 18.25 3.66667 17.0561 3.66667 15.5833V9.16667C3.66667 7.69391 4.86057 6.5 6.33333 6.5H15.6667C17.1394 6.5 18.3333 7.69391 18.3333 9.16667Z"
+                                    stroke="#888888" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M8.25 13.75H13.75" stroke="#888888" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M8.25 10.5417H11" stroke="#888888" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="nav-text">Vacancies</span>
+                    </a>
+                    <ul aria-expanded="false"
+                        class="{{ request()->routeIs('admin.vacancies.*', 'admin.applications') ? 'mm-show' : '' }}">
+                        @can('View Vacancies', $authUser)
+                            <li>
+                                <a href="{{ route('admin.vacancies.index') }}" wire:navigate.hover
+                                    class="{{ request()->routeIs('admin.vacancies.*') ? 'mm-active' : '' }}">
+                                    All Vacancies
+                                </a>
+                            </li>
+                        @endcan
+                        @can('View Applications', $authUser)
+                            <li>
+                                <a href="{{ route('admin.applications') }}" wire:navigate.hover
+                                    class="{{ request()->routeIs('admin.applications') ? 'mm-active' : '' }}">
+                                    Applications
+                                </a>
+                            </li>
+                        @endcan
+                    </ul>
+                </li>
+            @endcanany
             {{-- CMS: Blog / Categories --}}
             @canany(['View Posts', 'Create Posts', 'View Categories', 'Create Categories'], $authUser)
                 <li data-menu-key="cms">

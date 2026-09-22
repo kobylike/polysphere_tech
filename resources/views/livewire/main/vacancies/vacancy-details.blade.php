@@ -28,7 +28,7 @@
     {{-- ─── Breadcrumb ─── --}}
     <div wire:ignore class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
         <div class="breadcrumb__thumb"
-            style="background-image: url('{{ asset('assets/main/imgs/resources/service.jpg') }}');"></div>
+            style="background-image: url('{{ asset('assets/main/imgs/resources/vacancy.jpg') }}');"></div>
         <div class="breadcrumb__thumb_2"
             style="background-image: url('{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}');"></div>
         <div class="small-container">
@@ -144,9 +144,13 @@
                                 application.</p>
                         </div>
                         <div class="vd-apply__ctas">
-                            <a href="mailto:careers@polyspheretech.com?subject={{ urlencode('Application: ' . $vacancy->title) }}&body={{ urlencode("Hi Polysphere team,\n\nI'd like to apply for the " . $vacancy->title . " role.\n\n— [Your name]") }}"
+                            <a wire:navigate.hover href="{{ route('vacancies.apply', $vacancy->slug) }}"
                                 class="vd-apply-btn">
-                                <i class="fa-solid fa-paper-plane"></i> Apply by email
+                                <i class="fa-solid fa-paper-plane"></i> Apply for this role
+                            </a>
+                            <a href="mailto:careers@polyspheretech.com?subject={{ urlencode('Application: ' . $vacancy->title) }}"
+                                class="vd-apply__fallback">
+                                Or email us directly
                             </a>
                             @if($vacancy->closing_date)
                                 <span class="vd-apply__deadline">
@@ -590,6 +594,17 @@
             .vd-apply {
                 padding: 24px 22px;
             }
+        }
+
+        .vd-apply__fallback {
+            color: rgba(255, 255, 255, .6);
+            font-size: 13px;
+            text-decoration: none;
+        }
+
+        .vd-apply__fallback:hover {
+            color: #fff;
+            text-decoration: underline;
         }
     </style>
 @endpush
