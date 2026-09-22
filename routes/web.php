@@ -27,6 +27,7 @@ use App\Livewire\Admin\Users\LogManagement;
 use App\Livewire\Admin\Users\PermissionManagement;
 use App\Livewire\Admin\Users\RoleManagement;
 use App\Livewire\Admin\Users\UserManagement;
+use App\Livewire\Admin\Vacancies\VacancyManagement;
 use App\Livewire\Auth\EmailVerification;
 use App\Livewire\Auth\ForcePasswordChange;
 use App\Livewire\Auth\ForgotPassword;
@@ -51,6 +52,8 @@ use App\Livewire\Main\Services\ServiceComponent;
 use App\Livewire\Main\Services\ServiceDetails;
 use App\Livewire\Main\Team\TeamComponent;
 use App\Livewire\Main\Team\TeamDetails;
+use App\Livewire\Main\Vacancies\VacancyComponent;
+use App\Livewire\Main\Vacancies\VacancyDetails;
 use App\Models\Comment;
 use App\Models\Subscriber;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -163,7 +166,8 @@ Route::get('/projects/{slug}', ProjectDetails::class)->name('project.details');
 Route::get('/services', ServiceComponent::class)->name('services');
 Route::get('/services/{slug}', ServiceDetails::class)->name('service.details');
 Route::get('/search', MainGlobalSearch::class)->name('main.search');
-
+Route::get('/careers', VacancyComponent::class)->name('vacancies');
+Route::get('/careers/{slug}', VacancyDetails::class)->name('vacancy.details');
 
 Route::get('/force-password-change', ForcePasswordChange::class)
     ->middleware('auth')
@@ -252,6 +256,8 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
                 ->name('admin.projects.edit');
         });
 
+
+
         // ─── Service Management ─────────────────────────────────────────────
         Route::prefix('services-management')->group(function () {
             Route::get('/', ServiceManagement::class)
@@ -283,5 +289,11 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
         Route::get('/admin/newsletter/subscribers', SubscriberManagement::class)
             ->middleware('can:View Newsletter Subscribers')
             ->name('admin.newsletter.subscribers');
+
+
+
+        Route::get('/vacancies-management', VacancyManagement::class)
+            ->middleware('can:View Vacancies')
+            ->name('admin.vacancies.index');
     });
 });

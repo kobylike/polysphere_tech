@@ -24,13 +24,12 @@ class UserProfile extends Model
         'is_spotlight',
         'display_order',
         'employee_id',
-        'department',
+        'department_id', // ← was 'department' (string); now a real FK
         'hire_date',
         'employment_type',
         'is_employee',
         'emergency_contact_name',
         'emergency_contact_phone',
-        // 🔥 NEW FIELDS
         'date_of_birth',
         'country_code',
         'city',
@@ -63,18 +62,35 @@ class UserProfile extends Model
     }
 
     // ─── Relationships ───────────────────────────────────────────────
-    // in UserProfile.php
 
     public function scopeSpotlight($query)
     {
         return $query->where('is_spotlight', true)->orderBy('display_order', 'asc');
     }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────
+
+    /**
+     * Backward-compat accessor: any older code/view that still does
+     * $profile->department expecting a plain string (instead of the new
+     * belongsTo relation) gets the department's name instead of an error.
+     * Safe to remove once every reference has been migrated to
+     * $profile->department?->name or $profile->department_id.
+     */
+    public function getDepartmentNameAttribute(): ?string
+    {
+        return $this->department?->name;
+    }
 
     /**
      * Get a specific social link by platform.
@@ -106,13 +122,13 @@ class UserProfile extends Model
         }
         return $result;
     }
+
     public function getCountryNameAttribute(): ?string
     {
         if (empty($this->country_code)) {
             return null;
         }
 
-        // Load countries from the same JSON
         $path = public_path('countries-full.json');
         if (!file_exists($path)) {
             $path = public_path('countries.json');
@@ -122,9 +138,7 @@ class UserProfile extends Model
             $json = file_get_contents($path);
             $countries = json_decode($json, true);
             if (json_last_error() === JSON_ERROR_NONE && is_array($countries)) {
-                // The JSON may have different key names; we'll search by 'code' or 'iso'
                 foreach ($countries as $country) {
-                    // Try to match 'code' (dial code) or 'iso' (ISO code)
                     if (isset($country['code']) && $country['code'] === $this->country_code) {
                         return $country['name'];
                     }
@@ -135,7 +149,6 @@ class UserProfile extends Model
             }
         }
 
-        // Fallback: return the code itself
         return $this->country_code;
     }
 }

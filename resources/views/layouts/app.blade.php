@@ -182,6 +182,7 @@
         }
     </style>
     @livewireStyles
+    @stack('styles')
 </head>
 
 <body>
@@ -313,6 +314,23 @@
     @livewireScripts
     @vite('resources/js/app.js')
     @stack('scripts')
+
+    <script>
+        document.addEventListener('DOMContentLoaded', scrollToHashIfPresent);
+        document.addEventListener('livewire:navigated', scrollToHashIfPresent);
+
+        function scrollToHashIfPresent() {
+            const hash = window.location.hash?.slice(1);
+            if (!hash) return;
+
+            const el = document.getElementById(hash);
+            if (!el) return;
+
+            requestAnimationFrame(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        }
+    </script>
     <!-- ============================================ -->
     <!-- JAVASCRIPT                                  -->
     <!-- ============================================ -->

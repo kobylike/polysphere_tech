@@ -5,6 +5,7 @@ namespace App\Livewire\Admin\Hrm;
 use App\Helpers\ActivityLogger;
 use App\Mail\InvitationMail;
 use App\Models\Attendance;
+use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\Invitation;
 use App\Models\User;
@@ -26,7 +27,7 @@ class HrDashboard extends Component
 
     // ─── Filters ──────────────────────────────────────────────────────
     public string $search = '';
-    public string $departmentFilter = '';
+    public string $departmentFilter = ''; // holds a department_id (string from the <select>)
     public string $employmentType = '';
     public string $statusFilter = '';
     public int $perPage = 10;
@@ -64,7 +65,7 @@ class HrDashboard extends Component
     // ── Employment Info ──────────────────────────────────────────────
     public string $employee_id = '';
     public string $position = '';
-    public string $department = '';
+    public ?int $department_id = null; // ← was public string $department = '';
     public string $employment_type = 'full-time';
     public string $hire_date = '';
     public bool $is_featured_team = false;
@@ -87,7 +88,9 @@ class HrDashboard extends Component
     public bool $emergency_showCountryDropdown = false;
 
     // ── Department / Position management ────────────────────────────
-    public array $departmentsList = [];
+    // NOTE: departments are no longer a free-text list — they live in the
+    // departments table (App\Models\Department). Positions remain a simple
+    // distinct-string list for now.
     public array $positionsList = [];
     public string $newDepartment = '';
     public string $newPosition = '';
@@ -141,7 +144,7 @@ class HrDashboard extends Component
         $this->loadCountries();
         $this->updateCountryInfo();
         $this->emergency_updateCountryInfo();
-        $this->loadDepartmentsAndPositions();
+        $this->loadPositions();
     }
 
     private function loadAvailableRoles(): void
@@ -176,45 +179,19 @@ class HrDashboard extends Component
         }
     }
 
-    // ─── Departments & Positions ──────────────────────────────────────
+    // ─── Positions (still a simple string list) ──────────────────────
 
-    private function loadDepartmentsAndPositions()
+    private function loadPositions(): void
     {
-        $depts = UserProfile::where('is_employee', true)
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department')
-            ->toArray();
-
         $positions = UserProfile::where('is_employee', true)
             ->whereNotNull('position')
             ->distinct()
             ->pluck('position')
             ->toArray();
 
-        $defaultDepts = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Operations', 'Design'];
         $defaultPositions = ['CEO', 'CTO', 'Lead Developer', 'Senior Developer', 'Developer', 'Designer', 'Marketing Manager'];
 
-        $this->departmentsList = array_values(array_unique(array_merge($defaultDepts, $depts)));
         $this->positionsList = array_values(array_unique(array_merge($defaultPositions, $positions)));
-    }
-
-    public function addDepartment()
-    {
-        $name = trim($this->newDepartment);
-        if (!$name) {
-            $this->addError('newDepartment', 'Type a department name before adding it.');
-            return;
-        }
-        if (in_array($name, $this->departmentsList)) {
-            $this->addError('newDepartment', "\"{$name}\" already exists in the department list.");
-            return;
-        }
-        $this->departmentsList[] = $name;
-        $this->department = $name;
-        $this->newDepartment = '';
-        $this->showNewDepartment = false;
-        $this->dispatch('notify', ['type' => 'success', 'title' => 'Success', 'message' => "The {$name} department is now available for assignment."]);
     }
 
     public function addPosition()
@@ -233,6 +210,40 @@ class HrDashboard extends Component
         $this->newPosition = '';
         $this->showNewPosition = false;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Success', 'message' => "The {$name} position is now available for assignment."]);
+    }
+
+    // ─── Departments (now a real table — App\Models\Department) ──────
+
+    /**
+     * Every department, for both the filter dropdown and the employee
+     * modal's department select. Single source of truth shared with the
+     * Vacancies module.
+     */
+    public function getDepartmentsProperty()
+    {
+        return Department::orderBy('name')->get();
+    }
+
+    public function addDepartment()
+    {
+        $name = trim($this->newDepartment);
+
+        if (!$name) {
+            $this->addError('newDepartment', 'Type a department name before adding it.');
+            return;
+        }
+
+        if (Department::whereRaw('LOWER(name) = ?', [strtolower($name)])->exists()) {
+            $this->addError('newDepartment', "\"{$name}\" already exists.");
+            return;
+        }
+
+        $department = Department::create(['name' => $name]);
+
+        $this->department_id = $department->id;
+        $this->newDepartment = '';
+        $this->showNewDepartment = false;
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Success', 'message' => "The {$name} department is now available for assignment."]);
     }
 
     // ─── Statistics ──────────────────────────────────────────────────────
@@ -256,27 +267,17 @@ class HrDashboard extends Component
     public function getEmployeesProperty()
     {
         return User::whereHas('profile', fn($q) => $q->where('is_employee', true))
-            ->with('profile')
+            ->with('profile.department')
             ->when($this->search, fn($q) => $q->where(function ($q) {
                 $q->where('name', 'like', "%{$this->search}%")
                     ->orWhere('email', 'like', "%{$this->search}%")
                     ->orWhereHas('profile', fn($p) => $p->where('employee_id', 'like', "%{$this->search}%"));
             }))
-            ->when($this->departmentFilter, fn($q) => $q->whereHas('profile', fn($p) => $p->where('department', $this->departmentFilter)))
+            ->when($this->departmentFilter, fn($q) => $q->whereHas('profile', fn($p) => $p->where('department_id', $this->departmentFilter)))
             ->when($this->employmentType, fn($q) => $q->whereHas('profile', fn($p) => $p->where('employment_type', $this->employmentType)))
             ->when($this->statusFilter, fn($q) => $q->where('status', $this->statusFilter))
             ->orderBy('name')
             ->paginate($this->perPage);
-    }
-
-    public function getDepartmentsFilterProperty()
-    {
-        return UserProfile::where('is_employee', true)
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department')
-            ->values()
-            ->toArray();
     }
 
     // ─── Employee CRUD ──────────────────────────────────────────────────
@@ -320,7 +321,7 @@ class HrDashboard extends Component
             'phone',
             'gender',
             'position',
-            'department',
+            'department_id',
             'employment_type',
             'hire_date',
             'employee_id',
@@ -359,7 +360,7 @@ class HrDashboard extends Component
 
         $this->gender = $profile->gender ?? '';
         $this->position = $profile->position ?? '';
-        $this->department = $profile->department ?? '';
+        $this->department_id = $profile->department_id ?? null;
         $this->employment_type = $profile->employment_type ?? 'full-time';
 
         $this->hire_date = $profile->hire_date ? Carbon::parse($profile->hire_date)->format('Y-m-d') : '';
@@ -368,14 +369,13 @@ class HrDashboard extends Component
         $this->emergency_contact_phone = $profile->emergency_contact_phone ?? '';
         $this->is_featured_team = $profile->is_featured_team ?? false;
 
-        // 🔥 NEW: load new fields
         $this->date_of_birth = $profile->date_of_birth ? Carbon::parse($profile->date_of_birth)->format('Y-m-d') : '';
         $this->country_code = $profile->country_code ?? '';
         $this->city = $profile->city ?? '';
 
         $this->emergency_parsePhoneNumber($profile->emergency_contact_phone);
 
-        $this->loadDepartmentsAndPositions();
+        $this->loadPositions();
         $this->resetEmployeeModalUiState();
         $this->showEmployeeModal = true;
     }
@@ -396,7 +396,7 @@ class HrDashboard extends Component
             'email'       => 'required|email|unique:users,email,' . $this->editingEmployeeId,
             'gender'      => 'required|in:male,female,other',
             'position'    => 'required|string|max:255',
-            'department'  => 'required|string|max:255',
+            'department_id' => 'required|exists:departments,id',
             'employment_type' => 'required|in:full-time,part-time,contract,intern',
             'hire_date'   => 'required|date|before_or_equal:today',
             'employee_id' => 'required|string|max:50|unique:user_profiles,employee_id,' . ($this->editingEmployeeId ? UserProfile::where('user_id', $this->editingEmployeeId)->first()?->id : 'NULL'),
@@ -417,7 +417,8 @@ class HrDashboard extends Component
             'email.unique'         => 'This email is already registered to another employee.',
             'gender.required'      => 'Please select the employee\'s gender.',
             'position.required'    => 'Please select or add a job title.',
-            'department.required'  => 'Please select or add a department.',
+            'department_id.required' => 'Please select or add a department.',
+            'department_id.exists'   => 'Please select a valid department.',
             'employment_type.required' => 'Please choose an employment type.',
             'hire_date.required'   => 'Please provide the hire date.',
             'hire_date.before_or_equal' => 'Hire date can\'t be in the future.',
@@ -444,7 +445,7 @@ class HrDashboard extends Component
             $profile->update([
                 'gender'         => $this->gender,
                 'position'       => $this->position,
-                'department'     => $this->department,
+                'department_id'  => $this->department_id,
                 'employment_type' => $this->employment_type,
                 'hire_date'      => Carbon::parse($this->hire_date),
                 'employee_id'    => $this->employee_id,
@@ -457,12 +458,11 @@ class HrDashboard extends Component
                 'city'           => $this->city ?: null,
             ]);
 
-            // ─── Log update ──────────────────────────────────────────────────────
             ActivityLogger::log('Employee record updated', [
                 'user_id' => $user->id,
                 'employee_id' => $this->employee_id,
                 'name' => $fullName,
-                'department' => $this->department,
+                'department_id' => $this->department_id,
                 'position' => $this->position,
             ], 'hr');
 
@@ -484,7 +484,7 @@ class HrDashboard extends Component
             $user->profile()->create([
                 'gender'         => $this->gender,
                 'position'       => $this->position,
-                'department'     => $this->department,
+                'department_id'  => $this->department_id,
                 'employment_type' => $this->employment_type,
                 'hire_date'      => Carbon::parse($this->hire_date),
                 'employee_id'    => $this->employee_id,
@@ -499,13 +499,12 @@ class HrDashboard extends Component
 
             $user->assignRole('User');
 
-            // ─── Log create ──────────────────────────────────────────────────────
             ActivityLogger::log('Employee added', [
                 'user_id' => $user->id,
                 'employee_id' => $this->employee_id,
                 'name' => $fullName,
                 'email' => $this->email,
-                'department' => $this->department,
+                'department_id' => $this->department_id,
                 'position' => $this->position,
             ], 'hr');
 
@@ -524,7 +523,7 @@ class HrDashboard extends Component
             'phone',
             'gender',
             'position',
-            'department',
+            'department_id',
             'employment_type',
             'hire_date',
             'employee_id',
@@ -536,7 +535,7 @@ class HrDashboard extends Component
             'country_code',
             'city',
         ]);
-        $this->loadDepartmentsAndPositions();
+        $this->loadPositions();
     }
 
     // ─── Delete Employee ─────────────────────────────────────────────────
@@ -557,12 +556,11 @@ class HrDashboard extends Component
         if ($user && $user->id !== Auth::id()) {
             $name = $user->name;
 
-            // ─── Log before delete ──────────────────────────────────────────────
             ActivityLogger::log('Employee deleted', [
                 'user_id' => $user->id,
                 'name' => $name,
                 'employee_id' => $user->profile?->employee_id,
-                'department' => $user->profile?->department,
+                'department_id' => $user->profile?->department_id,
             ], 'hr');
 
             $user->delete();
@@ -623,7 +621,6 @@ class HrDashboard extends Component
 
         Mail::to($this->inviteEmail)->queue(new InvitationMail($invitation));
 
-        // ─── Log invitation ──────────────────────────────────────────────────────
         ActivityLogger::log('Invitation sent', [
             'email' => $this->inviteEmail,
             'role_id' => $this->inviteRoleId,
@@ -731,7 +728,6 @@ class HrDashboard extends Component
             ]
         );
 
-        // ─── Log attendance ──────────────────────────────────────────────────────
         ActivityLogger::log('Attendance marked', [
             'user_id' => $this->attendanceUserId,
             'name' => $this->attendanceUserName,
@@ -771,7 +767,6 @@ class HrDashboard extends Component
         if ($next === null) {
             if ($existing) $existing->delete();
 
-            // ─── Log cleared ──────────────────────────────────────────────────────
             ActivityLogger::log('Attendance cleared', [
                 'user_id' => $userId,
                 'name' => $user->name,
@@ -796,7 +791,6 @@ class HrDashboard extends Component
             Attendance::create($data);
         }
 
-        // ─── Log quick mark ──────────────────────────────────────────────────────
         ActivityLogger::log('Attendance quick-marked', [
             'user_id' => $userId,
             'name' => $user->name,
@@ -866,7 +860,6 @@ class HrDashboard extends Component
             }
         });
 
-        // ─── Log bulk attendance ──────────────────────────────────────────────────
         ActivityLogger::log('Bulk attendance marked', [
             'date' => $this->bulkAttendanceDate,
             'status' => $this->bulkAttendanceStatus,
@@ -923,7 +916,7 @@ class HrDashboard extends Component
         $holidayDates = $this->holidayDatesFor($this->year, $this->month);
 
         $employees = User::whereHas('profile', fn($q) => $q->where('is_employee', true))
-            ->with('profile')
+            ->with('profile.department')
             ->orderBy('name')
             ->get();
 
@@ -1023,14 +1016,13 @@ class HrDashboard extends Component
             ]
         );
 
-        // ─── Log holiday ──────────────────────────────────────────────────────────
         ActivityLogger::log($this->editingHolidayId ? 'Holiday updated' : 'Holiday added', [
             'name' => $this->holidayName,
             'date' => $this->holidayDate,
             'recurring' => $this->holidayRecurring,
         ], 'holiday');
 
-        $this->holidaysCache = null; // invalidate cache
+        $this->holidaysCache = null;
 
         $this->showHolidayModal = false;
         $this->dispatch('notify', [
@@ -1045,14 +1037,13 @@ class HrDashboard extends Component
     {
         $holiday = Holiday::findOrFail($id);
 
-        // ─── Log delete ──────────────────────────────────────────────────────────
         ActivityLogger::log('Holiday deleted', [
             'name' => $holiday->name,
             'date' => $holiday->date->format('Y-m-d'),
         ], 'holiday');
 
         $holiday->delete();
-        $this->holidaysCache = null; // invalidate cache
+        $this->holidaysCache = null;
         $this->dispatch('notify', [
             'type' => 'success',
             'title' => 'Deleted',
@@ -1077,7 +1068,7 @@ class HrDashboard extends Component
             foreach ($attendanceData as $row) {
                 fputcsv($handle, [
                     $row['user']->name,
-                    $row['user']->profile?->department ?? '—',
+                    $row['user']->profile?->department?->name ?? '—',
                     $row['total_present'],
                     $row['total_absent'],
                     $row['total_leave'],
@@ -1349,13 +1340,12 @@ class HrDashboard extends Component
         return view('livewire.admin.hrm.hr-dashboard', [
             'stats'            => $this->stats,
             'employees'        => $this->employees,
-            'departments'      => $this->departmentsFilter,
+            'departments'      => $this->departments, // Department models: {id, name, ...}
             'attendanceData'   => $this->attendanceData,
             'upcomingHolidays' => $this->upcomingHolidays,
             'attendanceStats'  => $attendanceStats,
             'daysInMonth'      => Carbon::create($this->year, $this->month)->daysInMonth,
             'assignableRoles'  => $this->assignableRoles,
-            'departmentsList'  => $this->departmentsList,
             'positionsList'    => $this->positionsList,
             'allActiveEmployees' => User::whereHas('profile', fn($q) => $q->where('is_employee', true))
                 ->where('status', 'active')->orderBy('name')->get(),

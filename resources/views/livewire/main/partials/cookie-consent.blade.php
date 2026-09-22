@@ -11,7 +11,8 @@
                     We use cookies to keep the site running, understand how it's used, and improve your experience.
                     You can accept everything, reject everything non-essential, or pick exactly what you're comfortable
                     with.
-                    <a href="#" class="ps-cc-link">Cookie Policy</a>
+                    <a wire:navigate.hover href="{{ route('privacy') }}#cookies" class="ps-cc-link">Cookie Policy</a>
+
                 </p>
             </div>
 
@@ -33,92 +34,89 @@
         <div class="ps-cc-overlay" wire:click.self="closeModal">
             <div class="ps-cc-modal" role="dialog" aria-modal="true" aria-labelledby="ps-cc-modal-title">
                 <div class="ps-cc-modal__handle" aria-hidden="true"></div>
-                    <div class="ps-cc-modal__header">
-                        <div class="ps-cc-modal__title" id="ps-cc-modal-title">
-                            <i class="fal fa-shield-check"></i>
-                            <span>Cookie Preferences</span>
+                <div class="ps-cc-modal__header">
+                    <div class="ps-cc-modal__title" id="ps-cc-modal-title">
+                        <i class="fal fa-shield-check"></i>
+                        <span>Cookie Preferences</span>
+                    </div>
+                    <button type="button" class="ps-cc-modal__close" wire:click="closeModal" aria-label="Close">
+                        <i class="fal fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="ps-cc-modal__body">
+                    <p class="ps-cc-modal__intro">
+                        Choose which categories of cookies you're happy for us to use. Strictly necessary cookies
+                        can't be switched off since the site won't work properly without them.
+                    </p>
+
+                    {{-- Necessary --}}
+                    <div class="ps-cc-row">
+                        <div class="ps-cc-row__text">
+                            <h6>Strictly Necessary</h6>
+                            <p>Required for core features like navigation, login, and security. Always active.</p>
                         </div>
-                        <button type="button" class="ps-cc-modal__close" wire:click="closeModal" aria-label="Close">
-                            <i class="fal fa-times"></i>
-                        </button>
+                        <label class="ps-cc-switch ps-cc-switch--locked">
+                            <input type="checkbox" checked disabled>
+                            <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
+                        </label>
                     </div>
 
-                    <div class="ps-cc-modal__body">
-                        <p class="ps-cc-modal__intro">
-                            Choose which categories of cookies you're happy for us to use. Strictly necessary cookies
-                            can't be switched off since the site won't work properly without them.
-                        </p>
-
-                        {{-- Necessary --}}
-                        <div class="ps-cc-row">
-                            <div class="ps-cc-row__text">
-                                <h6>Strictly Necessary</h6>
-                                <p>Required for core features like navigation, login, and security. Always active.</p>
-                            </div>
-                            <label class="ps-cc-switch ps-cc-switch--locked">
-                                <input type="checkbox" checked disabled>
-                                <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
-                            </label>
+                    {{-- Functional --}}
+                    <div class="ps-cc-row">
+                        <div class="ps-cc-row__text">
+                            <h6>Functional</h6>
+                            <p>Remembers your preferences (language, region, saved settings) for a smoother visit.</p>
                         </div>
-
-                        {{-- Functional --}}
-                        <div class="ps-cc-row">
-                            <div class="ps-cc-row__text">
-                                <h6>Functional</h6>
-                                <p>Remembers your preferences (language, region, saved settings) for a smoother visit.</p>
-                            </div>
-                            <label class="ps-cc-switch">
-                                <input type="checkbox"
-                                    @checked($categories['functional'])
-                                    wire:click="toggleCategory('functional')">
-                                <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
-                            </label>
-                        </div>
-
-                        {{-- Analytics --}}
-                        <div class="ps-cc-row">
-                            <div class="ps-cc-row__text">
-                                <h6>Analytics</h6>
-                                <p>Helps us understand how the site is used so we can improve it. Data is aggregated.</p>
-                            </div>
-                            <label class="ps-cc-switch">
-                                <input type="checkbox"
-                                    @checked($categories['analytics'])
-                                    wire:click="toggleCategory('analytics')">
-                                <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
-                            </label>
-                        </div>
-
-                        {{-- Marketing --}}
-                        <div class="ps-cc-row">
-                            <div class="ps-cc-row__text">
-                                <h6>Marketing</h6>
-                                <p>Used to show you relevant ads and measure campaign performance across sites.</p>
-                            </div>
-                            <label class="ps-cc-switch">
-                                <input type="checkbox"
-                                    @checked($categories['marketing'])
-                                    wire:click="toggleCategory('marketing')">
-                                <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
-                            </label>
-                        </div>
+                        <label class="ps-cc-switch">
+                            <input type="checkbox" @checked($categories['functional'])
+                                wire:click="toggleCategory('functional')">
+                            <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
+                        </label>
                     </div>
 
-                    <div class="ps-cc-modal__footer">
-                        <button type="button" class="ps-cc-btn ps-cc-btn--outline" wire:click="rejectAll">
-                            Reject All
-                        </button>
-                        <div class="ps-cc-modal__footer-right">
-                            <button type="button" class="ps-cc-btn ps-cc-btn--outline" wire:click="savePreferences">
-                                Save Preferences
-                            </button>
-                            <button type="button" class="ps-cc-btn ps-cc-btn--primary" wire:click="acceptAll">
-                                Accept All
-                            </button>
+                    {{-- Analytics --}}
+                    <div class="ps-cc-row">
+                        <div class="ps-cc-row__text">
+                            <h6>Analytics</h6>
+                            <p>Helps us understand how the site is used so we can improve it. Data is aggregated.</p>
                         </div>
+                        <label class="ps-cc-switch">
+                            <input type="checkbox" @checked($categories['analytics'])
+                                wire:click="toggleCategory('analytics')">
+                            <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
+                        </label>
+                    </div>
+
+                    {{-- Marketing --}}
+                    <div class="ps-cc-row">
+                        <div class="ps-cc-row__text">
+                            <h6>Marketing</h6>
+                            <p>Used to show you relevant ads and measure campaign performance across sites.</p>
+                        </div>
+                        <label class="ps-cc-switch">
+                            <input type="checkbox" @checked($categories['marketing'])
+                                wire:click="toggleCategory('marketing')">
+                            <span class="ps-cc-switch__track"><span class="ps-cc-switch__thumb"></span></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="ps-cc-modal__footer">
+                    <button type="button" class="ps-cc-btn ps-cc-btn--outline" wire:click="rejectAll">
+                        Reject All
+                    </button>
+                    <div class="ps-cc-modal__footer-right">
+                        <button type="button" class="ps-cc-btn ps-cc-btn--outline" wire:click="savePreferences">
+                            Save Preferences
+                        </button>
+                        <button type="button" class="ps-cc-btn ps-cc-btn--primary" wire:click="acceptAll">
+                            Accept All
+                        </button>
                     </div>
                 </div>
             </div>
+        </div>
     @endif
 
     {{-- Small persistent launcher so people can reopen their preferences any time --}}
@@ -143,7 +141,9 @@
             --ps-cc-safe-r: env(safe-area-inset-right, 0px);
         }
 
-        body.ps-cc-lock-scroll { overflow: hidden; }
+        body.ps-cc-lock-scroll {
+            overflow: hidden;
+        }
 
         /* ---------- Banner ---------- */
         .ps-cc-banner {
@@ -166,8 +166,15 @@
         }
 
         @keyframes ps-cc-rise {
-            from { opacity: 0; transform: translateY(20px); }
-            to   { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .ps-cc-banner__icon {
@@ -183,12 +190,34 @@
             background: linear-gradient(135deg, var(--ps-cc-primary), var(--ps-cc-accent));
         }
 
-        .ps-cc-banner__body { flex: 1; min-width: 0; }
-        .ps-cc-banner__body h5 { margin: 0 0 5px; font-size: clamp(15px, 2.5vw, 17px); font-weight: 700; color: var(--ps-cc-ink); }
-        .ps-cc-banner__body p { margin: 0; font-size: clamp(12.5px, 2.2vw, 14px); line-height: 1.55; color: var(--ps-cc-body); }
+        .ps-cc-banner__body {
+            flex: 1;
+            min-width: 0;
+        }
 
-        .ps-cc-link { color: var(--ps-cc-primary); text-decoration: underline; white-space: nowrap; }
-        .ps-cc-link:hover { color: var(--ps-cc-primary-dark); }
+        .ps-cc-banner__body h5 {
+            margin: 0 0 5px;
+            font-size: clamp(15px, 2.5vw, 17px);
+            font-weight: 700;
+            color: var(--ps-cc-ink);
+        }
+
+        .ps-cc-banner__body p {
+            margin: 0;
+            font-size: clamp(12.5px, 2.2vw, 14px);
+            line-height: 1.55;
+            color: var(--ps-cc-body);
+        }
+
+        .ps-cc-link {
+            color: var(--ps-cc-primary);
+            text-decoration: underline;
+            white-space: nowrap;
+        }
+
+        .ps-cc-link:hover {
+            color: var(--ps-cc-primary-dark);
+        }
 
         .ps-cc-banner__actions {
             display: flex;
@@ -210,14 +239,37 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        .ps-cc-btn--primary { background: var(--ps-cc-primary); color: #fff; }
-        .ps-cc-btn--primary:hover, .ps-cc-btn--primary:active { background: var(--ps-cc-primary-dark); }
+        .ps-cc-btn--primary {
+            background: var(--ps-cc-primary);
+            color: #fff;
+        }
 
-        .ps-cc-btn--outline { background: #fff; color: var(--ps-cc-ink); border: 1px solid var(--ps-cc-border); }
-        .ps-cc-btn--outline:hover, .ps-cc-btn--outline:active { border-color: var(--ps-cc-primary); color: var(--ps-cc-primary); }
+        .ps-cc-btn--primary:hover,
+        .ps-cc-btn--primary:active {
+            background: var(--ps-cc-primary-dark);
+        }
 
-        .ps-cc-btn--ghost { background: transparent; color: var(--ps-cc-body); }
-        .ps-cc-btn--ghost:hover, .ps-cc-btn--ghost:active { color: var(--ps-cc-primary); }
+        .ps-cc-btn--outline {
+            background: #fff;
+            color: var(--ps-cc-ink);
+            border: 1px solid var(--ps-cc-border);
+        }
+
+        .ps-cc-btn--outline:hover,
+        .ps-cc-btn--outline:active {
+            border-color: var(--ps-cc-primary);
+            color: var(--ps-cc-primary);
+        }
+
+        .ps-cc-btn--ghost {
+            background: transparent;
+            color: var(--ps-cc-body);
+        }
+
+        .ps-cc-btn--ghost:hover,
+        .ps-cc-btn--ghost:active {
+            color: var(--ps-cc-primary);
+        }
 
         /* ---------- Modal ---------- */
         .ps-cc-overlay {
@@ -233,7 +285,15 @@
             animation: ps-cc-fade 0.2s ease;
         }
 
-        @keyframes ps-cc-fade { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes ps-cc-fade {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
 
         .ps-cc-modal {
             width: 100%;
@@ -249,11 +309,20 @@
         }
 
         @keyframes ps-cc-pop {
-            from { opacity: 0; transform: scale(0.96); }
-            to   { opacity: 1; transform: scale(1); }
+            from {
+                opacity: 0;
+                transform: scale(0.96);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
 
-        .ps-cc-modal__handle { display: none; }
+        .ps-cc-modal__handle {
+            display: none;
+        }
 
         .ps-cc-modal__header {
             display: flex;
@@ -264,8 +333,18 @@
             flex-shrink: 0;
         }
 
-        .ps-cc-modal__title { display: flex; align-items: center; gap: 10px; font-size: clamp(15.5px, 2.5vw, 17px); font-weight: 700; color: var(--ps-cc-ink); }
-        .ps-cc-modal__title i { color: var(--ps-cc-primary); }
+        .ps-cc-modal__title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: clamp(15.5px, 2.5vw, 17px);
+            font-weight: 700;
+            color: var(--ps-cc-ink);
+        }
+
+        .ps-cc-modal__title i {
+            color: var(--ps-cc-primary);
+        }
 
         .ps-cc-modal__close {
             border: none;
@@ -277,10 +356,23 @@
             padding: 10px;
             margin: -10px;
         }
-        .ps-cc-modal__close:hover { color: var(--ps-cc-ink); }
 
-        .ps-cc-modal__body { padding: 18px 22px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        .ps-cc-modal__intro { font-size: 13.5px; color: var(--ps-cc-body); line-height: 1.6; margin: 0 0 16px; }
+        .ps-cc-modal__close:hover {
+            color: var(--ps-cc-ink);
+        }
+
+        .ps-cc-modal__body {
+            padding: 18px 22px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .ps-cc-modal__intro {
+            font-size: 13.5px;
+            color: var(--ps-cc-body);
+            line-height: 1.6;
+            margin: 0 0 16px;
+        }
 
         .ps-cc-row {
             display: flex;
@@ -290,31 +382,80 @@
             padding: 14px 0;
             border-bottom: 1px solid var(--ps-cc-border);
         }
-        .ps-cc-row:last-child { border-bottom: none; }
-        .ps-cc-row__text h6 { margin: 0 0 4px; font-size: 14.5px; font-weight: 700; color: var(--ps-cc-ink); }
-        .ps-cc-row__text p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--ps-cc-muted); }
 
-        .ps-cc-switch { position: relative; flex-shrink: 0; width: 46px; height: 26px; display: inline-block; touch-action: manipulation; }
-        .ps-cc-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; z-index: 1; }
+        .ps-cc-row:last-child {
+            border-bottom: none;
+        }
+
+        .ps-cc-row__text h6 {
+            margin: 0 0 4px;
+            font-size: 14.5px;
+            font-weight: 700;
+            color: var(--ps-cc-ink);
+        }
+
+        .ps-cc-row__text p {
+            margin: 0;
+            font-size: 13px;
+            line-height: 1.55;
+            color: var(--ps-cc-muted);
+        }
+
+        .ps-cc-switch {
+            position: relative;
+            flex-shrink: 0;
+            width: 46px;
+            height: 26px;
+            display: inline-block;
+            touch-action: manipulation;
+        }
+
+        .ps-cc-switch input {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            cursor: pointer;
+            z-index: 1;
+        }
+
         .ps-cc-switch__track {
-            position: absolute; inset: 0;
+            position: absolute;
+            inset: 0;
             background: var(--ps-cc-border);
             border-radius: 999px;
             transition: background 0.2s ease;
         }
+
         .ps-cc-switch__thumb {
             position: absolute;
-            top: 3px; left: 3px;
-            width: 20px; height: 20px;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
             background: #fff;
             border-radius: 50%;
             transition: transform 0.2s ease;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
         }
-        .ps-cc-switch input:checked + .ps-cc-switch__track { background: var(--ps-cc-primary); }
-        .ps-cc-switch input:checked + .ps-cc-switch__track .ps-cc-switch__thumb { transform: translateX(20px); }
-        .ps-cc-switch--locked .ps-cc-switch__track { cursor: not-allowed; opacity: 0.9; }
-        .ps-cc-switch--locked input { cursor: not-allowed; }
+
+        .ps-cc-switch input:checked+.ps-cc-switch__track {
+            background: var(--ps-cc-primary);
+        }
+
+        .ps-cc-switch input:checked+.ps-cc-switch__track .ps-cc-switch__thumb {
+            transform: translateX(20px);
+        }
+
+        .ps-cc-switch--locked .ps-cc-switch__track {
+            cursor: not-allowed;
+            opacity: 0.9;
+        }
+
+        .ps-cc-switch--locked input {
+            cursor: not-allowed;
+        }
 
         .ps-cc-modal__footer {
             display: flex;
@@ -328,7 +469,12 @@
             background: #f8fafc;
             flex-shrink: 0;
         }
-        .ps-cc-modal__footer-right { display: flex; gap: 10px; flex-wrap: wrap; }
+
+        .ps-cc-modal__footer-right {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
 
         /* ---------- Launcher ---------- */
         .ps-cc-launcher {
@@ -347,11 +493,16 @@
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
-        .ps-cc-launcher:hover { transform: translateY(-2px); }
+
+        .ps-cc-launcher:hover {
+            transform: translateY(-2px);
+        }
 
         /* ---------- Tablet ---------- */
         @media (max-width: 900px) {
-            .ps-cc-banner { max-width: 92%; }
+            .ps-cc-banner {
+                max-width: 92%;
+            }
         }
 
         /* ---------- Mobile: banner stacks, modal becomes a bottom sheet ---------- */
@@ -366,11 +517,23 @@
                 padding: 18px 16px;
                 gap: 12px;
             }
-            .ps-cc-banner__icon { margin: 0 auto; }
-            .ps-cc-banner__actions { flex-direction: column; }
-            .ps-cc-banner__actions .ps-cc-btn { width: 100%; }
 
-            .ps-cc-overlay { align-items: flex-end; padding: 0; }
+            .ps-cc-banner__icon {
+                margin: 0 auto;
+            }
+
+            .ps-cc-banner__actions {
+                flex-direction: column;
+            }
+
+            .ps-cc-banner__actions .ps-cc-btn {
+                width: 100%;
+            }
+
+            .ps-cc-overlay {
+                align-items: flex-end;
+                padding: 0;
+            }
 
             .ps-cc-modal {
                 max-width: 100%;
@@ -382,8 +545,13 @@
             }
 
             @keyframes ps-cc-sheet-up {
-                from { transform: translateY(100%); }
-                to   { transform: translateY(0); }
+                from {
+                    transform: translateY(100%);
+                }
+
+                to {
+                    transform: translateY(0);
+                }
             }
 
             .ps-cc-modal__handle {
@@ -400,8 +568,15 @@
                 flex-direction: column-reverse;
                 align-items: stretch;
             }
-            .ps-cc-modal__footer .ps-cc-btn { width: 100%; }
-            .ps-cc-modal__footer-right { flex-direction: column; width: 100%; }
+
+            .ps-cc-modal__footer .ps-cc-btn {
+                width: 100%;
+            }
+
+            .ps-cc-modal__footer-right {
+                flex-direction: column;
+                width: 100%;
+            }
 
             .ps-cc-launcher {
                 width: 44px;
@@ -412,12 +587,19 @@
 
         /* ---------- Very small phones ---------- */
         @media (max-width: 360px) {
-            .ps-cc-banner__body p { font-size: 12px; }
+            .ps-cc-banner__body p {
+                font-size: 12px;
+            }
         }
 
         /* ---------- Respect reduced-motion preferences ---------- */
         @media (prefers-reduced-motion: reduce) {
-            .ps-cc-banner, .ps-cc-overlay, .ps-cc-modal { animation: none !important; }
+
+            .ps-cc-banner,
+            .ps-cc-overlay,
+            .ps-cc-modal {
+                animation: none !important;
+            }
         }
     </style>
 
@@ -440,7 +622,7 @@
                     Livewire.on('cookie-consent-saved', (data) => persistLocally(data));
                     Livewire.on('cookie-consent-restored', (data) => persistLocally(data));
                     Livewire.on('cookie-consent-revoked', () => {
-                        try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+                        try { localStorage.removeItem(STORAGE_KEY); } catch (e) { }
                         window.dispatchEvent(new CustomEvent('ps:cookie-consent', { detail: null }));
                     });
 

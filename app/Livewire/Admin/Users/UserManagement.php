@@ -2,9 +2,10 @@
 
 namespace App\Livewire\Admin\Users;
 
-use App\Helpers\ActivityLogger; // <-- Added
+use App\Helpers\ActivityLogger;
 use App\Mail\AccountCreatedMail;
 use App\Mail\InvitationMail;
+use App\Models\Department;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Models\UserActivity;
@@ -19,7 +20,6 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
-use Illuminate\Auth\Access\AuthorizationException;
 
 #[Layout('layouts.users')]
 class UserManagement extends Component
@@ -64,7 +64,7 @@ class UserManagement extends Component
 
     // Employee fields for conversion
     public string $emp_employee_id = '';
-    public string $emp_department = '';
+    public ?int $emp_department_id = null;   // ← was string $emp_department
     public string $emp_position = '';
     public string $emp_employment_type = 'full-time';
     public string $emp_hire_date = '';
@@ -83,7 +83,8 @@ class UserManagement extends Component
     public bool $emp_emergency_showCountryDropdown = false;
 
     // ─── Departments / Positions for conversion ──────────────────────
-    public array $emp_departmentsList = [];
+    /** @var array<int, array{id:int, name:string}> */
+    public array $emp_departmentsList = [];   // ← now a list of {id, name}
     public array $emp_positionsList = [];
     public string $emp_newDepartment = '';
     public string $emp_newPosition = '';
@@ -101,7 +102,7 @@ class UserManagement extends Component
     public array $recentActivities = [];
 
     // ─── Bulk selection ─────────────────────────────────────────────────
-    public array $selectedUsers = [];
+    public  $selectedUsers = [];
     public bool $selectAll = false;
 
     // ─── User form fields ────────────────────────────────────────────────
@@ -109,17 +110,15 @@ class UserManagement extends Component
     public string $last_name = '';
     public string $email = '';
     public string $password = '';
-    public array $selectedRoles = [];
+    public  $selectedRoles = [];
     public string $formStatus = 'active';
     public bool $isEditing = false;
     public string $position = '';
     public bool $is_featured_team = false;
     public bool $is_spotlight = false;
 
-    // ─── NEW: flag for editing self ────────────────────────────────────
     public bool $isSelf = false;
 
-    // ─── Generated password ──────────────────────────────────────────────
     public ?string $generatedPassword = null;
 
     // ─── Available roles ─────────────────────────────────────────────────
@@ -149,8 +148,7 @@ class UserManagement extends Component
 
     private function ensureDefaultRoles(): void
     {
-        $defaultRoles = ['Super Admin', 'Admin', 'User'];
-        foreach ($defaultRoles as $roleName) {
+        foreach (['Super Admin', 'Admin', 'User'] as $roleName) {
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }
     }
@@ -164,46 +162,51 @@ class UserManagement extends Component
     }
 
     // ─── Departments & Positions for conversion ──────────────────────────
-    private function emp_loadDepartmentsAndPositions()
+    private function emp_loadDepartmentsAndPositions(): void
     {
-        $depts = UserProfile::where('is_employee', true)
-            ->whereNotNull('department')
-            ->distinct()
-            ->pluck('department')
+        // Departments now live in their own table — shared with the HR module
+        // and the Vacancies module. We only need id + name for the select.
+        $this->emp_departmentsList = Department::orderBy('name')
+            ->get(['id', 'name'])
+            ->map(fn($d) => ['id' => $d->id, 'name' => $d->name])
+            ->values()
             ->toArray();
 
+        // Positions are still a simple distinct-string list on user_profiles.
         $positions = UserProfile::where('is_employee', true)
             ->whereNotNull('position')
             ->distinct()
             ->pluck('position')
             ->toArray();
 
-        $defaultDepts = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance', 'Operations', 'Design'];
         $defaultPositions = ['CEO', 'CTO', 'Lead Developer', 'Senior Developer', 'Developer', 'Designer', 'Marketing Manager'];
 
-        $this->emp_departmentsList = array_values(array_unique(array_merge($defaultDepts, $depts)));
         $this->emp_positionsList = array_values(array_unique(array_merge($defaultPositions, $positions)));
     }
 
-    public function emp_addDepartment()
+    public function emp_addDepartment(): void
     {
         $name = trim($this->emp_newDepartment);
         if (!$name) {
             $this->addError('emp_newDepartment', 'Type a department name before adding it.');
             return;
         }
-        if (in_array($name, $this->emp_departmentsList)) {
+
+        if (Department::whereRaw('LOWER(name) = ?', [strtolower($name)])->exists()) {
             $this->addError('emp_newDepartment', "\"{$name}\" already exists.");
             return;
         }
-        $this->emp_departmentsList[] = $name;
-        $this->emp_department = $name;
+
+        $department = Department::create(['name' => $name]);
+
+        $this->emp_departmentsList[] = ['id' => $department->id, 'name' => $department->name];
+        $this->emp_department_id = $department->id;
         $this->emp_newDepartment = '';
         $this->emp_showNewDepartment = false;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Success', 'message' => "Department '{$name}' added."]);
     }
 
-    public function emp_addPosition()
+    public function emp_addPosition(): void
     {
         $name = trim($this->emp_newPosition);
         if (!$name) {
@@ -235,7 +238,7 @@ class UserManagement extends Component
     }
 
     // ─── Country / Phone logic ──────────────────────────────────────────
-    private function loadCountries()
+    private function loadCountries(): void
     {
         $path = public_path('countries-full.json');
         if (!file_exists($path)) {
@@ -253,7 +256,6 @@ class UserManagement extends Component
             }
         }
 
-        // Fallback
         $this->emp_emergency_countries = $this->emp_emergency_filteredCountries = [
             ['code' => '+233', 'name' => 'Ghana',          'flag' => 'gh.png', 'pattern' => '^[0-9]{9}$',    'minLength' => 9,  'maxLength' => 9,  'example' => '201234567'],
             ['code' => '+1',   'name' => 'United States',  'flag' => 'us.png', 'pattern' => '^[0-9]{10}$',   'minLength' => 10, 'maxLength' => 10, 'example' => '2025550123'],
@@ -263,7 +265,7 @@ class UserManagement extends Component
         ];
     }
 
-    public function emp_emergency_updateCountryInfo()
+    public function emp_emergency_updateCountryInfo(): void
     {
         $country = collect($this->emp_emergency_countries)->firstWhere('code', $this->emp_emergency_countryCode);
         if ($country) {
@@ -275,7 +277,7 @@ class UserManagement extends Component
         }
     }
 
-    public function emp_emergency_selectCountry($code, $flag)
+    public function emp_emergency_selectCountry($code, $flag): void
     {
         $this->emp_emergency_countryCode = $code;
         $this->emp_emergency_selectedFlag = $flag;
@@ -286,7 +288,7 @@ class UserManagement extends Component
         $this->emp_emergency_filteredCountries = $this->emp_emergency_countries;
     }
 
-    public function emp_emergency_toggleCountryDropdown()
+    public function emp_emergency_toggleCountryDropdown(): void
     {
         $this->emp_emergency_showCountryDropdown = !$this->emp_emergency_showCountryDropdown;
         if ($this->emp_emergency_showCountryDropdown) {
@@ -295,14 +297,14 @@ class UserManagement extends Component
         }
     }
 
-    public function emp_emergency_closeCountryDropdown()
+    public function emp_emergency_closeCountryDropdown(): void
     {
         $this->emp_emergency_showCountryDropdown = false;
         $this->emp_emergency_countrySearch = '';
         $this->emp_emergency_filteredCountries = $this->emp_emergency_countries;
     }
 
-    public function emp_emergency_searchCountries($searchTerm)
+    public function emp_emergency_searchCountries($searchTerm): void
     {
         $this->emp_emergency_countrySearch = $searchTerm;
         $this->emp_emergency_filteredCountries = collect($this->emp_emergency_countries)
@@ -358,7 +360,6 @@ class UserManagement extends Component
     }
 
     // ─── Validation Rules ────────────────────────────────────────────────
-
     protected function rules(): array
     {
         return [
@@ -375,8 +376,6 @@ class UserManagement extends Component
         ];
     }
 
-    // ─── Query String ─────────────────────────────────────────────────────
-
     protected $queryString = [
         'search'         => ['except' => ''],
         'statusFilter'   => ['except' => ''],
@@ -388,7 +387,6 @@ class UserManagement extends Component
     ];
 
     // ─── Filters / Sorting ────────────────────────────────────────────────
-
     public function updatingSearch(): void
     {
         $this->resetPage();
@@ -427,7 +425,6 @@ class UserManagement extends Component
     }
 
     // ─── Activity Log ─────────────────────────────────────────────────────
-
     private function logActivity(int $userId, string $action, string $description): void
     {
         if (class_exists(UserActivity::class)) {
@@ -446,7 +443,6 @@ class UserManagement extends Component
     }
 
     // ─── View User ────────────────────────────────────────────────────────
-
     public function viewUser(int $id): void
     {
         $user = User::with('roles', 'profile')->findOrFail($id);
@@ -460,7 +456,6 @@ class UserManagement extends Component
     }
 
     // ─── Create / Edit User ──────────────────────────────────────────────
-
     public function openCreate(): void
     {
         $this->authorize('create', User::class);
@@ -505,7 +500,6 @@ class UserManagement extends Component
         $this->is_featured_team = $user->profile?->is_featured_team ?? false;
         $this->is_spotlight = $user->profile?->is_spotlight ?? false;
 
-        // Only show roles that are assignable (excluding Super Admin)
         $this->selectedRoles = $user->roles->pluck('name')
             ->reject(fn($role) => $role === $this->protectedRole)
             ->toArray();
@@ -548,12 +542,10 @@ class UserManagement extends Component
     }
 
     // ─── Save User ────────────────────────────────────────────────────────
-
     public function saveUser(): void
     {
         $this->validate();
 
-        // Enforce spotlight cap
         if ($this->is_spotlight) {
             $alreadyUsed = UserProfile::where('is_spotlight', true)
                 ->when($this->isEditing && $this->selectedUserId, function ($q) {
@@ -585,7 +577,6 @@ class UserManagement extends Component
             if ($this->isEditing) {
                 $user = User::findOrFail($this->selectedUserId);
 
-                // 🔒 Prevent changing your own roles (unless you are Super Admin)
                 if ($this->isSelf && !$user->hasRole('Super Admin')) {
                     $currentRoles = $user->roles->pluck('name')->toArray();
                     if ($currentRoles != $roleNames) {
@@ -594,13 +585,11 @@ class UserManagement extends Component
                     }
                 }
 
-                // Check assignRole permission if roles changed (and not self, or self is Super Admin)
                 $currentRoles = $user->roles->pluck('name')->toArray();
                 if ($currentRoles != $roleNames && !$this->isSelf) {
                     $this->authorize('assignRole', $user);
                 }
 
-                // Also ensure update permission
                 $this->authorize('update', $user);
 
                 $password = $this->password ? Hash::make($this->password) : null;
@@ -617,7 +606,6 @@ class UserManagement extends Component
 
                 $user->update($data);
 
-                // Only sync roles if allowed (already handled above)
                 if (!($this->isSelf && !$user->hasRole('Super Admin'))) {
                     $user->syncRoles($roleNames);
                     $user->broadcastPermissions();
@@ -629,7 +617,6 @@ class UserManagement extends Component
                 $profile->is_spotlight = $this->is_spotlight;
                 $profile->save();
 
-                // 🔥 Log user update
                 ActivityLogger::log('User updated by admin', [
                     'user_id'      => $user->id,
                     'email'        => $user->email,
@@ -650,7 +637,6 @@ class UserManagement extends Component
                 $this->showUserModal = false;
                 $this->resetFormFields();
             } else {
-                // Creating new user – check create permission
                 $this->authorize('create', User::class);
 
                 $data['username'] = $this->generateUsername($this->first_name, $this->last_name);
@@ -674,7 +660,6 @@ class UserManagement extends Component
                     'is_spotlight' => $this->is_spotlight,
                 ]);
 
-                // 🔥 Log user creation
                 ActivityLogger::log('User created by admin', [
                     'user_id'      => $user->id,
                     'email'        => $user->email,
@@ -687,7 +672,6 @@ class UserManagement extends Component
 
                 $this->logActivity($user->id, 'admin_create', "Account created by admin ({$fullName}, {$this->email}).");
 
-                // Email the new user
                 try {
                     Mail::to($user->email)->queue(
                         new AccountCreatedMail($user->fresh('roles'), $plainPassword, Auth::user()?->name)
@@ -736,7 +720,6 @@ class UserManagement extends Component
     }
 
     // ─── Convert to Employee ──────────────────────────────────────────────
-
     public function openConvertToEmployee(int $userId): void
     {
         $user = User::with('profile')->findOrFail($userId);
@@ -747,14 +730,16 @@ class UserManagement extends Component
             return;
         }
 
+        // Refresh the department list so any just-added ones are included
+        $this->emp_loadDepartmentsAndPositions();
+
         $this->convertUserId = $userId;
         $this->emp_employee_id = $this->generateEmployeeId();
 
-        // Pre-fill from existing profile if available
         $profile = $user->profile;
         if ($profile) {
             $this->emp_position = $profile->position ?? '';
-            $this->emp_department = $profile->department ?? '';
+            $this->emp_department_id = $profile->department_id ?? null;   // ← FK
             $this->emp_employment_type = $profile->employment_type ?? 'full-time';
             $this->emp_hire_date = $profile->hire_date?->format('Y-m-d') ?? '';
             $this->emp_gender = $profile->gender ?? '';
@@ -762,9 +747,8 @@ class UserManagement extends Component
             $this->emp_emergency_contact_phone = $profile->emergency_contact_phone ?? '';
             $this->emp_emergency_parsePhoneNumber($profile->emergency_contact_phone ?? '');
         } else {
-            // Reset fields if no profile
             $this->emp_position = '';
-            $this->emp_department = '';
+            $this->emp_department_id = null;
             $this->emp_employment_type = 'full-time';
             $this->emp_hire_date = '';
             $this->emp_gender = '';
@@ -775,16 +759,18 @@ class UserManagement extends Component
             $this->emp_emergency_updateCountryInfo();
         }
 
-        $this->emp_loadDepartmentsAndPositions();
         $this->showConvertEmployeeModal = true;
     }
 
     public function saveConvertedEmployee(): void
     {
+        $profileIdForUnique = $this->convertUserId
+            ? UserProfile::where('user_id', $this->convertUserId)->first()?->id
+            : null;
+
         $this->validate([
-            'emp_employee_id' => 'required|string|max:50|unique:user_profiles,employee_id,' .
-                ($this->convertUserId ? UserProfile::where('user_id', $this->convertUserId)->first()?->id : 'NULL'),
-            'emp_department'  => 'required|string|max:255',
+            'emp_employee_id' => 'required|string|max:50|unique:user_profiles,employee_id,' . ($profileIdForUnique ?? 'NULL'),
+            'emp_department_id' => 'required|exists:departments,id',       // ← FK
             'emp_position'    => 'required|string|max:255',
             'emp_employment_type' => 'required|in:full-time,part-time,contract,intern',
             'emp_hire_date'   => 'required|date|before_or_equal:today',
@@ -798,7 +784,8 @@ class UserManagement extends Component
         ], [
             'emp_employee_id.required' => 'An employee ID is required.',
             'emp_employee_id.unique'   => 'This employee ID is already assigned.',
-            'emp_department.required'  => 'Please select or add a department.',
+            'emp_department_id.required' => 'Please select or add a department.',
+            'emp_department_id.exists'   => 'Please select a valid department.',
             'emp_position.required'    => 'Please select or add a job title.',
             'emp_employment_type.required' => 'Please choose an employment type.',
             'emp_hire_date.required'   => 'Please provide the hire date.',
@@ -816,7 +803,7 @@ class UserManagement extends Component
         $profile->update([
             'is_employee' => true,
             'employee_id' => $this->emp_employee_id,
-            'department'  => $this->emp_department,
+            'department_id' => $this->emp_department_id,          // ← FK
             'position'    => $this->emp_position,
             'employment_type' => $this->emp_employment_type,
             'hire_date'   => Carbon::parse($this->emp_hire_date),
@@ -829,12 +816,11 @@ class UserManagement extends Component
             $user->assignRole($this->defaultRole);
         }
 
-        // 🔥 Log conversion
         ActivityLogger::log('User converted to employee', [
             'user_id'      => $user->id,
             'email'        => $user->email,
             'employee_id'  => $this->emp_employee_id,
-            'department'   => $this->emp_department,
+            'department_id' => $this->emp_department_id,
             'position'     => $this->emp_position,
             'converted_by' => Auth::id(),
         ], 'user');
@@ -851,7 +837,7 @@ class UserManagement extends Component
 
         $this->reset([
             'emp_employee_id',
-            'emp_department',
+            'emp_department_id',
             'emp_position',
             'emp_employment_type',
             'emp_hire_date',
@@ -862,7 +848,6 @@ class UserManagement extends Component
     }
 
     // ─── Single Delete ────────────────────────────────────────────────────
-
     public function confirmDelete(int $id): void
     {
         if ($id === Auth::id()) {
@@ -886,7 +871,6 @@ class UserManagement extends Component
         $this->authorize('delete', $user);
         $user->delete();
 
-        // 🔥 Log deletion
         ActivityLogger::log('User deleted', [
             'user_id'    => $user->id,
             'email'      => $user->email,
@@ -899,7 +883,6 @@ class UserManagement extends Component
     }
 
     // ─── Bulk Actions ─────────────────────────────────────────────────────
-
     public function updatedSelectAll(bool $value): void
     {
         $this->selectedUsers = $value
@@ -933,7 +916,6 @@ class UserManagement extends Component
         }
         $this->authorize('delete', User::class);
 
-        // Log each deletion
         foreach ($ids as $id) {
             $user = User::find($id);
             if ($user) {
@@ -959,7 +941,6 @@ class UserManagement extends Component
         $ids = $this->selectedUsers;
         User::whereIn('id', $ids)->update(['status' => 'active']);
 
-        // Log each activation
         foreach ($ids as $id) {
             ActivityLogger::log('User activated (bulk)', [
                 'user_id'     => $id,
@@ -994,7 +975,6 @@ class UserManagement extends Component
     }
 
     // ─── Toggle Status ────────────────────────────────────────────────────
-
     public function confirmToggleStatus(int $id): void
     {
         if ($id === Auth::id()) {
@@ -1012,15 +992,15 @@ class UserManagement extends Component
         if (!$this->toggleUserId) return;
         $user = User::findOrFail($this->toggleUserId);
         $this->authorize('toggleStatus', $user);
+        $oldStatus = $user->status;
         $newStatus = $user->status === 'active' ? 'suspended' : 'active';
         $user->status = $newStatus;
         $user->save();
 
-        // 🔥 Log status toggle
         ActivityLogger::log('User status toggled', [
             'user_id'    => $user->id,
             'email'      => $user->email,
-            'old_status' => $user->status === $newStatus ? 'active' : 'suspended', // Actually need old status; we can store before change
+            'old_status' => $oldStatus,
             'new_status' => $newStatus,
             'toggled_by' => Auth::id(),
         ], 'user');
@@ -1032,7 +1012,6 @@ class UserManagement extends Component
     }
 
     // ─── Toggle Verification ─────────────────────────────────────────────
-
     public function confirmToggleVerify(int $id): void
     {
         $user = User::findOrFail($id);
@@ -1055,7 +1034,6 @@ class UserManagement extends Component
         }
         $user->save();
 
-        // 🔥 Log verification toggle
         ActivityLogger::log('Email verification toggled', [
             'user_id'    => $user->id,
             'email'      => $user->email,
@@ -1070,7 +1048,6 @@ class UserManagement extends Component
     }
 
     // ─── Resend Verification ─────────────────────────────────────────────
-
     public function resendVerification(int $id): void
     {
         $user = User::findOrFail($id);
@@ -1086,7 +1063,6 @@ class UserManagement extends Component
         $user->save();
         $user->sendEmailVerificationNotification();
 
-        // 🔥 Log resend
         ActivityLogger::log('Verification email resent', [
             'user_id' => $user->id,
             'email'   => $user->email,
@@ -1098,7 +1074,6 @@ class UserManagement extends Component
     }
 
     // ─── Bulk Resend Verification ────────────────────────────────────────
-
     public function confirmBulkVerifyResend(): void
     {
         if (empty($this->selectedUsers)) return;
@@ -1135,7 +1110,6 @@ class UserManagement extends Component
     }
 
     // ─── Spotlight Toggle ─────────────────────────────────────────────────
-
     public function confirmToggleSpotlight(int $id): void
     {
         $user = User::with('profile')->findOrFail($id);
@@ -1164,7 +1138,6 @@ class UserManagement extends Component
         $profile->is_spotlight = !$profile->is_spotlight;
         $profile->save();
 
-        // 🔥 Log spotlight toggle
         ActivityLogger::log('Spotlight status toggled', [
             'user_id'      => $user->id,
             'email'        => $user->email,
@@ -1179,7 +1152,6 @@ class UserManagement extends Component
     }
 
     // ─── Invitation ───────────────────────────────────────────────────────
-
     public function openInviteModal(): void
     {
         $this->authorize('create', User::class);
@@ -1210,7 +1182,6 @@ class UserManagement extends Component
 
         Mail::to($this->inviteEmail)->queue(new InvitationMail($invitation));
 
-        // 🔥 Log invitation
         ActivityLogger::log('Invitation sent', [
             'email'        => $this->inviteEmail,
             'role_id'      => $this->inviteRoleId,
@@ -1242,7 +1213,6 @@ class UserManagement extends Component
     }
 
     // ─── Query ─────────────────────────────────────────────────────────────
-
     private function getQuery()
     {
         return User::query()
@@ -1264,7 +1234,6 @@ class UserManagement extends Component
     }
 
     // ─── Render ────────────────────────────────────────────────────────────
-
     public function render()
     {
         return view('livewire.admin.users.user-management', [

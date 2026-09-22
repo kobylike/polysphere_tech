@@ -1,7 +1,5 @@
 <div class="position-relative">
 
-
-
     {{-- PAGE TITLES --}}
     <div class="page-titles">
         <ol class="breadcrumb">
@@ -617,7 +615,7 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- 🔥 Roles – with self‑edit protection (Super Admin exempt) --}}
+                            {{-- Roles – with self‑edit protection (Super Admin exempt) --}}
                             @php $targetUser = $isEditing ? App\Models\User::find($selectedUserId) : new App\Models\User(); @endphp
 
                             @if($isSelf)
@@ -1136,16 +1134,16 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Department --}}
+                            {{-- Department (now a real FK to departments.id) --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Department <span
                                         class="text-danger">*</span></label>
                                 <div class="d-flex gap-2">
-                                    <select class="form-select @error('emp_department') is-invalid @enderror"
-                                        wire:model="emp_department">
+                                    <select class="form-select @error('emp_department_id') is-invalid @enderror"
+                                        wire:model="emp_department_id">
                                         <option value="">Select Department</option>
                                         @foreach($emp_departmentsList as $dept)
-                                            <option value="{{ $dept }}">{{ $dept }}</option>
+                                            <option value="{{ $dept['id'] }}">{{ $dept['name'] }}</option>
                                         @endforeach
                                     </select>
                                     <button class="btn btn-sm btn-outline-primary" type="button"
@@ -1168,7 +1166,7 @@
                                     @error('emp_newDepartment')
                                     <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 @endif
-                                @error('emp_department')
+                                @error('emp_department_id')
                                 <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             </div>
 
@@ -1416,5 +1414,53 @@
         opacity: 0.8;
         transform: scale(0.97);
         transition: all 0.1s ease;
+    }
+
+    /* Phone country dropdown (mirrors HR module styles) */
+    .phone-country-dropdown {
+        border-radius: 0.6rem;
+        border: 1px solid #e2e8f0;
+        z-index: 1050;
+        overflow-y: auto;
+    }
+
+    .phone-country-dropdown .dropdown-item:hover {
+        background-color: #f1f5f9;
+    }
+
+    .phone-country-dropdown .dropdown-item.active {
+        background-color: #e0e7ff;
+        color: #1e293b;
+    }
+
+    @media (max-width: 575.98px) {
+        .phone-country-btn span {
+            font-size: 0.75rem;
+        }
+
+        .phone-country-btn img {
+            width: 18px;
+            height: 12px;
+        }
+
+        .phone-number-input {
+            font-size: 0.85rem;
+            padding: 0.4rem 0.5rem;
+        }
+
+        .phone-country-dropdown {
+            width: calc(100vw - 2.5rem) !important;
+            left: 0 !important;
+            right: auto !important;
+            max-height: 200px;
+        }
+    }
+
+    @media (min-width: 576px) {
+        .phone-country-dropdown {
+            width: 280px;
+            max-width: 280px;
+            max-height: 240px;
+        }
     }
 </style>

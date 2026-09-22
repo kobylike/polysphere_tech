@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('employee_id')->nullable()->unique();
-            $table->string('department')->nullable();
+            $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
             $table->date('hire_date')->nullable();
             $table->string('employment_type')->default('full-time'); // full-time, part-time, contract, intern
             $table->boolean('is_employee')->default(false);
@@ -41,6 +41,7 @@ return new class extends Migration
             // Index for faster queries
             $table->index('user_id');
             $table->index('is_featured_team');
+            $table->index('department_id');
         });
     }
 

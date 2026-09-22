@@ -141,7 +141,7 @@
                                                 wire:model.live="departmentFilter">
                                                 <option value="">All Departments</option>
                                                 @foreach($departments as $dept)
-                                                    <option value="{{ $dept }}">{{ $dept }}</option>
+                                                    <option value="{{ $dept->id }}">{{ $dept->name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -217,7 +217,7 @@
                                                             <span class="text-muted">—</span>
                                                         @endif
                                                     </td>
-                                                    <td><span>{{ $emp->profile->department ?? '—' }}</span></td>
+                                                    <td><span>{{ $emp->profile->department?->name ?? '—' }}</span></td>
                                                     <td>
                                                         <span
                                                             class="badge badge-{{ $emp->status === 'active' ? 'success' : 'danger' }} light border-0">
@@ -663,11 +663,11 @@
                                 <label class="form-label fw-bold small">Department <span
                                         class="text-danger">*</span></label>
                                 <div class="d-flex gap-2">
-                                    <select class="form-select @error('department') is-invalid @enderror"
-                                        wire:model="department">
+                                    <select class="form-select @error('department_id') is-invalid @enderror"
+                                        wire:model="department_id">
                                         <option value="">Select Department</option>
-                                        @foreach($departmentsList as $dept)
-                                            <option value="{{ $dept }}">{{ $dept }}</option>
+                                        @foreach($departments as $dept)
+                                            <option value="{{ $dept->id }}">{{ $dept->name }}</option>
                                         @endforeach
                                     </select>
                                     <button class="btn btn-sm btn-outline-primary" type="button"
@@ -688,7 +688,7 @@
                                     @error('newDepartment')
                                     <div class="text-danger small mt-1">{{ $message }}</div> @enderror
                                 @endif
-                                @error('department')
+                                @error('department_id')
                                 <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             </div>
                             <div class="col-md-6">
@@ -964,7 +964,7 @@
                                         <img src="{{ $emp->avatar_url }}" class="avatar avatar-sm rounded-circle"
                                             style="width:24px;height:24px;object-fit:cover;" alt="">
                                         {{ $emp->name }}
-                                        <span class="text-muted small">{{ $emp->profile->department ?? '' }}</span>
+                                        <span class="text-muted small">{{ $emp->profile->department?->name ?? '' }}</span>
                                     </label>
                                 </div>
                             @empty

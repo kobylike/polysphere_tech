@@ -123,7 +123,9 @@ class MainGlobalSearch extends Component
                     $q->where('name', 'like', "%{$term}%")
                         ->orWhereHas('profile', function ($p) use ($term) {
                             $p->where('position', 'like', "%{$term}%")
-                                ->orWhere('department', 'like', "%{$term}%");
+                                ->orWhereHas('department', function ($d) use ($term) {
+                                    $d->where('name', 'like', "%{$term}%");
+                                });
                         });
                 })
                 ->limit(10)
@@ -132,7 +134,11 @@ class MainGlobalSearch extends Component
                     return [
                         'id'       => $user->id,
                         'title'    => $user->name,
-                        'subtitle' => $user->profile?->position ?? 'Team Member',
+                        // show the department name alongside position if available
+                        'subtitle' => trim(
+                            ($user->profile?->position ?? 'Team Member') .
+                                ($user->profile?->department?->name ? ' · ' . $user->profile->department->name : '')
+                        ),
                         'url'      => route('team.details', $user->slug ?? $user->id),
                         'icon'     => 'fa-user',
                         'color'    => 'primary',
