@@ -114,9 +114,12 @@ class ApplicationManagement extends Component
         $application = Application::findOrFail($id);
         $this->authorize('view', $application);
 
-        abort_unless(Storage::disk('private')->exists($application->cv_path), 404);
+        /** @var \Illuminate\Filesystem\FilesystemAdapter $disk */
+        $disk = Storage::disk('private');
 
-        return Storage::disk('private')->download(
+        abort_unless($disk->exists($application->cv_path), 404);
+
+        return $disk->download(
             $application->cv_path,
             $application->cv_original_name ?: ('cv-' . $application->id . '.pdf'),
         );
