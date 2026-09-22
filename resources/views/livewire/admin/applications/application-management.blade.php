@@ -112,6 +112,12 @@
                     <div class="d-flex flex-wrap gap-1 justify-content-end align-items-center">
                         <span class="badge bg-dark text-white p-2">{{ count($selectedApplications) }} selected</span>
 
+                        @can('view', App\Models\Application::class)
+                            <button class="btn btn-info text-white btn-sm" wire:click="openBulkEmailModal">
+                                <i class="fa-regular fa-paper-plane"></i> Email selected
+                            </button>
+                        @endcan
+
                         @can('update', App\Models\Application::class)
                             <select class="form-control form-control-sm w-auto"
                                 wire:change="bulkSetStatus($event.target.value)">
@@ -461,7 +467,7 @@
         @endcan
     @endif
 
-    {{-- ─── Compose email modal ─────────────────────────────────── --}}
+    {{-- ─── Single email composer ───────────────────────────────── --}}
     @if($showEmailModal)
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.55);" wire:ignore.self>
             <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
@@ -484,14 +490,26 @@
                     </div>
 
                     <div class="modal-body">
+                        {{-- Template picker --}}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold small">Quick template</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach($templates as $key => $tpl)
+                                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                                        wire:click="applySingleTemplate('{{ $key }}')">
+                                        {{ $tpl['label'] }}
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">To</label>
                                 <input type="email" class="form-control @error('emailTo') is-invalid @enderror"
                                     wire:model.blur="emailTo">
                                 @error('emailTo')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-md-6">
@@ -506,8 +524,7 @@
                                 <input type="text" class="form-control @error('emailSubject') is-invalid @enderror"
                                     wire:model.blur="emailSubject">
                                 @error('emailSubject')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
                             <div class="col-12">
@@ -515,29 +532,38 @@
                                 <textarea class="form-control @error('emailBody') is-invalid @enderror" rows="12"
                                     wire:model.blur="emailBody" style="font-family: inherit; line-height: 1.6;"></textarea>
                                 @error('emailBody')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                                <small class="text-muted">
-                                    The candidate's name and the role are pre-filled. Edit freely — this is what they'll
-                                    see.
-                                </small>
+                                <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <div class="mt-2 text-muted small">
+                                    <strong>Available tokens</strong> (auto-replaced per candidate):
+                                    <code>{name}</code> · <code>{first_name}</code> · <code>{role}</code> ·
+                                    <code>{department}</code>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">
+                                    <i class="fa-regular fa-arrows-turn-right me-1 text-primary"></i>
+                                    After sending, advance status to
+                                </label>
+                                <select class="form-select" wire:model="emailAdvanceStatus">
+                                    <option value="">Leave unchanged</option>
+                                    @foreach($statuses as $s)
+                                        <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">Optional — great for one-click pipelines.</small>
                             </div>
                         </div>
                     </div>
 
                     <div class="modal-footer justify-content-between">
-                        <div class="d-flex gap-2">
-                            <a href="mailto:{{ $emailTo }}?subject={{ urlencode($emailSubject) }}&body={{ urlencode($emailBody) }}"
-                                class="btn btn-sm btn-outline-secondary" title="Open in your desktop mail client instead">
-                                <i class="fa-regular fa-arrow-up-right-from-square me-1"></i>
-                                Open in mail app
-                            </a>
-                        </div>
+                        <a href="mailto:{{ $emailTo }}?subject={{ urlencode($emailSubject) }}&body={{ urlencode($emailBody) }}"
+                            class="btn btn-sm btn-outline-secondary" title="Open in your desktop mail client instead">
+                            <i class="fa-regular fa-arrow-up-right-from-square me-1"></i> Open in mail app
+                        </a>
 
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-secondary" wire:click="closeEmailModal">
-                                Cancel
-                            </button>
+                            <button type="button" class="btn btn-secondary" wire:click="closeEmailModal">Cancel</button>
                             <button type="button" class="btn btn-primary" wire:click="sendCandidateEmail"
                                 wire:loading.attr="disabled" wire:target="sendCandidateEmail">
                                 <span wire:loading.remove wire:target="sendCandidateEmail">
@@ -545,6 +571,156 @@
                                 </span>
                                 <span wire:loading wire:target="sendCandidateEmail">
                                     <i class="fa-regular fa-spinner fa-spin"></i> Sending…
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ─── Bulk email modal ─────────────────────────────────────── --}}
+    @if($showBulkEmailModal)
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.6);" wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
+                <div class="modal-content border-0 shadow-lg">
+
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title mb-1">
+                                <i class="fa-regular fa-paper-plane me-1"></i>
+                                Bulk email — {{ count($selectedApplications) }} candidate(s)
+                            </h5>
+                            <div class="text-muted small">
+                                Each email is personalized. All go out through <strong>careers@polyspheretech.com</strong>.
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" wire:click="closeBulkEmailModal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row g-4">
+
+                            {{-- Left column: composer --}}
+                            <div class="col-lg-7">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Template</label>
+                                    <select class="form-select" wire:model.live="bulkEmailTemplate">
+                                        <option value="">— Choose a starting point —</option>
+                                        @foreach($templates as $key => $tpl)
+                                            <option value="{{ $key }}">{{ $tpl['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Subject</label>
+                                    <input type="text" class="form-control @error('bulkEmailSubject') is-invalid @enderror"
+                                        wire:model.blur="bulkEmailSubject">
+                                    @error('bulkEmailSubject')
+                                    <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold small">Message</label>
+                                    <textarea class="form-control @error('bulkEmailBody') is-invalid @enderror" rows="14"
+                                        wire:model.blur="bulkEmailBody"
+                                        style="font-family: inherit; line-height: 1.6;"></textarea>
+                                    @error('bulkEmailBody')
+                                    <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                    <div class="mt-2 text-muted small">
+                                        <strong>Available tokens</strong>:
+                                        <code>{name}</code> · <code>{first_name}</code> · <code>{role}</code> ·
+                                        <code>{department}</code>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="form-label fw-bold small">
+                                        <i class="fa-regular fa-arrows-turn-right me-1 text-primary"></i>
+                                        After sending, advance all to
+                                    </label>
+                                    <select class="form-select" wire:model="bulkEmailAdvanceStatus">
+                                        <option value="">Leave unchanged</option>
+                                        @foreach($statuses as $s)
+                                            <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-muted">
+                                        Optional. Applies to every recipient after their email is queued.
+                                    </small>
+                                </div>
+                            </div>
+
+                            {{-- Right column: recipients + preview --}}
+                            <div class="col-lg-5">
+                                <div class="bulk-recipients mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h6 class="mb-0 fw-bold small text-uppercase text-muted">
+                                            Recipients ({{ count($this->bulkEmailRecipients) }})
+                                        </h6>
+                                    </div>
+                                    <div class="bulk-recipients__list">
+                                        @foreach($this->bulkEmailRecipients as $r)
+                                            <div class="bulk-recipient">
+                                                <div class="avatar avatar-sm flex-shrink-0">
+                                                    <span class="avatar-text bg-secondary">
+                                                        {{ strtoupper(mb_substr($r['name'], 0, 1)) }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex-grow-1 min-w-0">
+                                                    <div class="small fw-semibold text-truncate">{{ $r['name'] }}</div>
+                                                    <div class="text-muted text-truncate" style="font-size: 11.5px;">
+                                                        {{ $r['email'] }}
+                                                    </div>
+                                                </div>
+                                                <span class="badge badge-secondary light border-0 flex-shrink-0">
+                                                    {{ $r['status'] }}
+                                                </span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+
+                                @if($this->bulkEmailPreview)
+                                    <div class="bulk-preview">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="mb-0 fw-bold small text-uppercase text-muted">
+                                                Preview — {{ $this->bulkEmailPreview['name'] }}
+                                            </h6>
+                                        </div>
+                                        <div class="bulk-preview__card">
+                                            <div class="bulk-preview__subject">
+                                                <span class="text-muted small">Subject:</span>
+                                                <strong>{{ $this->bulkEmailPreview['subject'] }}</strong>
+                                            </div>
+                                            <hr class="my-2">
+                                            <div class="bulk-preview__body" style="white-space: pre-line;">
+                                                {{ $this->bulkEmailPreview['body'] }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer justify-content-between">
+                        <span class="text-muted small">
+                            <i class="fa-regular fa-circle-info me-1"></i>
+                            Emails are queued — your team can keep working while they deliver.
+                        </span>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary" wire:click="closeBulkEmailModal">Cancel</button>
+                            <button type="button" class="btn btn-info text-white" wire:click="sendBulkEmail"
+                                wire:loading.attr="disabled" wire:target="sendBulkEmail">
+                                <span wire:loading.remove wire:target="sendBulkEmail">
+                                    <i class="fa-regular fa-paper-plane"></i>
+                                    Send to {{ count($selectedApplications) }}
+                                </span>
+                                <span wire:loading wire:target="sendBulkEmail">
+                                    <i class="fa-regular fa-spinner fa-spin"></i> Queuing…
                                 </span>
                             </button>
                         </div>
@@ -651,5 +827,62 @@
         height: 38px;
         font-size: 14px;
         border-radius: 50%;
+    }
+
+    /* ─── Bulk email composer ─── */
+    .bulk-recipients__list {
+        max-height: 240px;
+        overflow-y: auto;
+        border: 1px solid #e7e9f2;
+        border-radius: 10px;
+        padding: 6px;
+        background: #fbfcfe;
+    }
+
+    .bulk-recipient {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 8px;
+        border-radius: 8px;
+    }
+
+    .bulk-recipient:hover {
+        background: #f1f5f9;
+    }
+
+    .avatar-sm {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+
+    .avatar-sm .avatar-text {
+        font-size: 11px;
+    }
+
+    .min-w-0 {
+        min-width: 0;
+    }
+
+    .bulk-preview__card {
+        border: 1px solid #e7e9f2;
+        border-radius: 12px;
+        padding: 14px 16px;
+        background: #fff;
+        font-size: 13px;
+        line-height: 1.6;
+        max-height: 280px;
+        overflow-y: auto;
+    }
+
+    .bulk-preview__subject {
+        font-size: 13px;
+    }
+
+    .bulk-preview__body {
+        color: #334155;
     }
 </style>
