@@ -5,9 +5,12 @@ namespace App\Livewire\Main\Vacancies;
 use App\Enums\ApplicationStatus;
 use App\Enums\VacancyStatus;
 use App\Enums\WorkplaceType;
+use App\Helpers\ActivityLogger;
+use App\Helpers\NotificationHelper;
 use App\Mail\ApplicationReceivedMail;
 use App\Mail\ApplicationSubmittedAdminMail;
 use App\Models\Application;
+use App\Models\User;
 use App\Models\Vacancy;
 use DateTimeZone;
 use Illuminate\Support\Facades\Log;
@@ -500,6 +503,7 @@ class ApplicationWizard extends Component
         // 3. Store the CV
         $path = $this->cv->store("applications/{$this->vacancy->id}", 'private');
 
+        // 4. Create the application (Spatie logs this automatically)
         $application = Application::create([
             'vacancy_id' => $this->vacancy->id,
 
@@ -540,6 +544,39 @@ class ApplicationWizard extends Component
             'status' => ApplicationStatus::New->value,
         ]);
 
+        // ─── 5. System-wide activity log ─────────────────────────
+        try {
+            ActivityLogger::log('Application submitted', [
+                'application_id' => $application->id,
+                'vacancy_id'     => $application->vacancy_id,
+                'vacancy_title'  => $this->vacancy->title,
+                'candidate'      => $application->name,
+                'email'          => $application->email,
+                'source'         => $application->source,
+                'ip'             => request()->ip(),
+            ], 'application');
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // ─── 6. Notify the hiring team in-app ────────────────────
+        try {
+            $admins = User::role(['Super Admin', 'Admin'])->get();
+
+            if ($admins->isNotEmpty()) {
+                NotificationHelper::sendToUsers($admins, [
+                    'title' => 'New application received',
+                    'body'  => "{$application->name} applied for {$this->vacancy->title}.",
+                    'type'  => 'info',
+                    'icon'  => 'fa-user-plus',
+                    'link'  => route('admin.applications'),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // ─── 7. Emails ───────────────────────────────────────────
         try {
             Mail::to($application->email)->queue(new ApplicationReceivedMail($application));
             Mail::to('careers@polyspheretech.com')->queue(new ApplicationSubmittedAdminMail($application));

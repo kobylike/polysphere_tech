@@ -8,10 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Application extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'vacancy_id',
@@ -51,11 +53,11 @@ class Application extends Model
     ];
 
     protected $casts = [
-        'branch_answers'     => 'array',
-        'gdpr_consent'       => 'boolean',
-        'reviewed_at'        => 'datetime',
-        'decided_at'         => 'datetime',
-        'years_experience'   => 'integer',
+        'branch_answers'   => 'array',
+        'gdpr_consent'     => 'boolean',
+        'reviewed_at'      => 'datetime',
+        'decided_at'       => 'datetime',
+        'years_experience' => 'integer',
     ];
 
     protected static function booted(): void
@@ -65,6 +67,27 @@ class Application extends Model
                 $app->tracking_token = Str::random(64);
             }
         });
+    }
+
+    // ─── Activity log ──────────────────────────────────────
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        $candidate = $this->name ?: $this->email ?: "ID: {$this->id}";
+        $role      = $this->vacancy?->title ?? 'a role';
+
+        return LogOptions::defaults()
+            ->logAll()
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->logExcept(['tracking_token', 'updated_at', 'ip_address', 'reviewed_by'])
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Application from {$candidate} for {$role} was received",
+                'updated' => "Application from {$candidate} for {$role} was updated",
+                'deleted' => "Application from {$candidate} for {$role} was deleted",
+                default   => "Application from {$candidate} for {$role} was {$eventName}",
+            })
+            ->useLogName('application');
     }
 
     // ─── Relationships ─────────────────────────────────────
@@ -81,11 +104,29 @@ class Application extends Model
 
     // ─── Scopes ────────────────────────────────────────────
 
-
-
     public function scopeWithStatus($q, ApplicationStatus|string $status)
     {
         return $q->where('status', $status instanceof ApplicationStatus ? $status->value : $status);
+    }
+
+    public function scopeForVacancy($query, int $vacancyId)
+    {
+        return $query->where('vacancy_id', $vacancyId);
+    }
+
+    public function scopeForEmail($query, string $email)
+    {
+        return $query->whereRaw('LOWER(email) = ?', [strtolower(trim($email))]);
+    }
+
+    public function scopeBlockingReapplication($query)
+    {
+        $statuses = collect(ApplicationStatus::cases())
+            ->filter(fn(ApplicationStatus $s) => $s->blocksReapplication())
+            ->map(fn(ApplicationStatus $s) => $s->value)
+            ->all();
+
+        return $query->whereIn('status', $statuses);
     }
 
     // ─── Helpers ───────────────────────────────────────────
@@ -95,6 +136,11 @@ class Application extends Model
         return ApplicationStatus::from($this->status);
     }
 
+    public function blocksReapplication(): bool
+    {
+        return $this->statusEnum()->blocksReapplication();
+    }
+
     public function statusUrl(): string
     {
         return route('applications.status', $this->tracking_token);
@@ -102,7 +148,6 @@ class Application extends Model
 
     public function cvDownloadUrl(): string
     {
-        // signed temporary URL so only the admin can download – see admin view
         return route('admin.applications.cv', $this->id);
     }
 
@@ -126,7 +171,8 @@ class Application extends Model
         $this->save();
     }
 
-    /** Extract an int for the years of experience, best-effort. */
+    // ─── Accessors ─────────────────────────────────────────
+
     public function getYearsExperienceLabelAttribute(): string
     {
         return match (true) {
@@ -137,8 +183,6 @@ class Application extends Model
         };
     }
 
-    // ─── Accessors ─────────────────────────────────────────
-
     public function getInitialsAttribute(): string
     {
         return collect(explode(' ', $this->name))
@@ -146,33 +190,5 @@ class Application extends Model
             ->map(fn($p) => mb_substr($p, 0, 1))
             ->take(2)
             ->implode('');
-    }
-    public function scopeForVacancy($query, int $vacancyId)
-    {
-        return $query->where('vacancy_id', $vacancyId);
-    }
-
-
-    public function scopeForEmail($query, string $email)
-    {
-        return $query->whereRaw('LOWER(email) = ?', [strtolower(trim($email))]);
-    }
-
-    /**
-     * Applications whose current state should block a new submission
-     * to the same vacancy by the same candidate.
-     */
-    public function scopeBlockingReapplication($query)
-    {
-        $statuses = collect(ApplicationStatus::cases())
-            ->filter(fn(ApplicationStatus $s) => $s->blocksReapplication())
-            ->map(fn(ApplicationStatus $s) => $s->value)
-            ->all();
-
-        return $query->whereIn('status', $statuses);
-    }
-    public function blocksReapplication(): bool
-    {
-        return $this->statusEnum()->blocksReapplication();
     }
 }

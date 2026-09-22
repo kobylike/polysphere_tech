@@ -3,7 +3,10 @@
 namespace App\Livewire\Admin\Applications;
 
 use App\Enums\ApplicationStatus;
+use App\Helpers\ActivityLogger;
+use App\Helpers\NotificationHelper;
 use App\Models\Application;
+use App\Models\User;
 use App\Models\Vacancy;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -120,8 +123,59 @@ class ApplicationManagement extends Component
             'adminNotes' => 'nullable|string|max:5000',
         ]);
 
-        $status = ApplicationStatus::from($this->newStatus);
+        $status    = ApplicationStatus::from($this->newStatus);
+        $oldStatus = $this->viewingApplication->status;
+        $candidate = $this->viewingApplication->name;
+        $roleTitle = $this->viewingApplication->vacancy?->title ?? 'the role';
+
+        // Save — Spatie logs the model change automatically
         $this->viewingApplication->markAs($status, Auth::user(), $this->adminNotes);
+
+        // ─── Activity log ────────────────────────────────────────
+        try {
+            ActivityLogger::log('Application status updated', [
+                'application_id' => $this->viewingApplication->id,
+                'vacancy_title'  => $roleTitle,
+                'candidate'      => $candidate,
+                'old_status'     => $oldStatus,
+                'new_status'     => $status->value,
+                'updated_by'     => Auth::id(),
+            ], 'application');
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // ─── Notify the acting user ──────────────────────────────
+        try {
+            NotificationHelper::sendToUser(Auth::user(), [
+                'title' => 'Status updated',
+                'body'  => "{$candidate}'s application for {$roleTitle} is now {$status->label()}.",
+                'type'  => 'success',
+                'icon'  => 'fa-clipboard-check',
+                'link'  => route('admin.applications'),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // ─── Notify the rest of the hiring team ──────────────────
+        try {
+            $others = User::role(['Super Admin', 'Admin'])
+                ->where('id', '!=', Auth::id())
+                ->get();
+
+            if ($others->isNotEmpty()) {
+                NotificationHelper::sendToUsers($others, [
+                    'title' => 'Application status updated',
+                    'body'  => Auth::user()->name . " moved {$candidate} to {$status->label()} for {$roleTitle}.",
+                    'type'  => 'info',
+                    'icon'  => 'fa-user-pen',
+                    'link'  => route('admin.applications'),
+                ]);
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $this->dispatch('notify', [
             'type'    => 'success',
@@ -140,14 +194,40 @@ class ApplicationManagement extends Component
         if (! $enum) return;
 
         $applications = Application::whereIn('id', $this->selectedApplications)->get();
+        $count        = $applications->count();
+
         foreach ($applications as $app) {
             $this->authorize('update', $app);
             $app->markAs($enum, Auth::user());
         }
 
-        $count = count($this->selectedApplications);
+        // ─── Activity log ────────────────────────────────────────
+        try {
+            ActivityLogger::log('Applications bulk status updated', [
+                'application_ids' => $applications->pluck('id')->all(),
+                'new_status'      => $enum->value,
+                'count'           => $count,
+                'updated_by'      => Auth::id(),
+            ], 'application');
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // ─── Notify the acting user ──────────────────────────────
+        try {
+            NotificationHelper::sendToUser(Auth::user(), [
+                'title' => 'Bulk status update',
+                'body'  => "{$count} application(s) moved to {$enum->label()}.",
+                'type'  => 'success',
+                'icon'  => 'fa-layer-group',
+                'link'  => route('admin.applications'),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         $this->selectedApplications = [];
-        $this->selectAll = false;
+        $this->selectAll            = false;
 
         $this->dispatch('notify', [
             'type'    => 'success',
@@ -172,15 +252,45 @@ class ApplicationManagement extends Component
         $application = Application::findOrFail($this->deleteApplicationId);
         $this->authorize('delete', $application);
 
-        // Remove the CV file from private storage (soft-deleted rows stay in DB)
+        // Snapshot details before soft-delete
+        $snapshot = [
+            'application_id' => $application->id,
+            'vacancy_title'  => $application->vacancy?->title,
+            'candidate'      => $application->name,
+            'email'          => $application->email,
+            'deleted_by'     => Auth::id(),
+        ];
+
+        // Remove the CV file from private storage
         if ($application->cv_path && Storage::disk('private')->exists($application->cv_path)) {
             Storage::disk('private')->delete($application->cv_path);
         }
 
-        $application->delete();
+        $application->delete();   // Spatie logs this automatically
+
+        // ─── Activity log ────────────────────────────────────────
+        try {
+            ActivityLogger::log('Application deleted', $snapshot, 'application');
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // ─── Notify the acting user ──────────────────────────────
+        try {
+            NotificationHelper::sendToUser(Auth::user(), [
+                'title' => 'Application deleted',
+                'body'  => "{$snapshot['candidate']}'s application was removed.",
+                'type'  => 'warning',
+                'icon'  => 'fa-trash',
+                'link'  => route('admin.applications'),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
 
         $this->showDeleteModal     = false;
         $this->deleteApplicationId = null;
+
         $this->dispatch('notify', [
             'type'    => 'success',
             'title'   => 'Deleted',
@@ -200,7 +310,7 @@ class ApplicationManagement extends Component
     {
         $this->authorize('delete', Application::class);
 
-        $ids = $this->selectedApplications;
+        $ids          = $this->selectedApplications;
         $applications = Application::whereIn('id', $ids)->get();
 
         foreach ($applications as $app) {
@@ -210,10 +320,36 @@ class ApplicationManagement extends Component
             $app->delete();
         }
 
-        $count = count($ids);
+        $count = $applications->count();
+
+        // ─── Activity log ────────────────────────────────────────
+        try {
+            ActivityLogger::log('Applications bulk deleted', [
+                'application_ids' => $applications->pluck('id')->all(),
+                'emails'          => $applications->pluck('email')->all(),
+                'count'           => $count,
+                'deleted_by'      => Auth::id(),
+            ], 'application');
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // ─── Notify the acting user ──────────────────────────────
+        try {
+            NotificationHelper::sendToUser(Auth::user(), [
+                'title' => 'Applications deleted',
+                'body'  => "{$count} application(s) were removed.",
+                'type'  => 'warning',
+                'icon'  => 'fa-trash',
+                'link'  => route('admin.applications'),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
         $this->selectedApplications = [];
-        $this->selectAll = false;
-        $this->showBulkDeleteModal = false;
+        $this->selectAll            = false;
+        $this->showBulkDeleteModal  = false;
 
         $this->dispatch('notify', [
             'type'    => 'success',
