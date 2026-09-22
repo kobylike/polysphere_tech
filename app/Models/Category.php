@@ -15,10 +15,15 @@ class Category extends Model
     public function getActivitylogOptions(): LogOptions
     {
         $name = $this->name ?? $this->slug ?? "ID: {$this->id}";
+
         return LogOptions::defaults()
             ->logAll()
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
+            ->logExcept([
+                'order',
+                'updated_at',
+            ])
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
                 'created' => "Category '{$name}' was created",
                 'updated' => "Category '{$name}' was updated",

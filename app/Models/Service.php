@@ -19,17 +19,27 @@ class Service extends Model
         'additional_images',
         'icon',
         'order',
-        'status'
+        'status',
     ];
 
     protected $casts = [
         'additional_images' => 'array',
     ];
+
+    // ─── Activity log ───────────────────────────────────────
+
     public function getActivitylogOptions(): LogOptions
     {
         $name = $this->name ?? $this->slug ?? "ID: {$this->id}";
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                'name',
+                'slug',
+                'icon',
+                'order',
+                'status',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
@@ -40,10 +50,15 @@ class Service extends Model
             })
             ->useLogName('service');
     }
+
+    // ─── Relationships ──────────────────────────────────────
+
     public function projects()
     {
         return $this->hasMany(Project::class);
     }
+
+    // ─── Accessors ──────────────────────────────────────────
 
     public function getFeaturedImageUrlAttribute()
     {

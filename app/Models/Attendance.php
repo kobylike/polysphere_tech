@@ -6,12 +6,10 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Spatie\Activitylog\Support\LogOptions;
-use Spatie\Activitylog\Models\Concerns\LogsActivity;
 
 class Attendance extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory;
 
     protected $table = 'attendance';
 
@@ -26,30 +24,14 @@ class Attendance extends Model
 
     protected $casts = [
         'date' => 'date',
-        // check_in / check_out are TIME columns — kept as raw strings on purpose.
     ];
-    public function getActivitylogOptions(): LogOptions
-    {
-        $user = $this->user?->name ?? 'User';
-        $date = $this->date ?? 'unknown date';
-        return LogOptions::defaults()
-            ->logAll()
-            ->logOnlyDirty()
-            ->dontLogEmptyChanges()
-            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
-                'created' => "Attendance for {$user} on {$date} was recorded",
-                'updated' => "Attendance for {$user} on {$date} was updated",
-                'deleted' => "Attendance for {$user} on {$date} was deleted",
-                default   => "Attendance for {$user} on {$date} was {$eventName}",
-            })
-            ->useLogName('attendance');
-    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    // ─── Scopes ────────────────────────────────────────────────────────
+    // ─── Scopes ────────────────────────────────────────────────────
 
     public function scopeForMonth($query, $year, $month)
     {
@@ -71,8 +53,7 @@ class Attendance extends Model
         return $query->whereDate('date', today());
     }
 
-    // ─── Status source of truth ──────────────────────────────────────
-
+    // ─── Status source of truth ────────────────────────────────────
 
     public static function statusOptions(): array
     {
@@ -84,12 +65,6 @@ class Attendance extends Model
         ];
     }
 
-    /**
-     * Resolve display info for a day cell.
-     *
-     * @param string|null $status    Raw status string (or null/'—' if unmarked)
-     * @param bool        $isHoliday Whether the calendar date is a company holiday
-     */
     public static function displayFor(?string $status, bool $isHoliday = false): array
     {
         $normalized = $status ? strtolower(trim($status)) : null;
@@ -127,6 +102,7 @@ class Attendance extends Model
             ],
         };
     }
+
     public function getStatusBadgeAttribute(): string
     {
         return self::displayFor($this->status)['class'] === 'text-success' ? 'success'
@@ -139,16 +115,12 @@ class Attendance extends Model
         return self::displayFor($this->status)['icon'] ?? 'fa-question';
     }
 
-    /**
-     * Minutes worked, when both check-in and check-out are recorded.
-     * Returns null rather than a misleading 0 when the data is incomplete.
-     */
     public function getMinutesWorkedAttribute(): ?int
     {
-        if (!$this->check_in || !$this->check_out) {
+        if (! $this->check_in || ! $this->check_out) {
             return null;
         }
-        $in = Carbon::parse($this->check_in);
+        $in  = Carbon::parse($this->check_in);
         $out = Carbon::parse($this->check_out);
         return $out->diffInMinutes($in);
     }

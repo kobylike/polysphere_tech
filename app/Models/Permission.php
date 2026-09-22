@@ -10,6 +10,7 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
 class Permission extends SpatiePermission
 {
     use HasFactory, LogsActivity;
+
     protected $fillable = [
         'name',
         'guard_name',
@@ -17,11 +18,19 @@ class Permission extends SpatiePermission
         'color',
     ];
 
+    // ─── Activity log ───────────────────────────────────────
+
     public function getActivitylogOptions(): LogOptions
     {
         $name = $this->name ?? "ID: {$this->id}";
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                'name',
+                'guard_name',
+                'description',
+                'color',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {

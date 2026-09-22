@@ -16,11 +16,20 @@ class Role extends SpatieRole
         'description',
         'color',
     ];
+
+    // ─── Activity log ───────────────────────────────────────
+
     public function getActivitylogOptions(): LogOptions
     {
         $name = $this->name ?? "ID: {$this->id}";
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                'name',
+                'guard_name',
+                'description',
+                'color',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {

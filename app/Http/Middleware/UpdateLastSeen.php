@@ -15,10 +15,12 @@ class UpdateLastSeen
             /** @var \App\Models\User $user */
             $user = Auth::user();
 
-            // Update the database column
-            $user->update(['last_seen_at' => now()]);
+            // ── Quiet write ────────────────────────────────────────
+            // forceFill + saveQuietly updates last_seen_at WITHOUT firing
+            // model events, so Spatie's activity log stays clean.
+            $user->forceFill(['last_seen_at' => now()])->saveQuietly();
 
-            // Also keep a cache for quick lookups (optional but handy)
+            // Cache keeps the "who's online" lookups fast
             Cache::put('user-is-online-' . $user->id, true, now()->addMinutes(5));
             Cache::put('user-last-seen-' . $user->id, now(), now()->addMinutes(5));
         }

@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
-
 class Project extends Model
 {
     use HasFactory, SoftDeletes, LogsActivity;
@@ -62,11 +61,27 @@ class Project extends Model
         'published_at'       => 'datetime',
     ];
 
+    // ─── Activity log ───────────────────────────────────────
+
     public function getActivitylogOptions(): LogOptions
     {
         $title = $this->title ?? $this->slug ?? "ID: {$this->id}";
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                'title',
+                'slug',
+                'service_id',
+                'client',
+                'company',
+                'location',
+                'start_year',
+                'end_year',
+                'status',
+                'visibility',
+                'published_at',
+                'author_id',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
@@ -78,22 +93,14 @@ class Project extends Model
             ->useLogName('project');
     }
 
+    // ─── Accessors ──────────────────────────────────────────
+
     public function getVideoAttribute()
     {
         if ($this->video_file) {
             return asset('storage/' . $this->video_file);
         }
         return $this->video_url;
-    }
-
-    public function author()
-    {
-        return $this->belongsTo(User::class, 'author_id');
-    }
-
-    public function service()
-    {
-        return $this->belongsTo(Service::class);
     }
 
     public function getStatusBadgeAttribute()
@@ -116,5 +123,17 @@ class Project extends Model
     public function getThumbnailImageUrlAttribute()
     {
         return $this->thumbnail_image ? asset('storage/' . $this->thumbnail_image) : null;
+    }
+
+    // ─── Relationships ──────────────────────────────────────
+
+    public function author()
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function service()
+    {
+        return $this->belongsTo(Service::class);
     }
 }

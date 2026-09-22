@@ -10,13 +10,16 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Spatie\Activitylog\Models\Concerns\LogsActivity;
+use Spatie\Activitylog\Support\LogOptions;
 
 class Vacancy extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'department_id',
@@ -48,19 +51,19 @@ class Vacancy extends Model
     ];
 
     protected $casts = [
-        'employment_type' => EmploymentType::class,
-        'experience_level' => ExperienceLevel::class,
-        'workplace_type' => WorkplaceType::class,
-        'status' => VacancyStatus::class,
-        'salary_min' => 'decimal:2',
-        'salary_max' => 'decimal:2',
-        'is_salary_visible' => 'boolean',
-        'is_featured' => 'boolean',
+        'employment_type'    => EmploymentType::class,
+        'experience_level'   => ExperienceLevel::class,
+        'workplace_type'     => WorkplaceType::class,
+        'status'             => VacancyStatus::class,
+        'salary_min'         => 'decimal:2',
+        'salary_max'         => 'decimal:2',
+        'is_salary_visible'  => 'boolean',
+        'is_featured'        => 'boolean',
         'positions_available' => 'integer',
-        'views_count' => 'integer',
+        'views_count'        => 'integer',
         'applications_count' => 'integer',
-        'published_at' => 'datetime',
-        'closing_date' => 'datetime',
+        'published_at'       => 'datetime',
+        'closing_date'       => 'datetime',
     ];
 
     protected $appends = [
@@ -79,6 +82,47 @@ class Vacancy extends Model
         return 'slug';
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Activity log
+    |--------------------------------------------------------------------------
+    */
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        $title = $this->title ?: $this->slug ?: "ID: {$this->id}";
+
+        return LogOptions::defaults()
+            ->logOnly([
+                'department_id',
+                'title',
+                'slug',
+                'summary',
+                'employment_type',
+                'experience_level',
+                'workplace_type',
+                'location',
+                'country',
+                'salary_min',
+                'salary_max',
+                'salary_currency',
+                'is_salary_visible',
+                'positions_available',
+                'status',
+                'is_featured',
+                'published_at',
+                'closing_date',
+            ])
+            ->logOnlyDirty()
+            ->dontLogEmptyChanges()
+            ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
+                'created' => "Vacancy '{$title}' was created",
+                'updated' => "Vacancy '{$title}' was updated",
+                'deleted' => "Vacancy '{$title}' was deleted",
+                default   => "Vacancy '{$title}' was {$eventName}",
+            })
+            ->useLogName('vacancy');
+    }
     /*
     |--------------------------------------------------------------------------
     | Lifecycle
@@ -146,6 +190,11 @@ class Vacancy extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
     }
 
     /*
@@ -263,7 +312,7 @@ class Vacancy extends Model
     public function publish(): void
     {
         $this->update([
-            'status' => VacancyStatus::Published,
+            'status'       => VacancyStatus::Published,
             'published_at' => $this->published_at ?? now(),
         ]);
     }
@@ -281,10 +330,5 @@ class Vacancy extends Model
     public function incrementViews(): void
     {
         $this->increment('views_count');
-    }
-
-    public function applications()
-    {
-        return $this->hasMany(Application::class);
     }
 }

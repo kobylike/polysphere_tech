@@ -1,5 +1,4 @@
 <?php
-// app/Models/Invitation.php
 
 namespace App\Models;
 
@@ -13,6 +12,7 @@ use Spatie\Permission\Models\Role;
 class Invitation extends Model
 {
     use HasFactory, LogsActivity;
+
     protected $fillable = [
         'email',
         'token',
@@ -20,18 +20,29 @@ class Invitation extends Model
         'position',
         'expires_at',
         'accepted_at',
-        'invited_by'
+        'invited_by',
     ];
 
     protected $casts = [
-        'expires_at' => 'datetime',
+        'expires_at'  => 'datetime',
         'accepted_at' => 'datetime',
     ];
+
+    // ─── Activity log ───────────────────────────────────────
+
     public function getActivitylogOptions(): LogOptions
     {
         $email = $this->email ?? 'unknown email';
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                'email',
+                'role_id',
+                'position',
+                'expires_at',
+                'accepted_at',
+                'invited_by',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
@@ -43,6 +54,8 @@ class Invitation extends Model
             ->useLogName('invitation');
     }
 
+    // ─── Relationships ──────────────────────────────────────
+
     public function invitedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'invited_by');
@@ -52,6 +65,8 @@ class Invitation extends Model
     {
         return $this->belongsTo(Role::class, 'role_id');
     }
+
+    // ─── Helpers ────────────────────────────────────────────
 
     public function isExpired(): bool
     {

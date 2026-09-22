@@ -26,20 +26,31 @@ class Post extends Model
         'seo_title',
         'seo_description',
         'seo_keywords',
-        'author_id'
+        'author_id',
     ];
 
     protected $casts = [
-        'custom_fields' => 'array',
+        'custom_fields'  => 'array',
         'allow_comments' => 'boolean',
-        'published_at' => 'datetime',
+        'published_at'   => 'datetime',
     ];
+
+    // ─── Activity log ───────────────────────────────────────
 
     public function getActivitylogOptions(): LogOptions
     {
         $title = $this->title ?? $this->slug ?? "ID: {$this->id}";
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                'title',
+                'slug',
+                'status',
+                'visibility',
+                'allow_comments',
+                'published_at',
+                'author_id',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
@@ -50,6 +61,9 @@ class Post extends Model
             })
             ->useLogName('post');
     }
+
+    // ─── Relationships ──────────────────────────────────────
+
     public function author()
     {
         return $this->belongsTo(User::class, 'author_id');
@@ -65,18 +79,16 @@ class Post extends Model
         return $this->belongsToMany(Tag::class);
     }
 
-
-
     public function comments()
     {
         return $this->hasMany(Comment::class, 'post_id')->orderBy('created_at', 'desc');
     }
 
-
     public function approvedComments()
     {
         return $this->comments()->where('approved', true);
     }
+
     public function getStatusBadgeAttribute()
     {
         return match ($this->status) {

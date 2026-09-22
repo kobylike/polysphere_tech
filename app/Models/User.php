@@ -69,14 +69,27 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                // ── Fields that actually matter for auditing ──
+                'name',
+                'email',
+                'status',
+                'password',
+                'google_id',
+                'email_verified_at',
+                'two_factor_confirmed_at',
+                'two_factor_enabled',
+                'must_change_password',
+                'two_factor_secret',
+                'two_factor_recovery_codes',
+            ])
             ->logOnlyDirty()
-            ->dontLogEmptyChanges() //
+            ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
                 'created' => "User '{$this->name}' (ID: {$this->id}) was created",
                 'updated' => "User '{$this->name}' (ID: {$this->id}) was updated",
                 'deleted' => "User '{$this->name}' (ID: {$this->id}) was deleted",
-                default => "User '{$this->name}' (ID: {$this->id}) was {$eventName}",
+                default   => "User '{$this->name}' (ID: {$this->id}) was {$eventName}",
             })
             ->useLogName('user');
     }

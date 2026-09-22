@@ -5,14 +5,17 @@ namespace App\Livewire\Admin\Applications;
 use App\Enums\ApplicationStatus;
 use App\Helpers\ActivityLogger;
 use App\Helpers\NotificationHelper;
+use App\Mail\ApplicationCandidateReplyMail;
 use App\Models\Application;
 use App\Models\User;
 use App\Models\Vacancy;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Spatie\Activitylog\Models\Activity;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 #[Layout('layouts.users')]
@@ -46,6 +49,18 @@ class ApplicationManagement extends Component
     // ─── Bulk selection ─────────────────────────────────────────────
     public array $selectedApplications = [];
     public bool $selectAll = false;
+
+    // ─── Compose email modal ────────────────────────────────────────
+    public bool $showEmailModal = false;
+    public ?int $emailApplicationId = null;
+    public string $emailTo = '';
+    public string $emailSubject = '';
+    public string $emailBody = '';
+    public bool $emailSending = false;
+
+    // ─── Sent-email tracker (read from activity log) ────────────────
+    public int $emailsSentCount = 0;
+    public ?string $lastEmailedAt = null;
 
     // ─── Mount ──────────────────────────────────────────────────────
     public function mount(): void
@@ -128,10 +143,8 @@ class ApplicationManagement extends Component
         $candidate = $this->viewingApplication->name;
         $roleTitle = $this->viewingApplication->vacancy?->title ?? 'the role';
 
-        // Save — Spatie logs the model change automatically
         $this->viewingApplication->markAs($status, Auth::user(), $this->adminNotes);
 
-        // ─── Activity log ────────────────────────────────────────
         try {
             ActivityLogger::log('Application status updated', [
                 'application_id' => $this->viewingApplication->id,
@@ -145,7 +158,6 @@ class ApplicationManagement extends Component
             report($e);
         }
 
-        // ─── Notify the acting user ──────────────────────────────
         try {
             NotificationHelper::sendToUser(Auth::user(), [
                 'title' => 'Status updated',
@@ -158,7 +170,6 @@ class ApplicationManagement extends Component
             report($e);
         }
 
-        // ─── Notify the rest of the hiring team ──────────────────
         try {
             $others = User::role(['Super Admin', 'Admin'])
                 ->where('id', '!=', Auth::id())
@@ -177,11 +188,6 @@ class ApplicationManagement extends Component
             report($e);
         }
 
-        $this->dispatch('notify', [
-            'type'    => 'success',
-            'title'   => 'Updated',
-            'message' => 'Application status updated.',
-        ]);
         $this->showViewModal = false;
     }
 
@@ -201,7 +207,6 @@ class ApplicationManagement extends Component
             $app->markAs($enum, Auth::user());
         }
 
-        // ─── Activity log ────────────────────────────────────────
         try {
             ActivityLogger::log('Applications bulk status updated', [
                 'application_ids' => $applications->pluck('id')->all(),
@@ -213,7 +218,6 @@ class ApplicationManagement extends Component
             report($e);
         }
 
-        // ─── Notify the acting user ──────────────────────────────
         try {
             NotificationHelper::sendToUser(Auth::user(), [
                 'title' => 'Bulk status update',
@@ -228,12 +232,6 @@ class ApplicationManagement extends Component
 
         $this->selectedApplications = [];
         $this->selectAll            = false;
-
-        $this->dispatch('notify', [
-            'type'    => 'success',
-            'title'   => 'Updated',
-            'message' => "{$count} application(s) moved to {$enum->label()}.",
-        ]);
     }
 
     // ─── Single delete ──────────────────────────────────────────────
@@ -252,7 +250,6 @@ class ApplicationManagement extends Component
         $application = Application::findOrFail($this->deleteApplicationId);
         $this->authorize('delete', $application);
 
-        // Snapshot details before soft-delete
         $snapshot = [
             'application_id' => $application->id,
             'vacancy_title'  => $application->vacancy?->title,
@@ -261,21 +258,18 @@ class ApplicationManagement extends Component
             'deleted_by'     => Auth::id(),
         ];
 
-        // Remove the CV file from private storage
         if ($application->cv_path && Storage::disk('private')->exists($application->cv_path)) {
             Storage::disk('private')->delete($application->cv_path);
         }
 
-        $application->delete();   // Spatie logs this automatically
+        $application->delete();
 
-        // ─── Activity log ────────────────────────────────────────
         try {
             ActivityLogger::log('Application deleted', $snapshot, 'application');
         } catch (\Throwable $e) {
             report($e);
         }
 
-        // ─── Notify the acting user ──────────────────────────────
         try {
             NotificationHelper::sendToUser(Auth::user(), [
                 'title' => 'Application deleted',
@@ -290,12 +284,6 @@ class ApplicationManagement extends Component
 
         $this->showDeleteModal     = false;
         $this->deleteApplicationId = null;
-
-        $this->dispatch('notify', [
-            'type'    => 'success',
-            'title'   => 'Deleted',
-            'message' => 'Application deleted.',
-        ]);
     }
 
     // ─── Bulk delete ────────────────────────────────────────────────
@@ -322,7 +310,6 @@ class ApplicationManagement extends Component
 
         $count = $applications->count();
 
-        // ─── Activity log ────────────────────────────────────────
         try {
             ActivityLogger::log('Applications bulk deleted', [
                 'application_ids' => $applications->pluck('id')->all(),
@@ -334,7 +321,6 @@ class ApplicationManagement extends Component
             report($e);
         }
 
-        // ─── Notify the acting user ──────────────────────────────
         try {
             NotificationHelper::sendToUser(Auth::user(), [
                 'title' => 'Applications deleted',
@@ -350,12 +336,6 @@ class ApplicationManagement extends Component
         $this->selectedApplications = [];
         $this->selectAll            = false;
         $this->showBulkDeleteModal  = false;
-
-        $this->dispatch('notify', [
-            'type'    => 'success',
-            'title'   => 'Deleted',
-            'message' => "{$count} application(s) deleted.",
-        ]);
     }
 
     // ─── Download CV ────────────────────────────────────────────────
@@ -372,6 +352,170 @@ class ApplicationManagement extends Component
             $application->cv_path,
             $application->cv_original_name ?: ('cv-' . $application->id . '.pdf'),
         );
+    }
+
+    // ─── Compose / send email ───────────────────────────────────────
+    public function openEmailModal(int $id): void
+    {
+        $application = Application::with('vacancy.department')->findOrFail($id);
+        $this->authorize('view', $application);
+
+        $this->emailApplicationId = $id;
+        $this->emailTo            = $application->email;
+        $this->emailSubject       = $this->defaultSubjectFor($application);
+        $this->emailBody          = $this->defaultBodyFor($application);
+
+        $this->emailsSentCount = Activity::query()
+            ->where('log_name', 'application_email')
+            ->where('subject_type', Application::class)
+            ->where('subject_id', $application->id)
+            ->count();
+
+        $this->lastEmailedAt = Activity::query()
+            ->where('log_name', 'application_email')
+            ->where('subject_type', Application::class)
+            ->where('subject_id', $application->id)
+            ->latest()
+            ->first()?->created_at?->diffForHumans();
+
+        $this->showEmailModal = true;
+    }
+
+    protected function defaultSubjectFor(Application $application): string
+    {
+        $role = $application->vacancy?->title ?? 'the role';
+
+        return match ($application->status) {
+            'new'          => "Your application for {$role} — we've got it",
+            'reviewing'    => "Update on your {$role} application",
+            'shortlisted'  => "Good news — your {$role} application",
+            'interviewing' => "Interview invitation — {$role}",
+            'offer'        => "Your offer for {$role}",
+            'rejected'     => "Update on your application for {$role}",
+            default        => "Regarding your {$role} application",
+        };
+    }
+
+    protected function defaultBodyFor(Application $application): string
+    {
+        $role = $application->vacancy?->title ?? 'the role';
+        $dept = $application->vacancy?->department?->name;
+
+        return match ($application->status) {
+            'new' => "Thanks for applying for {$role}"
+                . ($dept ? " in {$dept}" : '') . ".\n\n"
+                . "We've received your application and it's now in our review queue. A member of our hiring team "
+                . "will read it personally, and we'll get back to you within a few working days.",
+
+            'reviewing' => "Quick update on your {$role} application.\n\n"
+                . "Our team is currently reviewing your materials. We haven't made a decision yet, but we'll be in "
+                . "touch as soon as we do.",
+
+            'shortlisted' => "Good news — you've been shortlisted for {$role}.\n\n"
+                . "We were impressed by your application and would like to move forward. Our team will be in touch "
+                . "shortly to arrange the next step.",
+
+            'interviewing' => "We'd love to schedule an interview for the {$role} role.\n\n"
+                . "Please let us know two or three time slots that work for you this week or next, and we'll set "
+                . "something up. Interviews are typically 45 minutes and can be done remotely.",
+
+            'offer' => "We're delighted to extend an offer for the {$role} position.\n\n"
+                . "Please review the attached details and let us know if you have any questions. We're excited about "
+                . "the possibility of you joining the team.",
+
+            'rejected' => "Thank you for applying for {$role}"
+                . ($dept ? " in {$dept}" : '') . ".\n\n"
+                . "We've decided to move forward with candidates whose experience more closely matches what the role "
+                . "needs right now. We genuinely appreciated your interest, and we'll keep your details on file for "
+                . "future openings.",
+
+            default => "Thank you for your interest in {$role}. We'll be in touch soon.",
+        };
+    }
+
+    public function sendCandidateEmail(): void
+    {
+        if (! $this->emailApplicationId) {
+            return;
+        }
+
+        $this->authorize('view', Application::class);
+
+        $this->validate([
+            'emailTo'      => 'required|email:rfc,dns|max:255',
+            'emailSubject' => 'required|string|max:200',
+            'emailBody'    => 'required|string|min:10|max:10000',
+        ]);
+
+        $application = Application::with('vacancy')->findOrFail($this->emailApplicationId);
+
+        $this->emailSending = true;
+
+        try {
+            // sendNow() bypasses the queue so the admin gets immediate feedback.
+            // For production, swap back to ->queue(...) and keep a worker running.
+            Mail::to($this->emailTo)->sendNow(new ApplicationCandidateReplyMail(
+                application: $application,
+                subjectLine: $this->emailSubject,
+                body: $this->emailBody,
+                senderName: Auth::user()->name,
+            ));
+
+            try {
+                activity('application_email')
+                    ->performedOn($application)
+                    ->causedBy(Auth::user())
+                    ->withProperties([
+                        'to'      => $this->emailTo,
+                        'subject' => $this->emailSubject,
+                        'body'    => $this->emailBody,
+                    ])
+                    ->log("Email sent to {$application->name}");
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            try {
+                NotificationHelper::sendToUser(Auth::user(), [
+                    'title' => 'Email sent',
+                    'body'  => "Your email to {$application->name} was sent.",
+                    'type'  => 'success',
+                    'icon'  => 'fa-paper-plane',
+                    'link'  => route('admin.applications'),
+                ]);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+
+            // ── The only toast we keep — confirmation of the send ──
+            $this->dispatch(
+                'notify',
+                type: 'success',
+                title: 'Email sent',
+                message: "Message delivered to {$application->name}.",
+            );
+
+            $this->showEmailModal = false;
+            $this->emailSending   = false;
+            $this->reset(['emailApplicationId', 'emailTo', 'emailSubject', 'emailBody']);
+        } catch (\Throwable $e) {
+            report($e);
+            $this->emailSending = false;
+
+            $this->dispatch(
+                'notify',
+                type: 'error',
+                title: 'Could not send',
+                message: 'Something went wrong sending the email. Check logs for details.',
+            );
+        }
+    }
+
+    public function closeEmailModal(): void
+    {
+        $this->showEmailModal = false;
+        $this->reset(['emailApplicationId', 'emailTo', 'emailSubject', 'emailBody']);
+        $this->resetErrorBag();
     }
 
     // ─── Export CSV ─────────────────────────────────────────────────

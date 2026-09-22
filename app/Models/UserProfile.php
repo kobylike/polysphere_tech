@@ -48,8 +48,24 @@ class UserProfile extends Model
     public function getActivitylogOptions(): LogOptions
     {
         $user = $this->user?->name ?? 'User';
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly([
+                'position',
+                'department_id',
+                'employment_type',
+                'hire_date',
+                'is_featured_team',
+                'is_spotlight',
+                'is_employee',
+                'employee_id',
+                'gender',
+                'date_of_birth',
+                'country_code',
+                'city',
+                'emergency_contact_name',
+                'emergency_contact_phone',
+            ])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
@@ -60,7 +76,6 @@ class UserProfile extends Model
             })
             ->useLogName('user_profile');
     }
-
     // ─── Relationships ───────────────────────────────────────────────
 
     public function scopeSpotlight($query)

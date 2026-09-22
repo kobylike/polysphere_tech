@@ -10,10 +10,12 @@
         <div class="d-flex gap-2">
             @can('viewAny', App\Models\Application::class)
                 <button class="btn btn-outline-primary btn-sm" wire:click="export" wire:loading.attr="disabled">
-                    <span wire:loading.remove wire:target="export"><i class="fa-regular fa-file-export me-1"></i> Export
-                        CSV</span>
-                    <span wire:loading wire:target="export"><i class="fa-regular fa-spinner fa-spin me-1"></i>
-                        Exporting…</span>
+                    <span wire:loading.remove wire:target="export">
+                        <i class="fa-regular fa-file-export me-1"></i> Export CSV
+                    </span>
+                    <span wire:loading wire:target="export">
+                        <i class="fa-regular fa-spinner fa-spin me-1"></i> Exporting…
+                    </span>
                 </button>
             @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
@@ -147,11 +149,13 @@
                                 <th wire:click="sort('name')" style="cursor:pointer;">
                                     Candidate
                                     <span class="ms-1">
-                                        @if($sortBy === 'name' && $sortDir === 'asc') <i
-                                            class="fa-regular fa-sort-up"></i>
-                                        @elseif($sortBy === 'name' && $sortDir === 'desc') <i
-                                            class="fa-regular fa-sort-down"></i>
-                                        @else <i class="fa-regular fa-sort"></i> @endif
+                                        @if($sortBy === 'name' && $sortDir === 'asc')
+                                            <i class="fa-regular fa-sort-up"></i>
+                                        @elseif($sortBy === 'name' && $sortDir === 'desc')
+                                            <i class="fa-regular fa-sort-down"></i>
+                                        @else
+                                            <i class="fa-regular fa-sort"></i>
+                                        @endif
                                     </span>
                                 </th>
                                 <th>Applied for</th>
@@ -159,21 +163,25 @@
                                 <th wire:click="sort('status')" style="cursor:pointer;">
                                     Status
                                     <span class="ms-1">
-                                        @if($sortBy === 'status' && $sortDir === 'asc') <i
-                                            class="fa-regular fa-sort-up"></i>
-                                        @elseif($sortBy === 'status' && $sortDir === 'desc') <i
-                                            class="fa-regular fa-sort-down"></i>
-                                        @else <i class="fa-regular fa-sort"></i> @endif
+                                        @if($sortBy === 'status' && $sortDir === 'asc')
+                                            <i class="fa-regular fa-sort-up"></i>
+                                        @elseif($sortBy === 'status' && $sortDir === 'desc')
+                                            <i class="fa-regular fa-sort-down"></i>
+                                        @else
+                                            <i class="fa-regular fa-sort"></i>
+                                        @endif
                                     </span>
                                 </th>
                                 <th wire:click="sort('created_at')" style="cursor:pointer;">
                                     Applied
                                     <span class="ms-1">
-                                        @if($sortBy === 'created_at' && $sortDir === 'asc') <i
-                                            class="fa-regular fa-sort-up"></i>
-                                        @elseif($sortBy === 'created_at' && $sortDir === 'desc') <i
-                                            class="fa-regular fa-sort-down"></i>
-                                        @else <i class="fa-regular fa-sort"></i> @endif
+                                        @if($sortBy === 'created_at' && $sortDir === 'asc')
+                                            <i class="fa-regular fa-sort-up"></i>
+                                        @elseif($sortBy === 'created_at' && $sortDir === 'desc')
+                                            <i class="fa-regular fa-sort-down"></i>
+                                        @else
+                                            <i class="fa-regular fa-sort"></i>
+                                        @endif
                                     </span>
                                 </th>
                                 <th class="text-center">Actions</th>
@@ -238,24 +246,23 @@
                                     <td>
                                         <div class="d-flex justify-content-center gap-1">
                                             @can('view', $app)
-                                                <button class="btn btn-sm btn-primary"
+                                                <button type="button" class="btn btn-sm btn-primary"
                                                     wire:click="viewApplication({{ $app->id }})" title="Review">
                                                     <i class="fa-regular fa-eye"></i>
                                                 </button>
-                                                <button class="btn btn-sm btn-outline-secondary"
+                                                <button type="button" class="btn btn-sm btn-outline-secondary"
                                                     wire:click="downloadCv({{ $app->id }})" title="Download CV">
                                                     <i class="fa-regular fa-download"></i>
                                                 </button>
+                                                <button type="button" class="btn btn-sm btn-outline-info"
+                                                    wire:click="openEmailModal({{ $app->id }})" title="Email candidate">
+                                                    <i class="fa-regular fa-envelope"></i>
+                                                </button>
                                             @endcan
 
-                                            <a href="mailto:{{ $app->email }}?subject={{ urlencode('Re: Your application for ' . ($app->vacancy?->title ?? 'the role')) }}"
-                                                class="btn btn-sm btn-outline-info" title="Email candidate">
-                                                <i class="fa-regular fa-envelope"></i>
-                                            </a>
-
                                             @can('delete', $app)
-                                                <button class="btn btn-sm btn-danger" wire:click="confirmDelete({{ $app->id }})"
-                                                    title="Delete">
+                                                <button type="button" class="btn btn-sm btn-danger"
+                                                    wire:click="confirmDelete({{ $app->id }})" title="Delete">
                                                     <i class="fa-regular fa-trash"></i>
                                                 </button>
                                             @endcan
@@ -386,10 +393,14 @@
 
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold small">CV</label>
-                                    <div>
-                                        <button class="btn btn-sm btn-primary"
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-sm btn-primary"
                                             wire:click="downloadCv({{ $viewingApplication->id }})">
                                             <i class="fa-regular fa-download"></i> Download CV
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-info"
+                                            wire:click="openEmailModal({{ $viewingApplication->id }}); $set('showViewModal', false)">
+                                            <i class="fa-regular fa-envelope"></i> Email candidate
                                         </button>
                                     </div>
                                 </div>
@@ -425,17 +436,19 @@
                         <div class="modal-footer justify-content-between">
                             <div>
                                 @can('delete', $viewingApplication)
-                                    <button class="btn btn-outline-danger"
+                                    <button type="button" class="btn btn-outline-danger"
                                         wire:click="confirmDelete({{ $viewingApplication->id }}); $set('showViewModal', false)">
                                         <i class="fa-regular fa-trash"></i> Delete
                                     </button>
                                 @endcan
                             </div>
                             <div class="d-flex gap-2">
-                                <button class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
+                                <button type="button" class="btn btn-secondary"
+                                    wire:click="$set('showViewModal', false)">Close</button>
 
                                 @can('update', $viewingApplication)
-                                    <button class="btn btn-primary" wire:click="saveStatus" wire:loading.attr="disabled">
+                                    <button type="button" class="btn btn-primary" wire:click="saveStatus"
+                                        wire:loading.attr="disabled">
                                         <span wire:loading.remove>Save changes</span>
                                         <span wire:loading><i class="fa-solid fa-circle-notch fa-spin"></i> Saving…</span>
                                     </button>
@@ -448,14 +461,108 @@
         @endcan
     @endif
 
+    {{-- ─── Compose email modal ─────────────────────────────────── --}}
+    @if($showEmailModal)
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.55);" wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content border-0 shadow-lg">
+
+                    <div class="modal-header">
+                        <div>
+                            <h5 class="modal-title mb-1">
+                                <i class="fa-regular fa-paper-plane me-1"></i> Email candidate
+                            </h5>
+                            @if($emailsSentCount > 0)
+                                <div class="text-muted small">
+                                    <i class="fa-regular fa-clock me-1"></i>
+                                    {{ $emailsSentCount }} email(s) previously sent
+                                    @if($lastEmailedAt) · last {{ $lastEmailedAt }} @endif
+                                </div>
+                            @endif
+                        </div>
+                        <button type="button" class="btn-close" wire:click="closeEmailModal"></button>
+                    </div>
+
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">To</label>
+                                <input type="email" class="form-control @error('emailTo') is-invalid @enderror"
+                                    wire:model.blur="emailTo">
+                                @error('emailTo')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small">From</label>
+                                <input type="text" class="form-control"
+                                    value="{{ Auth::user()->name }} <careers@polyspheretech.com>" readonly
+                                    style="background:#f8fafc; cursor:not-allowed;">
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">Subject</label>
+                                <input type="text" class="form-control @error('emailSubject') is-invalid @enderror"
+                                    wire:model.blur="emailSubject">
+                                @error('emailSubject')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">Message</label>
+                                <textarea class="form-control @error('emailBody') is-invalid @enderror" rows="12"
+                                    wire:model.blur="emailBody" style="font-family: inherit; line-height: 1.6;"></textarea>
+                                @error('emailBody')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">
+                                    The candidate's name and the role are pre-filled. Edit freely — this is what they'll
+                                    see.
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer justify-content-between">
+                        <div class="d-flex gap-2">
+                            <a href="mailto:{{ $emailTo }}?subject={{ urlencode($emailSubject) }}&body={{ urlencode($emailBody) }}"
+                                class="btn btn-sm btn-outline-secondary" title="Open in your desktop mail client instead">
+                                <i class="fa-regular fa-arrow-up-right-from-square me-1"></i>
+                                Open in mail app
+                            </a>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-secondary" wire:click="closeEmailModal">
+                                Cancel
+                            </button>
+                            <button type="button" class="btn btn-primary" wire:click="sendCandidateEmail"
+                                wire:loading.attr="disabled" wire:target="sendCandidateEmail">
+                                <span wire:loading.remove wire:target="sendCandidateEmail">
+                                    <i class="fa-regular fa-paper-plane"></i> Send email
+                                </span>
+                                <span wire:loading wire:target="sendCandidateEmail">
+                                    <i class="fa-regular fa-spinner fa-spin"></i> Sending…
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- ─── Single delete modal ─────────────────────────────────── --}}
     @if($showDeleteModal)
         <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,.6);" wire:ignore.self>
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header border-0">
-                        <h5 class="modal-title text-danger"><i class="fa-regular fa-triangle-exclamation me-2"></i>Delete
-                            this application?</h5>
+                        <h5 class="modal-title text-danger">
+                            <i class="fa-regular fa-triangle-exclamation me-2"></i>Delete this application?
+                        </h5>
                         <button type="button" class="btn-close" wire:click="$set('showDeleteModal', false)"></button>
                     </div>
                     <div class="modal-body text-center py-4">
@@ -470,12 +577,16 @@
                         </p>
                     </div>
                     <div class="modal-footer border-0 justify-content-center">
-                        <button class="btn btn-secondary" wire:click="$set('showDeleteModal', false)">Cancel</button>
-                        <button class="btn btn-danger" wire:click="deleteApplication" wire:loading.attr="disabled">
-                            <span wire:loading.remove wire:target="deleteApplication"><i class="fa-regular fa-trash"></i>
-                                Yes, delete</span>
-                            <span wire:loading wire:target="deleteApplication"><i class="fa-regular fa-spinner fa-spin"></i>
-                                Deleting…</span>
+                        <button type="button" class="btn btn-secondary"
+                            wire:click="$set('showDeleteModal', false)">Cancel</button>
+                        <button type="button" class="btn btn-danger" wire:click="deleteApplication"
+                            wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="deleteApplication">
+                                <i class="fa-regular fa-trash"></i> Yes, delete
+                            </span>
+                            <span wire:loading wire:target="deleteApplication">
+                                <i class="fa-regular fa-spinner fa-spin"></i> Deleting…
+                            </span>
                         </button>
                     </div>
                 </div>
@@ -507,12 +618,15 @@
                         </p>
                     </div>
                     <div class="modal-footer border-0 justify-content-center">
-                        <button class="btn btn-secondary" wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
-                        <button class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
-                            <span wire:loading.remove wire:target="bulkDelete"><i class="fa-regular fa-trash"></i> Delete
-                                all</span>
-                            <span wire:loading wire:target="bulkDelete"><i class="fa-regular fa-spinner fa-spin"></i>
-                                Deleting…</span>
+                        <button type="button" class="btn btn-secondary"
+                            wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
+                        <button type="button" class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
+                            <span wire:loading.remove wire:target="bulkDelete">
+                                <i class="fa-regular fa-trash"></i> Delete all
+                            </span>
+                            <span wire:loading wire:target="bulkDelete">
+                                <i class="fa-regular fa-spinner fa-spin"></i> Deleting…
+                            </span>
                         </button>
                     </div>
                 </div>
