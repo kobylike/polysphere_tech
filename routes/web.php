@@ -28,6 +28,7 @@ use App\Livewire\Admin\Users\Account\SecurityComponent;
 use App\Livewire\Admin\Users\LogManagement;
 use App\Livewire\Admin\Users\PermissionManagement;
 use App\Livewire\Admin\Users\RoleManagement;
+use App\Livewire\Admin\Users\UserDetails;
 use App\Livewire\Admin\Users\UserManagement;
 use App\Livewire\Admin\Vacancies\VacancyManagement;
 use App\Livewire\Auth\EmailVerification;
@@ -202,6 +203,8 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
             ->middleware('can:View Users')
             ->name('users');
 
+        // Register reserved sub-routes BEFORE {identifier} so Laravel matches
+        // /roles and /permissions against their own routes, not the wildcard.
         Route::get('/user-management/roles', RoleManagement::class)
             ->middleware('can:manage-roles')
             ->name('roles');
@@ -209,6 +212,16 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
         Route::get('/user-management/permissions', PermissionManagement::class)
             ->middleware('can:manage-permissions')
             ->name('permissions');
+
+        // User details — accepts username OR numeric id (fallback for old links).
+        // The constraint blocks reserved words so /roles and /permissions can
+        // never accidentally be swallowed by the wildcard, even if route order
+        // changes in the future.
+        Route::get('/user-management/{identifier}', UserDetails::class)
+            ->where('identifier', '^(?!roles$|permissions$|create$|edit$)[A-Za-z0-9_.-]+$')
+            ->middleware('can:View Users')
+            ->name('users.profile');
+
 
         // ─── HR Dashboard ────────────────────────────────────────────────────
         Route::get('/hr', HrDashboard::class)

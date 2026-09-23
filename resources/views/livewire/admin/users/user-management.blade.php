@@ -23,7 +23,7 @@
         <div class="d-flex gap-2">
             @can('create', App\Models\User::class)
                 <button class="btn btn-primary btn-sm" wire:click="openInviteModal">
-                    <i class="fa-regular fa-envelope me-1"></i> Invite
+                    <i class="fa-solid fa-envelope me-1"></i> Invite
                 </button>
                 <button class="btn btn-secondary btn-sm" wire:click="openCreate">
                     <i class="fa-solid fa-user-plus me-1"></i> Add User
@@ -45,7 +45,7 @@
                             <span class="fs-14">Total Users</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['total']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-users fs-24"></i>
+                        <i class="fa-solid fa-users fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -67,7 +67,7 @@
                             <span class="fs-14">Suspended</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['suspended']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-user-slash fs-24"></i>
+                        <i class="fa-solid fa-user-slash fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -78,7 +78,7 @@
                             <span class="fs-14">Unverified</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['unverified']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-envelope-circle-check fs-24"></i>
+                        <i class="fa-solid fa-envelope-circle-check fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -119,8 +119,8 @@
             <div class="col-xl-8 col-lg-6">
                 <div class="d-flex flex-wrap gap-2">
                     <div class="search-box">
-                        <input type="text" class="form-control form-control-sm" placeholder="Search name or email…"
-                            wire:model.live.debounce.300ms="search">
+                        <input type="text" class="form-control form-control-sm"
+                            placeholder="Search name, email, or username…" wire:model.live.debounce.300ms="search">
                         <i class="fa-solid fa-search"></i>
                     </div>
                     <select class="default-select style-1 form-control form-control-sm w-auto"
@@ -157,16 +157,20 @@
                     <div class="d-flex flex-wrap gap-1 justify-content-end">
                         <span class="badge bg-dark text-white p-2">{{ count($selectedUsers) }} selected</span>
                         @can('update', App\Models\User::class)
-                            <button class="btn btn-success btn-sm" wire:click="bulkActivate"><i class="fa-regular fa-check"></i>
-                                Activate</button>
-                            <button class="btn btn-warning btn-sm" wire:click="bulkSuspend"><i class="fa-regular fa-ban"></i>
-                                Suspend</button>
-                            <button class="btn btn-info btn-sm text-white" wire:click="confirmBulkVerifyResend"><i
-                                    class="fa-solid fa-paper-plane"></i> Resend Verification</button>
+                            <button class="btn btn-success btn-sm" wire:click="bulkActivate">
+                                <i class="fa-solid fa-check"></i> Activate
+                            </button>
+                            <button class="btn btn-warning btn-sm" wire:click="bulkSuspend">
+                                <i class="fa-solid fa-ban"></i> Suspend
+                            </button>
+                            <button class="btn btn-info btn-sm text-white" wire:click="confirmBulkVerifyResend">
+                                <i class="fa-solid fa-paper-plane"></i> Resend Verification
+                            </button>
                         @endcan
                         @can('delete', App\Models\User::class)
-                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete"><i
-                                    class="fa-solid fa-trash"></i> Delete</button>
+                            <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
+                                <i class="fa-solid fa-trash"></i> Delete
+                            </button>
                         @endcan
                     </div>
                 </div>
@@ -184,7 +188,7 @@
                                 <div>
                                     @can('create', App\Models\User::class)
                                         <button class="btn btn-primary btn-sm" wire:click="openInviteModal">
-                                            <i class="fa-regular fa-envelope"></i> Invite
+                                            <i class="fa-solid fa-envelope"></i> Invite
                                         </button>
                                         <button class="btn btn-secondary btn-sm" wire:click="openCreate">
                                             <i class="fa-solid fa-user-plus"></i> Add User
@@ -192,7 +196,7 @@
                                     @endcan
                                 </div>
                             </div>
-                            <table class="table">
+                            <table class="table users-table">
                                 <thead>
                                     <tr>
                                         <th style="width:40px">
@@ -266,7 +270,7 @@
                                                 @endif
                                             </span>
                                         </th>
-                                        <th class="text-center">Actions</th>
+                                        <th class="text-center" style="min-width:230px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -299,8 +303,14 @@
                                                     <div>
                                                         <h6 class="mb-0">{{ $user->name }}</h6>
                                                         <span class="text-muted small">{{ $user->email }}</span>
+                                                        <div class="text-muted small">
+                                                            <i class="fa-solid fa-at"
+                                                                style="font-size:9px; opacity:.6;"></i>
+                                                            <code
+                                                                style="font-size:11px;">{{ $user->route_identifier }}</code>
+                                                        </div>
                                                         @if($isVerified)
-                                                            <i class="fa-regular fa-circle-check text-success ms-1"
+                                                            <i class="fa-solid fa-circle-check text-success ms-1"
                                                                 title="Verified"></i>
                                                         @endif
                                                         @if($user->is_featured_team)
@@ -360,7 +370,7 @@
                                                             wire:click="confirmToggleVerify({{ $user->id }})"
                                                             title="{{ $isVerified ? 'Verified – click to unverify' : 'Unverified – click to verify' }}">
                                                             <i
-                                                                class="fa-regular {{ $isVerified ? 'fa-shield-check' : 'fa-shield-halved' }}"></i>
+                                                                class="fa-solid {{ $isVerified ? 'fa-shield-check' : 'fa-shield-halved' }}"></i>
                                                             {{ $isVerified ? 'Verified' : 'Unverified' }}
                                                         </button>
                                                         @if(!$isVerified)
@@ -381,16 +391,25 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="d-flex justify-content-center gap-1">
+                                                <div class="user-actions">
                                                     @can('view', $user)
-                                                        <button class="btn btn-sm btn-primary"
-                                                            wire:click="viewUser({{ $user->id }})" title="View">
-                                                            <i class="fa-regular fa-eye"></i>
+                                                        <a href="{{ route('users.profile', $user->route_identifier) }}"
+                                                            class="btn btn-sm btn-outline-primary action-btn"
+                                                            wire:navigate.hover
+                                                            title="View full profile ({{ $user->route_identifier }})">
+                                                            <i class="fa-solid fa-id-card"></i>
+                                                        </a>
+                                                    @endcan
+
+                                                    @can('view', $user)
+                                                        <button class="btn btn-sm btn-primary action-btn"
+                                                            wire:click="viewUser({{ $user->id }})" title="Quick view">
+                                                            <i class="fa-solid fa-eye"></i>
                                                         </button>
                                                     @endcan
 
                                                     @can('update', $user)
-                                                        <button class="btn btn-sm btn-warning"
+                                                        <button class="btn btn-sm btn-warning action-btn"
                                                             wire:click="openEdit({{ $user->id }})" title="Edit">
                                                             <i class="fa-solid fa-pen"></i>
                                                         </button>
@@ -398,12 +417,12 @@
 
                                                     @can('delete', $user)
                                                         @if(!$isSelf)
-                                                            <button class="btn btn-sm btn-danger"
+                                                            <button class="btn btn-sm btn-danger action-btn"
                                                                 wire:click="confirmDelete({{ $user->id }})" title="Delete">
                                                                 <i class="fa-solid fa-trash"></i>
                                                             </button>
                                                         @else
-                                                            <button class="btn btn-sm btn-secondary" disabled
+                                                            <button class="btn btn-sm btn-secondary action-btn" disabled
                                                                 title="Cannot delete your own account">
                                                                 <i class="fa-solid fa-lock"></i>
                                                             </button>
@@ -412,7 +431,7 @@
 
                                                     @can('update', $user)
                                                         @if(!$isEmployee)
-                                                            <button class="btn btn-sm btn-success"
+                                                            <button class="btn btn-sm btn-success action-btn"
                                                                 wire:click="openConvertToEmployee({{ $user->id }})"
                                                                 title="Convert to Employee">
                                                                 <i class="fa-solid fa-briefcase"></i>
@@ -425,7 +444,7 @@
                                     @empty
                                         <tr>
                                             <td colspan="9" class="text-center py-5">
-                                                <i class="fa-regular fa-users-slash fs-2 d-block mb-2 text-muted"></i>
+                                                <i class="fa-solid fa-users-slash fs-2 d-block mb-2 text-muted"></i>
                                                 <h5>No users found</h5>
                                                 <p class="text-muted">Try adjusting your search filters, or add a new user.
                                                 </p>
@@ -478,6 +497,10 @@
                             </div>
                             <div>
                                 <h5 class="mb-0">{{ $viewingUser->name }}</h5>
+                                <div class="text-muted small">
+                                    <i class="fa-solid fa-at" style="font-size:10px; opacity:.6;"></i>
+                                    <code style="font-size:12px;">{{ $viewingUser->route_identifier }}</code>
+                                </div>
                                 <span class="text-muted">{{ $viewingUser->email }}</span>
                                 @if($viewingUser->is_featured_team)
                                     <span class="badge bg-primary light border-0 ms-1">Featured</span>
@@ -518,8 +541,7 @@
                                 <div class="fw-bold text-muted small">Verification</div>
                                 <span
                                     class="badge {{ $viewingVerified ? 'badge-success' : 'badge-secondary' }} light border-0">
-                                    <i
-                                        class="fa-regular {{ $viewingVerified ? 'fa-shield-check' : 'fa-shield-halved' }}"></i>
+                                    <i class="fa-solid {{ $viewingVerified ? 'fa-shield-check' : 'fa-shield-halved' }}"></i>
                                     {{ $viewingVerified ? 'Verified' : 'Unverified' }}
                                 </span>
                                 @if($viewingVerified)
@@ -562,14 +584,20 @@
                             </div>
                         @endif
                     </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
-                        @can('update', $viewingUser)
-                            <button class="btn btn-primary"
-                                wire:click="openEdit({{ $viewingUser->id }}); $set('showViewModal', false)">
-                                <i class="fa-solid fa-pen"></i> Edit
-                            </button>
-                        @endcan
+                    <div class="modal-footer justify-content-between">
+                        <a href="{{ route('users.profile', $viewingUser->route_identifier) }}"
+                            class="btn btn-outline-primary" wire:navigate.hover>
+                            <i class="fa-solid fa-id-card me-1"></i> View Full Profile
+                        </a>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-secondary" wire:click="$set('showViewModal', false)">Close</button>
+                            @can('update', $viewingUser)
+                                <button class="btn btn-primary"
+                                    wire:click="openEdit({{ $viewingUser->id }}); $set('showViewModal', false)">
+                                    <i class="fa-solid fa-pen"></i> Edit
+                                </button>
+                            @endcan
+                        </div>
                     </div>
                 </div>
             </div>
@@ -588,7 +616,6 @@
                     </div>
                     <div class="modal-body">
                         <div wire:key="user-form-{{ $isEditing ? 'edit' : 'create' }}">
-                            {{-- First Name --}}
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold small">First Name</label>
@@ -606,7 +633,6 @@
                                 </div>
                             </div>
 
-                            {{-- Email --}}
                             <div class="mb-3">
                                 <label class="form-label fw-bold small">Email Address</label>
                                 <input type="email" class="form-control @error('email') is-invalid @enderror"
@@ -615,12 +641,10 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Roles – with self‑edit protection (Super Admin exempt) --}}
                             @php $targetUser = $isEditing ? App\Models\User::find($selectedUserId) : new App\Models\User(); @endphp
 
                             @if($isSelf)
                                 @if(auth()->user()->hasRole('Super Admin'))
-                                    {{-- Super Admin editing themselves – show roles and allow editing --}}
                                     <div class="mb-3">
                                         <label class="form-label fw-bold small">Roles</label>
                                         <div class="d-flex flex-wrap gap-2">
@@ -631,7 +655,7 @@
                                                     <label class="form-check-label" for="role_{{ $roleOption }}">
                                                         <span class="badge badge-secondary light border-0">
                                                             <i
-                                                                class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
+                                                                class="fa-solid {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
                                                             {{ $roleOption }}
                                                         </span>
                                                     </label>
@@ -645,7 +669,6 @@
                                             here.</small>
                                     </div>
                                 @else
-                                    {{-- Non‑Super Admin editing themselves – cannot change roles --}}
                                     <div class="mb-3">
                                         <label class="form-label fw-bold small">Roles</label>
                                         <div class="alert alert-info">
@@ -660,7 +683,6 @@
                                     </div>
                                 @endif
                             @elseif(auth()->user()->can('assignRole', $targetUser))
-                                {{-- Editing another user and have permission --}}
                                 <div class="mb-3">
                                     <label class="form-label fw-bold small">Roles</label>
                                     <div class="d-flex flex-wrap gap-2">
@@ -671,7 +693,7 @@
                                                 <label class="form-check-label" for="role_{{ $roleOption }}">
                                                     <span class="badge badge-secondary light border-0">
                                                         <i
-                                                            class="fa-regular {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
+                                                            class="fa-solid {{ strtolower($roleOption) === 'admin' ? 'fa-shield-alt' : 'fa-user' }}"></i>
                                                         {{ $roleOption }}
                                                     </span>
                                                 </label>
@@ -691,7 +713,6 @@
                                 </div>
                             @endif
 
-                            {{-- Position --}}
                             <div class="mb-3">
                                 <label class="form-label fw-bold small">Job Title</label>
                                 <input type="text" class="form-control @error('position') is-invalid @enderror"
@@ -715,7 +736,6 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Featured Team --}}
                             <div class="mb-3">
                                 <div class="form-check">
                                     <input type="checkbox" class="form-check-input" id="is_featured_team"
@@ -726,7 +746,6 @@
                                 </div>
                             </div>
 
-                            {{-- Spotlight --}}
                             <div class="mb-3 p-3 rounded-3"
                                 style="background: {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fef2f2' : '#fffbeb' }}; border: 1px solid {{ $this->spotlightInfo['full'] && !$is_spotlight ? '#fecaca' : '#fde68a' }};">
                                 <div class="form-check">
@@ -762,7 +781,6 @@
                                 </div>
                             @endif
 
-                            {{-- Validation errors summary --}}
                             @if($errors->any())
                                 <div class="alert alert-danger">
                                     <ul class="mb-0">
@@ -778,8 +796,7 @@
                         <button type="button" class="btn btn-secondary"
                             wire:click="$set('showUserModal', false)">Cancel</button>
                         <button type="button" class="btn btn-primary" wire:click="saveUser" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i
-                                    class="fa-regular {{ $isEditing ? 'fa-save' : 'fa-user-plus' }}"></i>
+                            <span wire:loading.remove><i class="fa-solid {{ $isEditing ? 'fa-save' : 'fa-user-plus' }}"></i>
                                 {{ $isEditing ? 'Save Changes' : 'Create User' }}</span>
                             <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Saving…</span>
                         </button>
@@ -827,7 +844,7 @@
                         <button type="button" class="btn-close" wire:click="$set('showBulkDeleteModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-users-slash fa-3x text-danger mb-3"></i>
+                        <i class="fa-solid fa-users-slash fa-3x text-danger mb-3"></i>
                         <p>You're about to permanently delete <strong>{{ count($selectedUsers) }} accounts</strong>. This
                             cannot be reversed.</p>
                     </div>
@@ -865,7 +882,7 @@
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showToggleStatusModal', false)">Cancel</button>
                         <button class="btn btn-warning" wire:click="toggleStatusConfirmed" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-check"></i> Confirm</span>
+                            <span wire:loading.remove><i class="fa-solid fa-check"></i> Confirm</span>
                             <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Updating…</span>
                         </button>
                     </div>
@@ -897,7 +914,7 @@
                         <button class="btn btn-secondary" wire:click="$set('showToggleVerifyModal', false)">Cancel</button>
                         <button class="btn btn-info text-white" wire:click="toggleVerifyConfirmed"
                             wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-check"></i> Confirm</span>
+                            <span wire:loading.remove><i class="fa-solid fa-check"></i> Confirm</span>
                             <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Updating…</span>
                         </button>
                     </div>
@@ -1111,7 +1128,6 @@
                     <div class="modal-body">
                         <p class="text-muted small mb-3"><span class="text-danger">*</span> Required field</p>
                         <div class="row g-3">
-                            {{-- Employee ID / Gender --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Employee ID <span
                                         class="text-danger">*</span></label>
@@ -1134,7 +1150,6 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Department (now a real FK to departments.id) --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Department <span
                                         class="text-danger">*</span></label>
@@ -1170,7 +1185,6 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Position --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Position / Job Title <span
                                         class="text-danger">*</span></label>
@@ -1206,7 +1220,6 @@
                                 <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Employment Type / Hire Date --}}
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small">Employment Type <span
                                         class="text-danger">*</span></label>
@@ -1228,7 +1241,6 @@
                                 <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
 
-                            {{-- Emergency Contact --}}
                             <div class="col-12">
                                 <h6 class="border-bottom pb-2 fw-bold text-primary mt-2"><i
                                         class="fas fa-phone-alt me-2"></i> Emergency Contact</h6>
@@ -1416,7 +1428,43 @@
         transition: all 0.1s ease;
     }
 
-    /* Phone country dropdown (mirrors HR module styles) */
+    /* ─── User table: keep actions on one line ─── */
+    .users-table tbody td {
+        vertical-align: middle;
+    }
+
+    .users-table th {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .user-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+    }
+
+    .user-actions .action-btn {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-size: 11.5px;
+        flex-shrink: 0;
+        line-height: 1;
+    }
+
+    .user-actions .action-btn i {
+        font-size: 12px;
+    }
+
+    /* Phone country dropdown */
     .phone-country-dropdown {
         border-radius: 0.6rem;
         border: 1px solid #e2e8f0;

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Spatie\Permission\Models\Role;
@@ -36,6 +37,11 @@ class UserManagement extends Component
     public string $sortBy = 'created_at';
     public string $sortDir = 'desc';
     public int $perPage = 15;
+
+    // ─── Deep-link: ?edit={identifier} opens the edit modal ────────────
+    // Accepts a username OR a numeric id — resolved at mount.
+    #[Url(as: 'edit', except: null)]
+    public ?string $openUser = null;
 
     // ─── Invite ──────────────────────────────────────────────────────────
     public string $inviteEmail = '';
@@ -62,9 +68,8 @@ class UserManagement extends Component
     public bool $showConvertEmployeeModal = false;
     public ?int $convertUserId = null;
 
-    // Employee fields for conversion
     public string $emp_employee_id = '';
-    public ?int $emp_department_id = null;   // ← was string $emp_department
+    public ?int $emp_department_id = null;
     public string $emp_position = '';
     public string $emp_employment_type = 'full-time';
     public string $emp_hire_date = '';
@@ -72,7 +77,6 @@ class UserManagement extends Component
     public string $emp_emergency_contact_name = '';
     public string $emp_emergency_contact_phone = '';
 
-    // Emergency phone country logic
     public string $emp_emergency_countryCode = '+233';
     public string $emp_emergency_selectedFlag = 'gh.png';
     public array $emp_emergency_countries = [];
@@ -82,9 +86,7 @@ class UserManagement extends Component
     public string $emp_emergency_countrySearch = '';
     public bool $emp_emergency_showCountryDropdown = false;
 
-    // ─── Departments / Positions for conversion ──────────────────────
-    /** @var array<int, array{id:int, name:string}> */
-    public array $emp_departmentsList = [];   // ← now a list of {id, name}
+    public array $emp_departmentsList = [];
     public array $emp_positionsList = [];
     public string $emp_newDepartment = '';
     public string $emp_newPosition = '';
@@ -98,11 +100,9 @@ class UserManagement extends Component
     public ?int $verifyUserId = null;
     public ?int $spotlightUserId = null;
 
-    // ─── Activity log ────────────────────────────────────────────────────
     public array $recentActivities = [];
 
-    // ─── Bulk selection ─────────────────────────────────────────────────
-    public  $selectedUsers = [];
+    public $selectedUsers = [];
     public bool $selectAll = false;
 
     // ─── User form fields ────────────────────────────────────────────────
@@ -110,7 +110,7 @@ class UserManagement extends Component
     public string $last_name = '';
     public string $email = '';
     public string $password = '';
-    public  $selectedRoles = [];
+    public $selectedRoles = [];
     public string $formStatus = 'active';
     public bool $isEditing = false;
     public string $position = '';
@@ -127,6 +127,57 @@ class UserManagement extends Component
     protected string $defaultRole = 'User';
     protected int $maxSpotlight = 3;
 
+    /**
+     * Reserved words that must never become a username.
+     * Kept in sync with UserAccountService so admin-created users and
+     * HR-created users share the same protection.
+     */
+    protected array $reservedUsernames = [
+        'admin',
+        'administrator',
+        'root',
+        'system',
+        'super',
+        'superadmin',
+        'roles',
+        'role',
+        'permissions',
+        'permission',
+        'create',
+        'edit',
+        'delete',
+        'new',
+        'add',
+        'update',
+        'profile',
+        'profiles',
+        'detail',
+        'details',
+        'view',
+        'list',
+        'user',
+        'users',
+        'user-management',
+        'user_management',
+        'auth',
+        'login',
+        'logout',
+        'register',
+        'signup',
+        'signin',
+        'api',
+        'www',
+        'support',
+        'help',
+        'info',
+        'contact',
+        'about',
+        'account',
+        'settings',
+        'dashboard',
+        'home',
+    ];
+
     // ─── Mount ────────────────────────────────────────────────────────────
     public function mount(): void
     {
@@ -134,6 +185,20 @@ class UserManagement extends Component
         $this->loadCountries();
         $this->emp_emergency_updateCountryInfo();
         $this->emp_loadDepartmentsAndPositions();
+
+        // Deep-link support: /user-management?edit=samuelatuahene
+        // or /user-management?edit=42 — both resolve.
+        if ($this->openUser) {
+            $identifier = $this->openUser;
+            $this->openUser = null;
+
+            try {
+                $user = User::findByUsernameOrId($identifier);
+                $this->openEdit($user->id);
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                // Silently ignore — bad identifier in URL
+            }
+        }
     }
 
     // ─── Roles ────────────────────────────────────────────────────────────
@@ -164,15 +229,12 @@ class UserManagement extends Component
     // ─── Departments & Positions for conversion ──────────────────────────
     private function emp_loadDepartmentsAndPositions(): void
     {
-        // Departments now live in their own table — shared with the HR module
-        // and the Vacancies module. We only need id + name for the select.
         $this->emp_departmentsList = Department::orderBy('name')
             ->get(['id', 'name'])
             ->map(fn($d) => ['id' => $d->id, 'name' => $d->name])
             ->values()
             ->toArray();
 
-        // Positions are still a simple distinct-string list on user_profiles.
         $positions = UserProfile::where('is_employee', true)
             ->whereNotNull('position')
             ->distinct()
@@ -510,12 +572,21 @@ class UserManagement extends Component
         $this->showUserModal = true;
     }
 
+    /**
+     * Generate a unique, URL-safe username from first + last name.
+     * Never returns a reserved word.
+     */
     private function generateUsername(string $firstName, string $lastName): string
     {
         $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $firstName . $lastName));
         $base = $base !== '' ? $base : 'user';
+
+        if (in_array($base, $this->reservedUsernames, true)) {
+            $base .= '_user';
+        }
+
         $username = $base;
-        $counter = 1;
+        $counter  = 1;
         while (User::where('username', $username)->exists()) {
             $username = $base . $counter;
             $counter++;
@@ -602,6 +673,11 @@ class UserManagement extends Component
                     $data['email_verified_at'] = null;
                     $data['email_verification_token'] = Str::random(64);
                     $data['email_verification_sent_at'] = null;
+                }
+
+                // Backfill username if missing (legacy accounts)
+                if (empty($user->username)) {
+                    $data['username'] = $this->generateUsername($this->first_name, $this->last_name);
                 }
 
                 $user->update($data);
@@ -730,7 +806,6 @@ class UserManagement extends Component
             return;
         }
 
-        // Refresh the department list so any just-added ones are included
         $this->emp_loadDepartmentsAndPositions();
 
         $this->convertUserId = $userId;
@@ -739,7 +814,7 @@ class UserManagement extends Component
         $profile = $user->profile;
         if ($profile) {
             $this->emp_position = $profile->position ?? '';
-            $this->emp_department_id = $profile->department_id ?? null;   // ← FK
+            $this->emp_department_id = $profile->department_id ?? null;
             $this->emp_employment_type = $profile->employment_type ?? 'full-time';
             $this->emp_hire_date = $profile->hire_date?->format('Y-m-d') ?? '';
             $this->emp_gender = $profile->gender ?? '';
@@ -770,7 +845,7 @@ class UserManagement extends Component
 
         $this->validate([
             'emp_employee_id' => 'required|string|max:50|unique:user_profiles,employee_id,' . ($profileIdForUnique ?? 'NULL'),
-            'emp_department_id' => 'required|exists:departments,id',       // ← FK
+            'emp_department_id' => 'required|exists:departments,id',
             'emp_position'    => 'required|string|max:255',
             'emp_employment_type' => 'required|in:full-time,part-time,contract,intern',
             'emp_hire_date'   => 'required|date|before_or_equal:today',
@@ -803,7 +878,7 @@ class UserManagement extends Component
         $profile->update([
             'is_employee' => true,
             'employee_id' => $this->emp_employee_id,
-            'department_id' => $this->emp_department_id,          // ← FK
+            'department_id' => $this->emp_department_id,
             'position'    => $this->emp_position,
             'employment_type' => $this->emp_employment_type,
             'hire_date'   => Carbon::parse($this->emp_hire_date),
@@ -1221,7 +1296,8 @@ class UserManagement extends Component
             ->select('users.*', 'user_profiles.position as position', 'user_profiles.is_featured_team', 'user_profiles.is_spotlight', 'user_profiles.is_employee')
             ->when($this->search, fn($q) => $q->where(function ($q) {
                 $q->where('users.name', 'like', "%{$this->search}%")
-                    ->orWhere('users.email', 'like', "%{$this->search}%");
+                    ->orWhere('users.email', 'like', "%{$this->search}%")
+                    ->orWhere('users.username', 'like', "%{$this->search}%");
             }))
             ->when($this->statusFilter, fn($q) => $q->where('users.status', $this->statusFilter))
             ->when($this->roleFilter, fn($q) => $q->whereHas('roles', function ($q) {

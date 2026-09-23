@@ -573,6 +573,33 @@ class User extends Authenticatable implements MustVerifyEmail
         }
         return $initials ?: '?';
     }
+
+    /**
+     * The identifier to use in URLs for this user.
+     * Prefers username; falls back to numeric id for legacy accounts
+     * that were created before the username column existed.
+     */
+    public function getRouteIdentifierAttribute(): string
+    {
+        return $this->username ?: (string) $this->id;
+    }
+
+    /**
+     * Resolve a user by username first, then by numeric id.
+     * Used by the UserDetails component's mount() method and
+     * anywhere else that needs to accept either identifier.
+     */
+    public static function findByUsernameOrId(string $identifier): self
+    {
+        return static::with(['roles', 'roles.permissions', 'profile.department'])
+            ->where(function ($q) use ($identifier) {
+                $q->where('username', $identifier);
+                if (is_numeric($identifier)) {
+                    $q->orWhere('id', (int) $identifier);
+                }
+            })
+            ->firstOrFail();
+    }
     public function sendPasswordResetNotification($token)
     {
         $resetUrl = url(route('password.reset', [

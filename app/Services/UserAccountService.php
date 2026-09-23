@@ -10,12 +10,70 @@ use Illuminate\Support\Facades\Mail;
 class UserAccountService
 {
     /**
-     * Generate a unique username from first + last name.
+     * Reserved words that must never become a username.
+     * Prevents collisions with route segments like /user-management/roles
+     * and other sensitive keywords.
+     */
+    protected array $reservedUsernames = [
+        'admin',
+        'administrator',
+        'root',
+        'system',
+        'super',
+        'superadmin',
+        'roles',
+        'role',
+        'permissions',
+        'permission',
+        'create',
+        'edit',
+        'delete',
+        'new',
+        'add',
+        'update',
+        'profile',
+        'profiles',
+        'detail',
+        'details',
+        'view',
+        'list',
+        'user',
+        'users',
+        'user-management',
+        'user_management',
+        'auth',
+        'login',
+        'logout',
+        'register',
+        'signup',
+        'signin',
+        'api',
+        'www',
+        'support',
+        'help',
+        'info',
+        'contact',
+        'about',
+        'account',
+        'settings',
+        'dashboard',
+        'home',
+    ];
+
+    /**
+     * Generate a unique, URL-safe username from first + last name.
+     * Never returns a reserved word — appends '_user' if it would.
      */
     public function generateUsername(string $firstName, string $lastName): string
     {
         $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $firstName . $lastName));
         $base = $base !== '' ? $base : 'user';
+
+        // Never allow a reserved word as the base
+        if (in_array($base, $this->reservedUsernames, true)) {
+            $base .= '_user';
+        }
+
         $username = $base;
         $counter  = 1;
 
@@ -80,7 +138,6 @@ class UserAccountService
 
     /**
      * Queue the welcome email containing login credentials.
-     * Returns true on success, false if the mail failed to queue.
      */
     public function sendWelcomeEmail(User $user, string $plainPassword, ?string $createdByName = null): bool
     {
