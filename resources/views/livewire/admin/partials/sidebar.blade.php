@@ -86,6 +86,26 @@ Sidebar start
                 </li>
             @endcan
 
+            {{-- Departments --}}
+            @can('View Departments', $authUser)
+                <li>
+                    <a href="{{ route('admin.departments') }}" wire:navigate.hover
+                        class="{{ request()->routeIs('admin.departments') ? 'mm-active' : '' }}">
+                        <div class="menu-icon">
+                            <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd"
+                                    d="M11 3.4375L4.46875 6.875L11 10.3125L17.5312 6.875L11 3.4375Z" stroke="#888888"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M4.46875 11L11 14.4375L17.5312 11" stroke="#888888" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M4.46875 15.125L11 18.5625L17.5312 15.125" stroke="#888888" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="nav-text">Departments</span>
+                    </a>
+                </li>
+            @endcan
             {{-- User Management: Users / Roles / Permissions --}}
             @canany(['View Users', 'manage-roles', 'manage-permissions'], $authUser)
                 <li data-menu-key="user-management">

@@ -9,6 +9,7 @@ use App\Livewire\Admin\Blog\Post\PostFormComponent;
 use App\Livewire\Admin\Blog\Post\PostManagement;
 use App\Livewire\Admin\Dashboard\DashboardComponent;
 use App\Livewire\Admin\Dashboard\UserDashboardComponent;
+use App\Livewire\Admin\Departments\DepartmentComponent;
 use App\Livewire\Admin\Hrm\HrDashboard;
 use App\Livewire\Admin\Messenger\ChatMessengerComponent;
 use App\Livewire\Admin\Messenger\ChatMessengerMain;
@@ -307,5 +308,9 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
         Route::get('/applications', ApplicationManagement::class)
             ->middleware('can:View Applications')
             ->name('admin.applications');
+
+        Route::get('/departments-management', DepartmentComponent::class)
+            ->middleware('can:View Departments')
+            ->name('admin.departments');
     });
 });

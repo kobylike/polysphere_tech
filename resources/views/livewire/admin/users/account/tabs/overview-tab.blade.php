@@ -11,7 +11,11 @@
                     <span class="stats-card-label">Total Posts</span>
                     <h3 class="stats-card-value">{{ number_format($stats['total_posts']) }}</h3>
                     <span class="stats-card-trend">
-                        <i class="fas fa-arrow-up"></i> 12%
+                        @if($stats['posts_this_month'] > 0)
+                            <i class="fas fa-arrow-up"></i> {{ $stats['posts_this_month'] }} this month
+                        @else
+                            <i class="fas fa-layer-group"></i> All time
+                        @endif
                     </span>
                 </div>
             </div>
@@ -27,7 +31,11 @@
                     <span class="stats-card-label">Published</span>
                     <h3 class="stats-card-value">{{ number_format($stats['published_posts']) }}</h3>
                     <span class="stats-card-trend">
-                        <i class="fas fa-arrow-up"></i> 8%
+                        @if($stats['published_this_month'] > 0)
+                            <i class="fas fa-arrow-up"></i> {{ $stats['published_this_month'] }} this month
+                        @else
+                            <i class="fas fa-globe"></i> Live on site
+                        @endif
                     </span>
                 </div>
             </div>
@@ -43,7 +51,11 @@
                     <span class="stats-card-label">Drafts</span>
                     <h3 class="stats-card-value">{{ number_format($stats['draft_posts']) }}</h3>
                     <span class="stats-card-trend">
-                        <i class="fas fa-arrow-down"></i> 3%
+                        @if($stats['draft_posts'] > 0)
+                            <i class="fas fa-hourglass-half"></i> Pending review
+                        @else
+                            <i class="fas fa-check"></i> All caught up
+                        @endif
                     </span>
                 </div>
             </div>
@@ -59,7 +71,7 @@
                     <span class="stats-card-label">Account Age</span>
                     <h3 class="stats-card-value">{{ $stats['account_age_display'] }}</h3>
                     <span class="stats-card-trend">
-                        <i class="fas fa-calendar-check"></i> Active
+                        <i class="fas fa-calendar-check"></i> Since {{ $user->created_at->format('M Y') }}
                     </span>
                 </div>
             </div>
@@ -146,7 +158,7 @@
                             </div>
                             <div class="col-sm-6 col-12">
                                 <span class="text-muted small text-uppercase fw-bold">Department</span>
-                                <p class="mb-0">{{ $profile->department ?? '—' }}</p>
+                                <p class="mb-0">{{ $profile->department?->name ?? '—' }}</p>
                             </div>
                             <div class="col-sm-6 col-12">
                                 <span class="text-muted small text-uppercase fw-bold">Employment Type</span>
@@ -444,6 +456,10 @@
             padding: 0.05rem 0.4rem;
             border-radius: 20px;
             background: #f1f5f9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
         }
 
         .stats-card-trend .fa-arrow-up {

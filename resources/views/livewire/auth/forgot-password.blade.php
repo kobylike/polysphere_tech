@@ -39,7 +39,7 @@
                         </div>
                         <input id="email" type="email" wire:model.live="email" autocomplete="email"
                             class="pl-10 w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all @error('email') border-red-300 @enderror"
-                            placeholder="you@school.edu" :disabled="loading" autofocus>
+                            placeholder="you@mail.com" :disabled="loading" autofocus>
                     </div>
                     @error('email')
                         <p class="mt-2 text-sm text-red-600 flex items-center">
@@ -192,14 +192,14 @@
                 const toast = document.createElement('div');
                 toast.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white transform transition-all duration-300 translate-x-full ${getToastClass(type)}`;
                 toast.innerHTML = `
-                                                                <div class="flex items-center">
-                                                                    <i class="${getToastIcon(type)} mr-2"></i>
-                                                                    <span>${message}</span>
-                                                                    <button class="ml-4" onclick="this.parentElement.parentElement.remove()">
-                                                                        <i class="fas fa-times"></i>
-                                                                    </button>
-                                                                </div>
-                                                            `;
+                                                                        <div class="flex items-center">
+                                                                            <i class="${getToastIcon(type)} mr-2"></i>
+                                                                            <span>${message}</span>
+                                                                            <button class="ml-4" onclick="this.parentElement.parentElement.remove()">
+                                                                                <i class="fas fa-times"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    `;
 
                 document.body.appendChild(toast);
 

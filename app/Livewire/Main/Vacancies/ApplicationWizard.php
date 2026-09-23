@@ -399,6 +399,7 @@ class ApplicationWizard extends Component
             1 => [
                 'name'     => 'required|string|min:2|max:120',
                 'email'    => 'required|email:rfc,dns|max:190',
+                // 'email'    => 'required|email:rfc|max:190',
                 'phone'    => [
                     'required',
                     'string',

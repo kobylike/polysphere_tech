@@ -25,6 +25,12 @@ class RolesAndPermissionsSeeder extends Seeder
             // HR
             'View HR Dashboard',
 
+            // ─── Departments ────────────────────────────────────────────
+            'View Departments',
+            'Create Department',
+            'Edit Department',
+            'Delete Department',
+
             // Blog
             'View Posts',
             'Create Posts',
@@ -91,6 +97,13 @@ class RolesAndPermissionsSeeder extends Seeder
             'toggleStatus',
             'Assign Role',
             'View HR Dashboard',
+
+            // ─── Department permissions ──────────────────────────────────
+            'View Departments',
+            'Create Department',
+            'Edit Department',
+            'Delete Department',
+
             'View Posts',
             'Create Posts',
             'Edit Posts',
