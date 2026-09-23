@@ -16,11 +16,11 @@ use DateTimeZone;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
-use Livewire\Attributes\Layout;
+
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-#[Layout('layouts.main')]
+
 class ApplicationWizard extends Component
 {
     use WithFileUploads;

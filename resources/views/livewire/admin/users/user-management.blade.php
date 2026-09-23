@@ -26,11 +26,11 @@
                     <i class="fa-regular fa-envelope me-1"></i> Invite
                 </button>
                 <button class="btn btn-secondary btn-sm" wire:click="openCreate">
-                    <i class="fa-regular fa-user-plus me-1"></i> Add User
+                    <i class="fa-solid fa-user-plus me-1"></i> Add User
                 </button>
             @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
-                <i class="fa-regular fa-undo me-1"></i> Reset
+                <i class="fa-solid fa-undo me-1"></i> Reset
             </button>
         </div>
     </div>
@@ -56,7 +56,7 @@
                             <span class="fs-14">Active</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['active']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-user-check fs-24"></i>
+                        <i class="fa-solid fa-user-check fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -121,7 +121,7 @@
                     <div class="search-box">
                         <input type="text" class="form-control form-control-sm" placeholder="Search name or email…"
                             wire:model.live.debounce.300ms="search">
-                        <i class="fa-regular fa-search"></i>
+                        <i class="fa-solid fa-search"></i>
                     </div>
                     <select class="default-select style-1 form-control form-control-sm w-auto"
                         wire:model.live="statusFilter">
@@ -162,11 +162,11 @@
                             <button class="btn btn-warning btn-sm" wire:click="bulkSuspend"><i class="fa-regular fa-ban"></i>
                                 Suspend</button>
                             <button class="btn btn-info btn-sm text-white" wire:click="confirmBulkVerifyResend"><i
-                                    class="fa-regular fa-paper-plane"></i> Resend Verification</button>
+                                    class="fa-solid fa-paper-plane"></i> Resend Verification</button>
                         @endcan
                         @can('delete', App\Models\User::class)
                             <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete"><i
-                                    class="fa-regular fa-trash"></i> Delete</button>
+                                    class="fa-solid fa-trash"></i> Delete</button>
                         @endcan
                     </div>
                 </div>
@@ -187,7 +187,7 @@
                                             <i class="fa-regular fa-envelope"></i> Invite
                                         </button>
                                         <button class="btn btn-secondary btn-sm" wire:click="openCreate">
-                                            <i class="fa-regular fa-user-plus"></i> Add User
+                                            <i class="fa-solid fa-user-plus"></i> Add User
                                         </button>
                                     @endcan
                                 </div>
@@ -206,11 +206,11 @@
                                             User
                                             <span class="ms-1">
                                                 @if($sortBy === 'name' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'name' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -219,11 +219,11 @@
                                             Position
                                             <span class="ms-1">
                                                 @if($sortBy === 'position' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'position' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -234,11 +234,11 @@
                                             Status
                                             <span class="ms-1">
                                                 @if($sortBy === 'status' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'status' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -246,11 +246,11 @@
                                             Verified
                                             <span class="ms-1">
                                                 @if($sortBy === 'email_verified_at' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'email_verified_at' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -258,11 +258,11 @@
                                             Joined
                                             <span class="ms-1">
                                                 @if($sortBy === 'created_at' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'created_at' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -367,7 +367,7 @@
                                                             <button class="btn btn-sm btn-outline-info"
                                                                 wire:click="resendVerification({{ $user->id }})"
                                                                 title="Resend verification">
-                                                                <i class="fa-regular fa-paper-plane"></i>
+                                                                <i class="fa-solid fa-paper-plane"></i>
                                                             </button>
                                                         @endif
                                                     </div>
@@ -392,7 +392,7 @@
                                                     @can('update', $user)
                                                         <button class="btn btn-sm btn-warning"
                                                             wire:click="openEdit({{ $user->id }})" title="Edit">
-                                                            <i class="fa-regular fa-pen"></i>
+                                                            <i class="fa-solid fa-pen"></i>
                                                         </button>
                                                     @endcan
 
@@ -400,12 +400,12 @@
                                                         @if(!$isSelf)
                                                             <button class="btn btn-sm btn-danger"
                                                                 wire:click="confirmDelete({{ $user->id }})" title="Delete">
-                                                                <i class="fa-regular fa-trash"></i>
+                                                                <i class="fa-solid fa-trash"></i>
                                                             </button>
                                                         @else
                                                             <button class="btn btn-sm btn-secondary" disabled
                                                                 title="Cannot delete your own account">
-                                                                <i class="fa-regular fa-lock"></i>
+                                                                <i class="fa-solid fa-lock"></i>
                                                             </button>
                                                         @endif
                                                     @endcan
@@ -415,7 +415,7 @@
                                                             <button class="btn btn-sm btn-success"
                                                                 wire:click="openConvertToEmployee({{ $user->id }})"
                                                                 title="Convert to Employee">
-                                                                <i class="fa-regular fa-briefcase"></i>
+                                                                <i class="fa-solid fa-briefcase"></i>
                                                             </button>
                                                         @endif
                                                     @endcan
@@ -431,7 +431,7 @@
                                                 </p>
                                                 @can('create', App\Models\User::class)
                                                     <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                                                        <i class="fa-regular fa-user-plus me-1"></i> Add First User
+                                                        <i class="fa-solid fa-user-plus me-1"></i> Add First User
                                                     </button>
                                                 @endcan
                                             </td>
@@ -567,7 +567,7 @@
                         @can('update', $viewingUser)
                             <button class="btn btn-primary"
                                 wire:click="openEdit({{ $viewingUser->id }}); $set('showViewModal', false)">
-                                <i class="fa-regular fa-pen"></i> Edit
+                                <i class="fa-solid fa-pen"></i> Edit
                             </button>
                         @endcan
                     </div>
@@ -649,7 +649,7 @@
                                     <div class="mb-3">
                                         <label class="form-label fw-bold small">Roles</label>
                                         <div class="alert alert-info">
-                                            <i class="fa-regular fa-circle-info me-2"></i>
+                                            <i class="fa-solid fa-circle-info me-2"></i>
                                             You cannot change your own roles.
                                         </div>
                                         <div class="text-muted small">
@@ -741,7 +741,7 @@
                                 </div>
                                 <div
                                     class="mt-2 small fw-bold {{ $this->spotlightInfo['full'] && !$is_spotlight ? 'text-danger' : 'text-warning' }}">
-                                    <i class="fa-regular fa-circle-info"></i>
+                                    <i class="fa-solid fa-circle-info"></i>
                                     {{ $this->spotlightInfo['used'] }} / {{ $this->spotlightInfo['max'] }} slots used
                                     @if($this->spotlightInfo['full'] && !$is_spotlight)
                                         — full, remove someone else first
@@ -781,7 +781,7 @@
                             <span wire:loading.remove><i
                                     class="fa-regular {{ $isEditing ? 'fa-save' : 'fa-user-plus' }}"></i>
                                 {{ $isEditing ? 'Save Changes' : 'Create User' }}</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Saving…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Saving…</span>
                         </button>
                     </div>
                 </div>
@@ -800,15 +800,15 @@
                         <button type="button" class="btn-close" wire:click="$set('showDeleteModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-trash-alt fa-3x text-danger mb-3"></i>
+                        <i class="fa-solid fa-trash-alt fa-3x text-danger mb-3"></i>
                         <p>This action is <strong>permanent</strong> and cannot be undone. All associated data will be
                             removed.</p>
                     </div>
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showDeleteModal', false)">Keep User</button>
                         <button class="btn btn-danger" wire:click="deleteUser" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Yes, Delete</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Yes, Delete</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>
@@ -834,8 +834,8 @@
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
                         <button class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Delete All</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Delete All</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>
@@ -854,7 +854,7 @@
                         <button type="button" class="btn-close" wire:click="$set('showToggleStatusModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                        <i class="fa-solid fa-exclamation-triangle fa-3x text-warning mb-3"></i>
                         <p>
                             You are about to <strong>
                                 @php $targetUser = App\Models\User::find($toggleUserId); @endphp
@@ -866,7 +866,7 @@
                         <button class="btn btn-secondary" wire:click="$set('showToggleStatusModal', false)">Cancel</button>
                         <button class="btn btn-warning" wire:click="toggleStatusConfirmed" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular fa-check"></i> Confirm</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Updating…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Updating…</span>
                         </button>
                     </div>
                 </div>
@@ -885,7 +885,7 @@
                         <button type="button" class="btn-close" wire:click="$set('showToggleVerifyModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-shield-halved fa-3x text-info mb-3"></i>
+                        <i class="fa-solid fa-shield-halved fa-3x text-info mb-3"></i>
                         <p>
                             You are about to manually mark this user's email as <strong>
                                 @php $targetVerifyUser = App\Models\User::find($verifyUserId); @endphp
@@ -898,7 +898,7 @@
                         <button class="btn btn-info text-white" wire:click="toggleVerifyConfirmed"
                             wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular fa-check"></i> Confirm</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Updating…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Updating…</span>
                         </button>
                     </div>
                 </div>
@@ -937,7 +937,7 @@
                         <button class="btn btn-warning" wire:click="toggleSpotlightConfirmed" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-solid fa-star"></i>
                                 {{ $currentlyIn ? 'Remove' : 'Add to Spotlight' }}</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Updating…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Updating…</span>
                         </button>
                     </div>
                 </div>
@@ -956,7 +956,7 @@
                         <button type="button" class="btn-close" wire:click="$set('showBulkVerifyModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-paper-plane fa-3x text-info mb-3"></i>
+                        <i class="fa-solid fa-paper-plane fa-3x text-info mb-3"></i>
                         <p>
                             This will send a new verification link to every <strong>unverified</strong> user among your
                             {{ count($selectedUsers) }} selected accounts. Already-verified users will be skipped.
@@ -966,8 +966,8 @@
                         <button class="btn btn-secondary" wire:click="$set('showBulkVerifyModal', false)">Cancel</button>
                         <button class="btn btn-info text-white" wire:click="bulkResendVerification"
                             wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-paper-plane"></i> Send Emails</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Sending…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-paper-plane"></i> Send Emails</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Sending…</span>
                         </button>
                     </div>
                 </div>
@@ -1041,8 +1041,8 @@
                     <div class="modal-footer">
                         <button class="btn btn-secondary" wire:click="$set('showInviteModal', false)">Cancel</button>
                         <button class="btn btn-success" wire:click="sendInvitation" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-paper-plane"></i> Send Invitation</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Sending…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-paper-plane"></i> Send Invitation</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Sending…</span>
                         </button>
                     </div>
                 </div>
@@ -1078,7 +1078,7 @@
                                 <code class="fs-5 fw-bold" style="color:#78350F;">{{ $createdUserPassword }}</code>
                                 <button type="button" class="btn btn-sm btn-outline-warning flex-shrink-0"
                                     x-on:click="navigator.clipboard.writeText('{{ $createdUserPassword }}'); copied = true; setTimeout(() => copied = false, 2000);">
-                                    <span x-show="!copied"><i class="fa-regular fa-copy"></i> Copy</span>
+                                    <span x-show="!copied"><i class="fa-solid fa-copy"></i> Copy</span>
                                     <span x-show="copied" x-cloak><i class="fa-solid fa-check"></i> Copied!</span>
                                 </button>
                             </div>

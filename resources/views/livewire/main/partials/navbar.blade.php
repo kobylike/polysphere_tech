@@ -66,6 +66,8 @@
                                                 </li>
                                                 <li><a wire:navigate.hover href="{{ route('team') }}">Team</a></li>
                                                 <li><a wire:navigate.hover href="{{ route('faq') }}">FAQ</a></li>
+                                                <li><a wire:navigate.hover href="{{ route('vacancies') }}">Careers</a>
+                                                </li>
                                             </ul>
                                         </li>
 

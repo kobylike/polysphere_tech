@@ -230,7 +230,7 @@
                                     @empty
                                         <tr>
                                             <td colspan="8" class="text-center py-4">
-                                                <i class="fa-regular fa-file-lines fa-2x d-block text-muted mb-2"></i>
+                                                <i class="fa-solid fa-file-lines fa-2x d-block text-muted mb-2"></i>
                                                 No posts found.
                                                 @can('create', App\Models\Post::class)
                                                     <a wire:navigate.hover href="{{ route('create.post') }}">Create your first post</a>

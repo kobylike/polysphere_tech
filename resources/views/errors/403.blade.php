@@ -51,7 +51,7 @@
                         {{-- Additional info – only shown if the exception has a message --}}
                         @if(isset($exception) && $exception->getMessage())
                             <div class="mt-4 p-3 bg-light rounded-3 text-start small">
-                                <i class="fa-regular fa-circle-info text-muted me-2"></i>
+                                <i class="fa-solid fa-circle-info text-muted me-2"></i>
                                 <span class="text-muted">{{ $exception->getMessage() }}</span>
                             </div>
                         @endif
@@ -60,7 +60,7 @@
 
                 {{-- Footer note --}}
                 <p class="text-center text-muted small mt-4">
-                    <i class="fa-regular fa-shield-halved me-1"></i>
+                    <i class="fa-solid fa-shield-halved me-1"></i>
                     You are seeing this page because you tried to access a restricted area.
                 </p>
             </div>

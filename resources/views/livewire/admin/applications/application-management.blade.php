@@ -11,15 +11,15 @@
             @can('viewAny', App\Models\Application::class)
                 <button class="btn btn-outline-primary btn-sm" wire:click="export" wire:loading.attr="disabled">
                     <span wire:loading.remove wire:target="export">
-                        <i class="fa-regular fa-file-export me-1"></i> Export CSV
+                        <i class="fa-solid fa-file-export me-1"></i> Export CSV
                     </span>
                     <span wire:loading wire:target="export">
-                        <i class="fa-regular fa-spinner fa-spin me-1"></i> Exporting…
+                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Exporting…
                     </span>
                 </button>
             @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
-                <i class="fa-regular fa-undo me-1"></i> Reset
+                <i class="fa-solid fa-undo me-1"></i> Reset
             </button>
         </div>
     </div>
@@ -84,7 +84,7 @@
                     <div class="search-box">
                         <input type="text" class="form-control form-control-sm"
                             placeholder="Search name, email, company…" wire:model.live.debounce.300ms="search">
-                        <i class="fa-regular fa-search"></i>
+                        <i class="fa-solid fa-search"></i>
                     </div>
                     <select class="form-control form-control-sm w-auto" wire:model.live="vacancyFilter">
                         <option value="">All vacancies</option>
@@ -114,7 +114,7 @@
 
                         @can('view', App\Models\Application::class)
                             <button class="btn btn-info text-white btn-sm" wire:click="openBulkEmailModal">
-                                <i class="fa-regular fa-paper-plane"></i> Email selected
+                                <i class="fa-solid fa-paper-plane"></i> Email selected
                             </button>
                         @endcan
 
@@ -130,7 +130,7 @@
 
                         @can('delete', App\Models\Application::class)
                             <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
-                                <i class="fa-regular fa-trash"></i> Delete
+                                <i class="fa-solid fa-trash"></i> Delete
                             </button>
                         @endcan
                     </div>
@@ -156,11 +156,11 @@
                                     Candidate
                                     <span class="ms-1">
                                         @if($sortBy === 'name' && $sortDir === 'asc')
-                                            <i class="fa-regular fa-sort-up"></i>
+                                            <i class="fa-solid fa-sort-up"></i>
                                         @elseif($sortBy === 'name' && $sortDir === 'desc')
-                                            <i class="fa-regular fa-sort-down"></i>
+                                            <i class="fa-solid fa-sort-down"></i>
                                         @else
-                                            <i class="fa-regular fa-sort"></i>
+                                            <i class="fa-solid fa-sort"></i>
                                         @endif
                                     </span>
                                 </th>
@@ -170,11 +170,11 @@
                                     Status
                                     <span class="ms-1">
                                         @if($sortBy === 'status' && $sortDir === 'asc')
-                                            <i class="fa-regular fa-sort-up"></i>
+                                            <i class="fa-solid fa-sort-up"></i>
                                         @elseif($sortBy === 'status' && $sortDir === 'desc')
-                                            <i class="fa-regular fa-sort-down"></i>
+                                            <i class="fa-solid fa-sort-down"></i>
                                         @else
-                                            <i class="fa-regular fa-sort"></i>
+                                            <i class="fa-solid fa-sort"></i>
                                         @endif
                                     </span>
                                 </th>
@@ -182,11 +182,11 @@
                                     Applied
                                     <span class="ms-1">
                                         @if($sortBy === 'created_at' && $sortDir === 'asc')
-                                            <i class="fa-regular fa-sort-up"></i>
+                                            <i class="fa-solid fa-sort-up"></i>
                                         @elseif($sortBy === 'created_at' && $sortDir === 'desc')
-                                            <i class="fa-regular fa-sort-down"></i>
+                                            <i class="fa-solid fa-sort-down"></i>
                                         @else
-                                            <i class="fa-regular fa-sort"></i>
+                                            <i class="fa-solid fa-sort"></i>
                                         @endif
                                     </span>
                                 </th>
@@ -258,7 +258,7 @@
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-secondary"
                                                     wire:click="downloadCv({{ $app->id }})" title="Download CV">
-                                                    <i class="fa-regular fa-download"></i>
+                                                    <i class="fa-solid fa-download"></i>
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-outline-info"
                                                     wire:click="openEmailModal({{ $app->id }})" title="Email candidate">
@@ -269,7 +269,7 @@
                                             @can('delete', $app)
                                                 <button type="button" class="btn btn-sm btn-danger"
                                                     wire:click="confirmDelete({{ $app->id }})" title="Delete">
-                                                    <i class="fa-regular fa-trash"></i>
+                                                    <i class="fa-solid fa-trash"></i>
                                                 </button>
                                             @endcan
                                         </div>
@@ -278,7 +278,7 @@
                             @empty
                                 <tr>
                                     <td colspan="7" class="text-center py-5">
-                                        <i class="fa-regular fa-inbox fs-2 d-block mb-2 text-muted"></i>
+                                        <i class="fa-solid fa-inbox fs-2 d-block mb-2 text-muted"></i>
                                         <h5>No applications yet</h5>
                                         <p class="text-muted">When candidates apply, they'll appear here.</p>
                                     </td>
@@ -402,7 +402,7 @@
                                     <div class="d-flex gap-2">
                                         <button type="button" class="btn btn-sm btn-primary"
                                             wire:click="downloadCv({{ $viewingApplication->id }})">
-                                            <i class="fa-regular fa-download"></i> Download CV
+                                            <i class="fa-solid fa-download"></i> Download CV
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-info"
                                             wire:click="openEmailModal({{ $viewingApplication->id }}); $set('showViewModal', false)">
@@ -444,7 +444,7 @@
                                 @can('delete', $viewingApplication)
                                     <button type="button" class="btn btn-outline-danger"
                                         wire:click="confirmDelete({{ $viewingApplication->id }}); $set('showViewModal', false)">
-                                        <i class="fa-regular fa-trash"></i> Delete
+                                        <i class="fa-solid fa-trash"></i> Delete
                                     </button>
                                 @endcan
                             </div>
@@ -476,7 +476,7 @@
                     <div class="modal-header">
                         <div>
                             <h5 class="modal-title mb-1">
-                                <i class="fa-regular fa-paper-plane me-1"></i> Email candidate
+                                <i class="fa-solid fa-paper-plane me-1"></i> Email candidate
                             </h5>
                             @if($emailsSentCount > 0)
                                 <div class="text-muted small">
@@ -559,7 +559,7 @@
                     <div class="modal-footer justify-content-between">
                         <a href="mailto:{{ $emailTo }}?subject={{ urlencode($emailSubject) }}&body={{ urlencode($emailBody) }}"
                             class="btn btn-sm btn-outline-secondary" title="Open in your desktop mail client instead">
-                            <i class="fa-regular fa-arrow-up-right-from-square me-1"></i> Open in mail app
+                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Open in mail app
                         </a>
 
                         <div class="d-flex gap-2">
@@ -567,10 +567,10 @@
                             <button type="button" class="btn btn-primary" wire:click="sendCandidateEmail"
                                 wire:loading.attr="disabled" wire:target="sendCandidateEmail">
                                 <span wire:loading.remove wire:target="sendCandidateEmail">
-                                    <i class="fa-regular fa-paper-plane"></i> Send email
+                                    <i class="fa-solid fa-paper-plane"></i> Send email
                                 </span>
                                 <span wire:loading wire:target="sendCandidateEmail">
-                                    <i class="fa-regular fa-spinner fa-spin"></i> Sending…
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Sending…
                                 </span>
                             </button>
                         </div>
@@ -589,7 +589,7 @@
                     <div class="modal-header">
                         <div>
                             <h5 class="modal-title mb-1">
-                                <i class="fa-regular fa-paper-plane me-1"></i>
+                                <i class="fa-solid fa-paper-plane me-1"></i>
                                 Bulk email — {{ count($selectedApplications) }} candidate(s)
                             </h5>
                             <div class="text-muted small">
@@ -708,7 +708,7 @@
 
                     <div class="modal-footer justify-content-between">
                         <span class="text-muted small">
-                            <i class="fa-regular fa-circle-info me-1"></i>
+                            <i class="fa-solid fa-circle-info me-1"></i>
                             Emails are queued — your team can keep working while they deliver.
                         </span>
                         <div class="d-flex gap-2">
@@ -716,11 +716,11 @@
                             <button type="button" class="btn btn-info text-white" wire:click="sendBulkEmail"
                                 wire:loading.attr="disabled" wire:target="sendBulkEmail">
                                 <span wire:loading.remove wire:target="sendBulkEmail">
-                                    <i class="fa-regular fa-paper-plane"></i>
+                                    <i class="fa-solid fa-paper-plane"></i>
                                     Send to {{ count($selectedApplications) }}
                                 </span>
                                 <span wire:loading wire:target="sendBulkEmail">
-                                    <i class="fa-regular fa-spinner fa-spin"></i> Queuing…
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Queuing…
                                 </span>
                             </button>
                         </div>
@@ -737,14 +737,14 @@
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header border-0">
                         <h5 class="modal-title text-danger">
-                            <i class="fa-regular fa-triangle-exclamation me-2"></i>Delete this application?
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>Delete this application?
                         </h5>
                         <button type="button" class="btn-close" wire:click="$set('showDeleteModal', false)"></button>
                     </div>
                     <div class="modal-body text-center py-4">
                         <div class="d-inline-flex align-items-center justify-content-center mb-3"
                             style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239,68,68,.1);">
-                            <i class="fa-regular fa-trash-can fs-2 text-danger"></i>
+                            <i class="fa-solid fa-trash-can fs-2 text-danger"></i>
                         </div>
                         <h5 class="mb-2">This cannot be undone.</h5>
                         <p class="text-muted mb-0">
@@ -758,10 +758,10 @@
                         <button type="button" class="btn btn-danger" wire:click="deleteApplication"
                             wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="deleteApplication">
-                                <i class="fa-regular fa-trash"></i> Yes, delete
+                                <i class="fa-solid fa-trash"></i> Yes, delete
                             </span>
                             <span wire:loading wire:target="deleteApplication">
-                                <i class="fa-regular fa-spinner fa-spin"></i> Deleting…
+                                <i class="fa-solid fa-spinner fa-spin"></i> Deleting…
                             </span>
                         </button>
                     </div>
@@ -777,7 +777,7 @@
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header border-0">
                         <h5 class="modal-title text-danger">
-                            <i class="fa-regular fa-triangle-exclamation me-2"></i>
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i>
                             Delete {{ count($selectedApplications) }} application(s)?
                         </h5>
                         <button type="button" class="btn-close" wire:click="$set('showBulkDeleteModal', false)"></button>
@@ -785,7 +785,7 @@
                     <div class="modal-body text-center py-4">
                         <div class="d-inline-flex align-items-center justify-content-center mb-3"
                             style="width: 72px; height: 72px; border-radius: 50%; background: rgba(239,68,68,.1);">
-                            <i class="fa-regular fa-trash-can fs-2 text-danger"></i>
+                            <i class="fa-solid fa-trash-can fs-2 text-danger"></i>
                         </div>
                         <h5 class="mb-2">You're about to delete {{ count($selectedApplications) }} applications.</h5>
                         <p class="text-muted mb-0">
@@ -798,10 +798,10 @@
                             wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
                         <button type="button" class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="bulkDelete">
-                                <i class="fa-regular fa-trash"></i> Delete all
+                                <i class="fa-solid fa-trash"></i> Delete all
                             </span>
                             <span wire:loading wire:target="bulkDelete">
-                                <i class="fa-regular fa-spinner fa-spin"></i> Deleting…
+                                <i class="fa-solid fa-spinner fa-spin"></i> Deleting…
                             </span>
                         </button>
                     </div>

@@ -12,14 +12,14 @@
         <div class="d-flex gap-2">
             <button class="btn btn-outline-primary btn-sm" wire:click="export" wire:loading.attr="disabled">
                 <span wire:loading.remove wire:target="export">
-                    <i class="fa-regular fa-file-export me-1"></i> Export CSV
+                    <i class="fa-solid fa-file-export me-1"></i> Export CSV
                 </span>
                 <span wire:loading wire:target="export">
-                    <i class="fa-regular fa-spinner fa-spin me-1"></i> Exporting…
+                    <i class="fa-solid fa-spinner fa-spin me-1"></i> Exporting…
                 </span>
             </button>
             <button class="btn btn-outline-danger btn-sm" wire:click="confirmPrune">
-                <i class="fa-regular fa-broom me-1"></i> Prune Old
+                <i class="fa-solid fa-broom me-1"></i> Prune Old
             </button>
         </div>
     </div>
@@ -196,7 +196,7 @@
                 @if($this->activeFilterCount > 0)
                     <div class="mt-3 pt-3 border-top d-flex flex-wrap align-items-center gap-2">
                         <span class="text-muted small fw-semibold">
-                            <i class="fa-regular fa-filter me-1"></i>
+                            <i class="fa-solid fa-filter me-1"></i>
                             {{ $this->activeFilterCount }} active filter(s):
                         </span>
 
@@ -281,11 +281,11 @@
                                     When
                                     <span class="ms-1">
                                         @if($sortBy === 'created_at' && $sortDir === 'asc')
-                                            <i class="fa-regular fa-sort-up"></i>
+                                            <i class="fa-solid fa-sort-up"></i>
                                         @elseif($sortBy === 'created_at' && $sortDir === 'desc')
-                                            <i class="fa-regular fa-sort-down"></i>
+                                            <i class="fa-solid fa-sort-down"></i>
                                         @else
-                                            <i class="fa-regular fa-sort"></i>
+                                            <i class="fa-solid fa-sort"></i>
                                         @endif
                                     </span>
                                 </th>
@@ -386,7 +386,7 @@
                                         @if($log->properties && $log->properties->count())
                                             <button class="btn btn-sm btn-outline-primary"
                                                 wire:click="openPropertyModal({{ $log->id }})" title="View change details">
-                                                <i class="fa-regular fa-code-compare"></i>
+                                                <i class="fa-solid fa-code-compare"></i>
                                             </button>
                                         @else
                                             <button class="btn btn-sm btn-outline-secondary"
@@ -497,7 +497,7 @@
                             </div>
                         @else
                             <div class="alert alert-light border mb-4">
-                                <i class="fa-regular fa-circle-info me-1"></i>
+                                <i class="fa-solid fa-circle-info me-1"></i>
                                 No field changes recorded — this entry has context only.
                             </div>
                         @endif
@@ -513,7 +513,7 @@
                                             navigator.clipboard.writeText(@js(json_encode($selectedLog->properties, JSON_PRETTY_PRINT)));
                                             $dispatch('notify', { type: 'success', title: 'Copied', message: 'Raw JSON copied to clipboard.' });
                                         ">
-                                    <i class="fa-regular fa-copy me-1"></i> Copy JSON
+                                    <i class="fa-solid fa-copy me-1"></i> Copy JSON
                                 </button>
                                 <pre
                                     class="log-raw__pre">{{ json_encode($selectedLog->properties, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
@@ -553,7 +553,7 @@
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header border-0">
                         <h5 class="modal-title text-danger">
-                            <i class="fa-regular fa-triangle-exclamation me-2"></i> Prune old log entries?
+                            <i class="fa-solid fa-triangle-exclamation me-2"></i> Prune old log entries?
                         </h5>
                         <button type="button" class="btn-close" wire:click="$set('showPruneModal', false)"></button>
                     </div>
@@ -575,10 +575,10 @@
                         <button class="btn btn-secondary" wire:click="$set('showPruneModal', false)">Cancel</button>
                         <button class="btn btn-danger" wire:click="pruneOldLogs" wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="pruneOldLogs">
-                                <i class="fa-regular fa-broom"></i> Prune
+                                <i class="fa-solid fa-broom"></i> Prune
                             </span>
                             <span wire:loading wire:target="pruneOldLogs">
-                                <i class="fa-regular fa-spinner fa-spin"></i> Pruning…
+                                <i class="fa-solid fa-spinner fa-spin"></i> Pruning…
                             </span>
                         </button>
                     </div>

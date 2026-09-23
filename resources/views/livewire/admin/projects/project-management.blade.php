@@ -163,13 +163,13 @@
                                                 @can('update', $project)
                                                     <a wire:navigate.hover href="{{ route('admin.projects.edit', $project->id) }}"
                                                         class="btn btn-warning btn-sm"><i
-                                                            class="fa-regular fa-pen-to-square"></i></a>
+                                                            class="fa-solid fa-pen-to-square"></i></a>
                                                 @endcan
                                                 @can('delete', $project)
                                                     <button class="btn btn-danger btn-sm"
                                                         wire:click="deleteSingle({{ $project->id }})"
                                                         onclick="return confirm('Delete this project?')"><i
-                                                            class="fa-regular fa-trash-alt"></i></button>
+                                                            class="fa-solid fa-trash-alt"></i></button>
                                                 @endcan
                                             </td>
                                         </tr>

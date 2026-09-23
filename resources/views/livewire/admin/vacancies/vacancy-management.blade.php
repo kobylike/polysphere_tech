@@ -24,20 +24,20 @@
             @can('viewAny', App\Models\Vacancy::class)
                 <button class="btn btn-outline-primary btn-sm" wire:click="export" wire:loading.attr="disabled">
                     <span wire:loading.remove wire:target="export">
-                        <i class="fa-regular fa-file-export me-1"></i> Export CSV
+                        <i class="fa-solid fa-file-export me-1"></i> Export CSV
                     </span>
                     <span wire:loading wire:target="export">
-                        <i class="fa-regular fa-spinner fa-spin me-1"></i> Exporting…
+                        <i class="fa-solid fa-spinner fa-spin me-1"></i> Exporting…
                     </span>
                 </button>
             @endcan
             @can('create', App\Models\Vacancy::class)
                 <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                    <i class="fa-regular fa-plus me-1"></i> Post Vacancy
+                    <i class="fa-solid fa-plus me-1"></i> Post Vacancy
                 </button>
             @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
-                <i class="fa-regular fa-undo me-1"></i> Reset
+                <i class="fa-solid fa-undo me-1"></i> Reset
             </button>
         </div>
     </div>
@@ -52,7 +52,7 @@
                             <span class="fs-14">Total Vacancies</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['total']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-briefcase fs-24"></i>
+                        <i class="fa-solid fa-briefcase fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -74,7 +74,7 @@
                             <span class="fs-14">Draft</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['draft']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-file-pen fs-24"></i>
+                        <i class="fa-solid fa-file-pen fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -85,7 +85,7 @@
                             <span class="fs-14">Closed / Archived</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['closed'] + $stats['archived']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-box-archive fs-24"></i>
+                        <i class="fa-solid fa-box-archive fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -128,7 +128,7 @@
                     <div class="search-box">
                         <input type="text" class="form-control form-control-sm"
                             placeholder="Search title, summary, location…" wire:model.live.debounce.300ms="search">
-                        <i class="fa-regular fa-search"></i>
+                        <i class="fa-solid fa-search"></i>
                     </div>
                     <select class="default-select style-1 form-control form-control-sm w-auto"
                         wire:model.live="statusFilter">
@@ -182,15 +182,15 @@
                                 <i class="fa-regular fa-circle-check"></i> Publish
                             </button>
                             <button class="btn btn-warning btn-sm" wire:click="bulkClose">
-                                <i class="fa-regular fa-lock"></i> Close
+                                <i class="fa-solid fa-lock"></i> Close
                             </button>
                             <button class="btn btn-dark btn-sm" wire:click="confirmBulkArchive">
-                                <i class="fa-regular fa-box-archive"></i> Archive
+                                <i class="fa-solid fa-box-archive"></i> Archive
                             </button>
                         @endcan
                         @can('delete', App\Models\Vacancy::class)
                             <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
-                                <i class="fa-regular fa-trash"></i> Delete
+                                <i class="fa-solid fa-trash"></i> Delete
                             </button>
                         @endcan
                     </div>
@@ -209,12 +209,12 @@
                                 <div>
                                     @can('create', App\Models\Vacancy::class)
                                         <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                                            <i class="fa-regular fa-plus"></i> Post Vacancy
+                                            <i class="fa-solid fa-plus"></i> Post Vacancy
                                         </button>
                                     @endcan
                                 </div>
                             </div>
-                            <table class="table">
+                            <table class="table vacancies-table">
                                 <thead>
                                     <tr>
                                         <th style="width:40px">
@@ -228,11 +228,11 @@
                                             Role
                                             <span class="ms-1">
                                                 @if($sortBy === 'title' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'title' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -245,11 +245,11 @@
                                             Status
                                             <span class="ms-1">
                                                 @if($sortBy === 'status' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'status' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -257,11 +257,11 @@
                                             Views
                                             <span class="ms-1">
                                                 @if($sortBy === 'views_count' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'views_count' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -269,11 +269,11 @@
                                             Applications
                                             <span class="ms-1">
                                                 @if($sortBy === 'applications_count' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'applications_count' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -281,15 +281,16 @@
                                             Posted
                                             <span class="ms-1">
                                                 @if($sortBy === 'created_at' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'created_at' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
-                                        <th class="text-center">Actions</th>
+                                        <th class="text-center" style="min-width:280px; white-space:nowrap;">Actions
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -372,53 +373,53 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                                <div class="vacancy-actions">
                                                     @can('view', $vacancy)
-                                                        <button class="btn btn-sm btn-primary"
+                                                        <button class="btn btn-sm btn-primary action-btn"
                                                             wire:click="viewVacancy({{ $vacancy->id }})" title="View">
                                                             <i class="fa-regular fa-eye"></i>
                                                         </button>
                                                     @endcan
 
                                                     @can('update', $vacancy)
-                                                        <button class="btn btn-sm btn-warning"
+                                                        <button class="btn btn-sm btn-warning action-btn"
                                                             wire:click="openEdit({{ $vacancy->id }})" title="Edit">
-                                                            <i class="fa-regular fa-pen"></i>
+                                                            <i class="fa-solid fa-pen"></i>
                                                         </button>
 
                                                         @if($vacancy->status->value === 'draft' || $vacancy->status->value === 'closed')
-                                                            <button class="btn btn-sm btn-success"
+                                                            <button class="btn btn-sm btn-success action-btn"
                                                                 wire:click="confirmPublish({{ $vacancy->id }})" title="Publish">
                                                                 <i class="fa-regular fa-circle-check"></i>
                                                             </button>
                                                         @endif
 
                                                         @if($vacancy->status->value === 'published')
-                                                            <button class="btn btn-sm btn-secondary"
+                                                            <button class="btn btn-sm btn-secondary action-btn"
                                                                 wire:click="confirmClose({{ $vacancy->id }})" title="Close">
-                                                                <i class="fa-regular fa-lock"></i>
+                                                                <i class="fa-solid fa-lock"></i>
                                                             </button>
                                                         @endif
 
                                                         @if($vacancy->status->value !== 'archived')
-                                                            <button class="btn btn-sm btn-dark"
+                                                            <button class="btn btn-sm btn-dark action-btn"
                                                                 wire:click="confirmArchive({{ $vacancy->id }})" title="Archive">
-                                                                <i class="fa-regular fa-box-archive"></i>
+                                                                <i class="fa-solid fa-box-archive"></i>
                                                             </button>
                                                         @endif
                                                     @endcan
 
                                                     @can('create', App\Models\Vacancy::class)
-                                                        <button class="btn btn-sm btn-info text-white"
+                                                        <button class="btn btn-sm btn-info text-white action-btn"
                                                             wire:click="duplicateVacancy({{ $vacancy->id }})" title="Duplicate">
-                                                            <i class="fa-regular fa-copy"></i>
+                                                            <i class="fa-solid fa-copy"></i>
                                                         </button>
                                                     @endcan
 
                                                     @can('delete', $vacancy)
-                                                        <button class="btn btn-sm btn-danger"
+                                                        <button class="btn btn-sm btn-danger action-btn"
                                                             wire:click="confirmDelete({{ $vacancy->id }})" title="Delete">
-                                                            <i class="fa-regular fa-trash"></i>
+                                                            <i class="fa-solid fa-trash"></i>
                                                         </button>
                                                     @endcan
                                                 </div>
@@ -427,13 +428,13 @@
                                     @empty
                                         <tr>
                                             <td colspan="10" class="text-center py-5">
-                                                <i class="fa-regular fa-briefcase fs-2 d-block mb-2 text-muted"></i>
+                                                <i class="fa-solid fa-briefcase fs-2 d-block mb-2 text-muted"></i>
                                                 <h5>No vacancies found</h5>
                                                 <p class="text-muted">Try adjusting your search filters, or post a new
                                                     role.</p>
                                                 @can('create', App\Models\Vacancy::class)
                                                     <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                                                        <i class="fa-regular fa-plus me-1"></i> Post First Vacancy
+                                                        <i class="fa-solid fa-plus me-1"></i> Post First Vacancy
                                                     </button>
                                                 @endcan
                                             </td>
@@ -559,7 +560,7 @@
                         @can('update', $viewingVacancy)
                             <button class="btn btn-primary"
                                 wire:click="openEdit({{ $viewingVacancy->id }}); $set('showViewModal', false)">
-                                <i class="fa-regular fa-pen"></i> Edit
+                                <i class="fa-solid fa-pen"></i> Edit
                             </button>
                         @endcan
                     </div>
@@ -583,7 +584,7 @@
 
                             {{-- Core Details --}}
                             <h6 class="border-bottom pb-2 fw-bold text-primary"><i
-                                    class="fa-regular fa-file-lines me-2"></i>Core Details</h6>
+                                    class="fa-solid fa-file-lines me-2"></i>Core Details</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-8">
                                     <label class="form-label fw-bold small">Job Title <span
@@ -665,7 +666,7 @@
 
                             {{-- Classification --}}
                             <h6 class="border-bottom pb-2 fw-bold text-primary mt-2"><i
-                                    class="fa-regular fa-tags me-2"></i>Classification</h6>
+                                    class="fa-solid fa-tags me-2"></i>Classification</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold small">Employment Type <span
@@ -734,7 +735,7 @@
 
                             {{-- Compensation --}}
                             <h6 class="border-bottom pb-2 fw-bold text-primary mt-2"><i
-                                    class="fa-regular fa-sack-dollar me-2"></i>Compensation</h6>
+                                    class="fa-solid fa-sack-dollar me-2"></i>Compensation</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold small">Currency</label>
@@ -772,7 +773,7 @@
 
                             {{-- Publishing --}}
                             <h6 class="border-bottom pb-2 fw-bold text-primary mt-2"><i
-                                    class="fa-regular fa-calendar-check me-2"></i>Publishing</h6>
+                                    class="fa-solid fa-calendar-check me-2"></i>Publishing</h6>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-4">
                                     <label class="form-label fw-bold small">Status <span
@@ -806,7 +807,7 @@
 
                             {{-- SEO --}}
                             <h6 class="border-bottom pb-2 fw-bold text-primary mt-2"><i
-                                    class="fa-regular fa-magnifying-glass me-2"></i>SEO (optional)</h6>
+                                    class="fa-solid fa-magnifying-glass me-2"></i>SEO (optional)</h6>
                             <div class="row g-3 mb-2">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold small">Meta Title</label>
@@ -841,7 +842,7 @@
                         <button type="button" class="btn btn-primary" wire:click="saveVacancy" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular {{ $isEditing ? 'fa-save' : 'fa-plus' }}"></i>
                                 {{ $isEditing ? 'Save Changes' : 'Post Vacancy' }}</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Saving…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Saving…</span>
                         </button>
                     </div>
                 </div>
@@ -860,14 +861,14 @@
                         <button type="button" class="btn-close" wire:click="$set('showDeleteModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-trash-alt fa-3x text-danger mb-3"></i>
+                        <i class="fa-solid fa-trash-alt fa-3x text-danger mb-3"></i>
                         <p>This action is <strong>permanent</strong> and cannot be undone.</p>
                     </div>
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showDeleteModal', false)">Keep Vacancy</button>
                         <button class="btn btn-danger" wire:click="deleteVacancy" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Yes, Delete</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Yes, Delete</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>
@@ -886,15 +887,15 @@
                         <button type="button" class="btn-close" wire:click="$set('showBulkDeleteModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-box-open fa-3x text-danger mb-3"></i>
+                        <i class="fa-solid fa-box-open fa-3x text-danger mb-3"></i>
                         <p>You're about to permanently delete <strong>{{ count($selectedVacancies) }} vacancies</strong>.
                             This cannot be reversed.</p>
                     </div>
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
                         <button class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Delete All</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Delete All</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>
@@ -910,7 +911,7 @@
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header border-0">
                         <h5 class="modal-title">
-                            <i class="fa-regular fa-box-archive me-2"></i>
+                            <i class="fa-solid fa-box-archive me-2"></i>
                             Archive {{ count($selectedVacancies) }} vacancies?
                         </h5>
                         <button type="button" class="btn-close" wire:click="$set('showBulkArchiveModal', false)"></button>
@@ -918,7 +919,7 @@
                     <div class="modal-body text-center py-4">
                         <div class="d-inline-flex align-items-center justify-content-center mb-3"
                             style="width:72px; height:72px; border-radius:50%; background:rgba(15,23,42,.06);">
-                            <i class="fa-regular fa-box-archive fs-2 text-dark"></i>
+                            <i class="fa-solid fa-box-archive fs-2 text-dark"></i>
                         </div>
                         <p class="text-muted mb-0">
                             Archived roles are hidden from the public careers page but stay in your records.
@@ -929,10 +930,10 @@
                         <button class="btn btn-secondary" wire:click="$set('showBulkArchiveModal', false)">Cancel</button>
                         <button class="btn btn-dark" wire:click="bulkArchive" wire:loading.attr="disabled">
                             <span wire:loading.remove wire:target="bulkArchive">
-                                <i class="fa-regular fa-box-archive"></i> Archive all
+                                <i class="fa-solid fa-box-archive"></i> Archive all
                             </span>
                             <span wire:loading wire:target="bulkArchive">
-                                <i class="fa-regular fa-spinner fa-spin"></i> Archiving…
+                                <i class="fa-solid fa-spinner fa-spin"></i> Archiving…
                             </span>
                         </button>
                     </div>
@@ -959,7 +960,7 @@
                         <button class="btn btn-secondary" wire:click="$set('showPublishModal', false)">Cancel</button>
                         <button class="btn btn-success" wire:click="publishConfirmed" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular fa-circle-check"></i> Publish</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Publishing…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Publishing…</span>
                         </button>
                     </div>
                 </div>
@@ -978,15 +979,15 @@
                         <button type="button" class="btn-close" wire:click="$set('showCloseModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-lock fa-3x text-warning mb-3"></i>
+                        <i class="fa-solid fa-lock fa-3x text-warning mb-3"></i>
                         <p>The role will stop accepting applications but stay in your records. You can re-publish it
                             later.</p>
                     </div>
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showCloseModal', false)">Cancel</button>
                         <button class="btn btn-warning" wire:click="closeConfirmed" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-lock"></i> Close Vacancy</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Closing…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-lock"></i> Close Vacancy</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Closing…</span>
                         </button>
                     </div>
                 </div>
@@ -1005,15 +1006,15 @@
                         <button type="button" class="btn-close" wire:click="$set('showArchiveModal', false)"></button>
                     </div>
                     <div class="modal-body text-center">
-                        <i class="fa-regular fa-box-archive fa-3x text-dark mb-3"></i>
+                        <i class="fa-solid fa-box-archive fa-3x text-dark mb-3"></i>
                         <p>Archived vacancies are hidden everywhere but kept for reference. This does not delete the
                             record.</p>
                     </div>
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showArchiveModal', false)">Cancel</button>
                         <button class="btn btn-dark" wire:click="archiveConfirmed" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-box-archive"></i> Archive</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Archiving…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-box-archive"></i> Archive</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Archiving…</span>
                         </button>
                     </div>
                 </div>
@@ -1056,5 +1057,41 @@
 
     .badge.light {
         opacity: 0.9;
+    }
+
+    /* ─── Vacancies table — keep actions on one line ─── */
+    .vacancies-table tbody td {
+        vertical-align: middle;
+    }
+
+    .vacancies-table th {
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+
+    .vacancy-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        white-space: nowrap;
+        flex-wrap: nowrap;
+    }
+
+    .vacancy-actions .action-btn {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        font-size: 11.5px;
+        flex-shrink: 0;
+        line-height: 1;
+    }
+
+    .vacancy-actions .action-btn i {
+        font-size: 12px;
     }
 </style>

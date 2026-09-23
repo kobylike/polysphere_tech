@@ -22,11 +22,11 @@
         <div class="d-flex gap-2">
             @can('manage-roles')
                 <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                    <i class="fa-regular fa-plus me-1"></i> New Role
+                    <i class="fa-solid fa-plus me-1"></i> New Role
                 </button>
             @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
-                <i class="fa-regular fa-undo me-1"></i> Reset
+                <i class="fa-solid fa-undo me-1"></i> Reset
             </button>
         </div>
     </div>
@@ -41,7 +41,7 @@
                             <span class="fs-14">Total Roles</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['total']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-shield-halved fs-24"></i>
+                        <i class="fa-solid fa-shield-halved fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                     <div class="search-box">
                         <input type="text" class="form-control form-control-sm" placeholder="Search roles…"
                             wire:model.live.debounce.300ms="search">
-                        <i class="fa-regular fa-search"></i>
+                        <i class="fa-solid fa-search"></i>
                     </div>
                     <select class="default-select style-1 form-control form-control-sm w-auto"
                         wire:model.live="perPage">
@@ -104,7 +104,7 @@
                         <span class="badge bg-dark text-white p-2">{{ count($selectedRoles) }} selected</span>
                         @can('manage-roles')
                             <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
-                                <i class="fa-regular fa-trash"></i> Delete
+                                <i class="fa-solid fa-trash"></i> Delete
                             </button>
                         @endcan
                     </div>
@@ -135,11 +135,11 @@
                                             Role
                                             <span class="ms-1">
                                                 @if($sortBy === 'name' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'name' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -147,18 +147,18 @@
                                         <th wire:click="sort('users_count')" style="cursor:pointer;">
                                             Users
                                             <span class="ms-1">
-                                                <i class="fa-regular fa-sort"></i>
+                                                <i class="fa-solid fa-sort"></i>
                                             </span>
                                         </th>
                                         <th wire:click="sort('created_at')" style="cursor:pointer;">
                                             Created
                                             <span class="ms-1">
                                                 @if($sortBy === 'created_at' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'created_at' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -233,23 +233,23 @@
                                                         @if(!$isProtected)
                                                             <button class="btn btn-sm btn-warning"
                                                                 wire:click="openEdit({{ $role->id }})" title="Edit">
-                                                                <i class="fa-regular fa-pen"></i>
+                                                                <i class="fa-solid fa-pen"></i>
                                                             </button>
                                                         @else
                                                             <button class="btn btn-sm btn-secondary" disabled
                                                                 title="System role – cannot edit">
-                                                                <i class="fa-regular fa-lock"></i>
+                                                                <i class="fa-solid fa-lock"></i>
                                                             </button>
                                                         @endif
                                                         @if(!$isProtected)
                                                             <button class="btn btn-sm btn-danger"
                                                                 wire:click="confirmDelete({{ $role->id }})" title="Delete">
-                                                                <i class="fa-regular fa-trash"></i>
+                                                                <i class="fa-solid fa-trash"></i>
                                                             </button>
                                                         @else
                                                             <button class="btn btn-sm btn-secondary" disabled
                                                                 title="System role – cannot delete">
-                                                                <i class="fa-regular fa-lock"></i>
+                                                                <i class="fa-solid fa-lock"></i>
                                                             </button>
                                                         @endif
                                                     @endcan
@@ -259,13 +259,13 @@
                                     @empty
                                         <tr>
                                             <td colspan="6" class="text-center py-5">
-                                                <i class="fa-regular fa-shield-halved fs-2 d-block mb-2 text-muted"></i>
+                                                <i class="fa-solid fa-shield-halved fs-2 d-block mb-2 text-muted"></i>
                                                 <h5>No roles found</h5>
                                                 <p class="text-muted">Try adjusting your search, or create your first role.
                                                 </p>
                                                 @can('manage-roles')
                                                     <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                                                        <i class="fa-regular fa-plus"></i> Create First Role
+                                                        <i class="fa-solid fa-plus"></i> Create First Role
                                                     </button>
                                                 @endcan
                                             </td>
@@ -305,7 +305,7 @@
                 <div class="modal-content">
                     <div class="modal-header" style="border-bottom: 3px solid {{ $vColor }};">
                         <h5 class="modal-title">
-                            <i class="fa-regular fa-shield-halved" style="color: {{ $vColor }};"></i>
+                            <i class="fa-solid fa-shield-halved" style="color: {{ $vColor }};"></i>
                             {{ ucfirst($viewingRole->name) }}
                             @if($vIsProtected)
                                 <span class="badge bg-secondary text-white ms-1">System</span>
@@ -348,7 +348,7 @@
                             @if(!$vIsProtected)
                                 <button class="btn btn-primary"
                                     wire:click="openEdit({{ $viewingRole->id }}); $set('showViewModal', false)">
-                                    <i class="fa-regular fa-pen"></i> Edit Role
+                                    <i class="fa-solid fa-pen"></i> Edit Role
                                 </button>
                             @endif
                         @endcan
@@ -433,7 +433,7 @@
                         <button class="btn btn-primary" wire:click="saveRole" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular {{ $isEditing ? 'fa-save' : 'fa-plus' }}"></i>
                                 {{ $isEditing ? 'Save Changes' : 'Create Role' }}</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Saving…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Saving…</span>
                         </button>
                     </div>
                 </div>
@@ -459,8 +459,8 @@
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showDeleteModal', false)">Keep Role</button>
                         <button class="btn btn-danger" wire:click="deleteRole" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Yes, Delete</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Yes, Delete</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>
@@ -486,8 +486,8 @@
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
                         <button class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Delete All</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Delete All</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>

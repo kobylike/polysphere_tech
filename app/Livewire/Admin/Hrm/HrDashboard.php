@@ -10,6 +10,7 @@ use App\Models\Holiday;
 use App\Models\Invitation;
 use App\Models\User;
 use App\Models\UserProfile;
+use App\Services\UserAccountService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,7 +28,7 @@ class HrDashboard extends Component
 
     // ─── Filters ──────────────────────────────────────────────────────
     public string $search = '';
-    public string $departmentFilter = ''; // holds a department_id (string from the <select>)
+    public string $departmentFilter = '';
     public string $employmentType = '';
     public string $statusFilter = '';
     public int $perPage = 10;
@@ -65,12 +66,11 @@ class HrDashboard extends Component
     // ── Employment Info ──────────────────────────────────────────────
     public string $employee_id = '';
     public string $position = '';
-    public ?int $department_id = null; // ← was public string $department = '';
+    public ?int $department_id = null;
     public string $employment_type = 'full-time';
     public string $hire_date = '';
     public bool $is_featured_team = false;
 
-    // 🔥 NEW PERSONAL FIELDS
     public string $date_of_birth = '';
     public string $country_code = '';
     public string $city = '';
@@ -88,9 +88,6 @@ class HrDashboard extends Component
     public bool $emergency_showCountryDropdown = false;
 
     // ── Department / Position management ────────────────────────────
-    // NOTE: departments are no longer a free-text list — they live in the
-    // departments table (App\Models\Department). Positions remain a simple
-    // distinct-string list for now.
     public array $positionsList = [];
     public string $newDepartment = '';
     public string $newPosition = '';
@@ -107,7 +104,7 @@ class HrDashboard extends Component
     public ?string $attendanceCheckIn = null;
     public ?string $attendanceCheckOut = null;
 
-    // ── Bulk / whole-team attendance modal ───────────────────────────
+    // ── Bulk attendance modal ────────────────────────────────────────
     public bool $showBulkAttendanceModal = false;
     public string $bulkAttendanceDate = '';
     public string $bulkAttendanceStatus = 'present';
@@ -131,7 +128,12 @@ class HrDashboard extends Component
     protected string $protectedRole = 'Super Admin';
     protected string $defaultRole = 'User';
 
-    /** Cached (per-request) list of all holidays, so we don't re-query per row. */
+    // ── NEW: credentials modal after creating a new employee ─────────
+    public bool $showCredentialsModal = false;
+    public string $createdUserName = '';
+    public string $createdUserEmail = '';
+    public string $createdUserPassword = '';
+
     protected ?\Illuminate\Support\Collection $holidaysCache = null;
 
     // ─── Mount ──────────────────────────────────────────────────────────
@@ -158,8 +160,7 @@ class HrDashboard extends Component
 
     private function ensureDefaultRoles(): void
     {
-        $defaultRoles = ['Super Admin', 'Admin', 'Agent', 'User'];
-        foreach ($defaultRoles as $roleName) {
+        foreach (['Super Admin', 'Admin', 'Agent', 'User'] as $roleName) {
             Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
         }
     }
@@ -179,7 +180,7 @@ class HrDashboard extends Component
         }
     }
 
-    // ─── Positions (still a simple string list) ──────────────────────
+    // ─── Positions ───────────────────────────────────────────────────
 
     private function loadPositions(): void
     {
@@ -212,13 +213,8 @@ class HrDashboard extends Component
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Success', 'message' => "The {$name} position is now available for assignment."]);
     }
 
-    // ─── Departments (now a real table — App\Models\Department) ──────
+    // ─── Departments ─────────────────────────────────────────────────
 
-    /**
-     * Every department, for both the filter dropdown and the employee
-     * modal's department select. Single source of truth shared with the
-     * Vacancies module.
-     */
     public function getDepartmentsProperty()
     {
         return Department::orderBy('name')->get();
@@ -246,7 +242,7 @@ class HrDashboard extends Component
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Success', 'message' => "The {$name} department is now available for assignment."]);
     }
 
-    // ─── Statistics ──────────────────────────────────────────────────────
+    // ─── Statistics ──────────────────────────────────────────────────
 
     public function getStatsProperty()
     {
@@ -262,7 +258,7 @@ class HrDashboard extends Component
         ];
     }
 
-    // ─── Employees List ──────────────────────────────────────────────────
+    // ─── Employees List ──────────────────────────────────────────────
 
     public function getEmployeesProperty()
     {
@@ -280,7 +276,7 @@ class HrDashboard extends Component
             ->paginate($this->perPage);
     }
 
-    // ─── Employee CRUD ──────────────────────────────────────────────────
+    // ─── Employee CRUD ──────────────────────────────────────────────
 
     private function generateEmployeeId(): string
     {
@@ -294,7 +290,6 @@ class HrDashboard extends Component
         return 'EMP-' . str_pad((string) $next, 4, '0', STR_PAD_LEFT);
     }
 
-    /** Shared reset for anything transient in the employee modal (dropdowns, "add new" inputs). */
     private function resetEmployeeModalUiState(): void
     {
         $this->showCountryDropdown = false;
@@ -432,8 +427,11 @@ class HrDashboard extends Component
         ]);
 
         $fullName = trim($this->first_name . ' ' . $this->last_name);
+        /** @var UserAccountService $accounts */
+        $accounts = app(UserAccountService::class);
 
         if ($this->editingEmployeeId) {
+            // ── EDIT existing employee ────────────────────────────
             $user = User::findOrFail($this->editingEmployeeId);
             $user->update([
                 'name'  => $fullName,
@@ -472,14 +470,20 @@ class HrDashboard extends Component
                 'message' => "{$fullName}'s record has been updated and is now current."
             ]);
         } else {
-            $user = User::create([
-                'name'     => $fullName,
-                'email'    => $this->email,
-                'password' => bcrypt(Str::random(16)),
-                'status'   => 'active',
-                'phone'    => $this->getFullPhone(),
-                'email_verified_at' => now(),
-            ]);
+            // ── CREATE new employee (with login account) ──────────
+            $result = $accounts->createWithGeneratedPassword(
+                attributes: [
+                    'name'     => $fullName,
+                    'email'    => strtolower($this->email),
+                    'username' => $accounts->generateUsername($this->first_name, $this->last_name),
+                    'status'   => 'active',
+                    'phone'    => $this->getFullPhone(),
+                ],
+                roles: ['User'],
+            );
+
+            $user          = $result['user'];
+            $plainPassword = $result['plain_password'];
 
             $user->profile()->create([
                 'gender'         => $this->gender,
@@ -497,21 +501,31 @@ class HrDashboard extends Component
                 'city'           => $this->city ?: null,
             ]);
 
-            $user->assignRole('User');
+            // Welcome email with login credentials
+            $emailed = $accounts->sendWelcomeEmail($user, $plainPassword, Auth::user()?->name);
 
             ActivityLogger::log('Employee added', [
                 'user_id' => $user->id,
                 'employee_id' => $this->employee_id,
                 'name' => $fullName,
-                'email' => $this->email,
+                'email' => $user->email,
                 'department_id' => $this->department_id,
                 'position' => $this->position,
+                'welcome_email_sent' => $emailed,
+                'created_by' => Auth::id(),
             ], 'hr');
+
+            // Populate the credentials modal
+            $this->createdUserName     = $fullName;
+            $this->createdUserEmail    = $user->email;
+            $this->createdUserPassword = $plainPassword;
+            $this->showCredentialsModal = true;
 
             $this->dispatch('notify', [
                 'type' => 'success',
                 'title' => 'Success',
                 'message' => "{$fullName} has joined the roster as {$this->employee_id}."
+                    . ($emailed ? ' Login credentials were emailed.' : ' (Warning: welcome email failed to send — copy the password from the dialog.)'),
             ]);
         }
 
@@ -538,7 +552,13 @@ class HrDashboard extends Component
         $this->loadPositions();
     }
 
-    // ─── Delete Employee ─────────────────────────────────────────────────
+    public function closeCredentialsModal(): void
+    {
+        $this->showCredentialsModal = false;
+        $this->reset(['createdUserName', 'createdUserEmail', 'createdUserPassword']);
+    }
+
+    // ─── Delete Employee ─────────────────────────────────────────────
 
     public function confirmDelete($userId)
     {
@@ -581,7 +601,7 @@ class HrDashboard extends Component
         $this->deleteUserId = null;
     }
 
-    // ─── Invitation ──────────────────────────────────────────────────────
+    // ─── Invitation ──────────────────────────────────────────────────
 
     public function openInviteModal()
     {
@@ -636,7 +656,7 @@ class HrDashboard extends Component
         ]);
     }
 
-    // ─── Single-employee attendance ──────────────────────────────────────
+    // ─── Single-employee attendance ──────────────────────────────────
 
     public function markAttendance($userId)
     {
@@ -745,9 +765,6 @@ class HrDashboard extends Component
         ]);
     }
 
-    /**
-     * One-click marking for today's column: cycles Present → Absent → Leave → Cleared.
-     */
     public function quickMarkToday($userId)
     {
         $user = User::find($userId);
@@ -801,7 +818,7 @@ class HrDashboard extends Component
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Marked', 'message' => "{$user->name} marked as " . ucfirst($next) . " for today."]);
     }
 
-    // ─── Bulk / whole-team attendance ────────────────────────────────────
+    // ─── Bulk attendance ─────────────────────────────────────────────
 
     public function openBulkAttendance()
     {
@@ -825,7 +842,6 @@ class HrDashboard extends Component
         }
     }
 
-    /** Keep the "select all" checkbox honest if someone manually toggles individual rows. */
     public function updatedBulkSelectedEmployees(): void
     {
         $activeCount = User::whereHas('profile', fn($q) => $q->where('is_employee', true))
@@ -877,21 +893,20 @@ class HrDashboard extends Component
         ]);
     }
 
-    // ─── Month changed ──────────────────────────────────────────────────
+    // ─── Month changed ───────────────────────────────────────────────
 
     public function monthChanged()
     {
         $this->resetPage();
     }
 
-    // ─── Holidays helper (recurrence-aware) ─────────────────────────────
+    // ─── Holidays helper ─────────────────────────────────────────────
 
     private function allHolidays(): \Illuminate\Support\Collection
     {
         return $this->holidaysCache ??= Holiday::orderBy('date')->get();
     }
 
-    /** Every calendar date (Y-m-d strings) in $year/$month that is a company holiday. */
     private function holidayDatesFor(int $year, int $month): array
     {
         return $this->allHolidays()
@@ -901,7 +916,7 @@ class HrDashboard extends Component
             ->all();
     }
 
-    // ─── Attendance Calendar Data ──────────────────────────────────────
+    // ─── Attendance Calendar Data ────────────────────────────────────
 
     public function getAttendanceDataProperty()
     {
@@ -965,9 +980,8 @@ class HrDashboard extends Component
         return $data;
     }
 
-    // ─── Holidays ──────────────────────────────────────────────────────
+    // ─── Holidays ────────────────────────────────────────────────────
 
-    /** Upcoming holidays, correctly resolving recurring ones to their next real occurrence. */
     public function getUpcomingHolidaysProperty()
     {
         $today = today();
@@ -1051,7 +1065,7 @@ class HrDashboard extends Component
         ]);
     }
 
-    // ─── Export Attendance Report ──────────────────────────────────────
+    // ─── Export Attendance Report ────────────────────────────────────
 
     public function exportAttendance()
     {
@@ -1081,7 +1095,7 @@ class HrDashboard extends Component
         return response()->stream($callback, 200, $headers);
     }
 
-    // ─── Attendance Stats ──────────────────────────────────────────────
+    // ─── Attendance Stats ────────────────────────────────────────────
 
     public function getAttendanceStatsProperty()
     {
@@ -1103,7 +1117,7 @@ class HrDashboard extends Component
         ];
     }
 
-    // ─── Country / Phone logic (primary) ────────────────────────────────
+    // ─── Country / Phone logic ────────────────────────────────────────
 
     public function loadCountries()
     {
@@ -1227,7 +1241,7 @@ class HrDashboard extends Component
         $this->updateCountryInfo();
     }
 
-    // ─── Emergency Phone logic ──────────────────────────────────────────
+    // ─── Emergency Phone logic ────────────────────────────────────────
 
     public function emergency_updateCountryInfo()
     {
@@ -1324,7 +1338,7 @@ class HrDashboard extends Component
         $this->emergency_updateCountryInfo();
     }
 
-    // ─── Render ────────────────────────────────────────────────────────
+    // ─── Render ──────────────────────────────────────────────────────
 
     public function render()
     {
@@ -1340,7 +1354,7 @@ class HrDashboard extends Component
         return view('livewire.admin.hrm.hr-dashboard', [
             'stats'            => $this->stats,
             'employees'        => $this->employees,
-            'departments'      => $this->departments, // Department models: {id, name, ...}
+            'departments'      => $this->departments,
             'attendanceData'   => $this->attendanceData,
             'upcomingHolidays' => $this->upcomingHolidays,
             'attendanceStats'  => $attendanceStats,

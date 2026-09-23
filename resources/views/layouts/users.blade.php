@@ -210,38 +210,88 @@
         max-height: 240px;
         }
         }
-        </style>
 
-        @livewireStyles
 
-        <!-- Vendor Scripts (deferred) -->
-        <script src="{{ asset('assets/users/vendor/global/global.min.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/chart.js/Chart.bundle.min.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"
-            defer></script>
-        <script src="{{ asset('assets/users/vendor/apexchart/apexchart.js') }}" defer></script>
-        <script src="{{ asset('assets/users/js/dashboard/dashboard-1.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/draggable/draggable.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/tagify/dist/tagify.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/datatables/js/jquery.dataTables.min.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/datatables/js/dataTables.buttons.min.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/datatables/js/buttons.html5.min.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/datatables/js/jszip.min.js') }}" defer></script>
-        <script src="{{ asset('assets/users/js/plugins-init/datatables.init.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/moment.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js') }}"
-            defer></script>
-        <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.min.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.world.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.usa.js') }}" defer></script>
-        <script
-            src="{{ asset('assets/users/js/custom.js') }}?v={{ filemtime(public_path('assets/users/js/custom.js')) }}"
-            defer></script>
-        <script src="{{ asset('assets/users/js/deznav-init.js') }}" defer></script>
-        <script src="{{ asset('assets/users/js/demo.js') }}" defer></script>
-        <script src="{{ asset('assets/users/js/styleSwitcher.js') }}" defer></script>
-        <script src="{{ asset('assets/users/vendor/ckeditor/ckeditor.js') }}" defer></script>
-        <script src="{{ asset('assets/users/js/dashboard/cms.js') }}" defer></script>
+        /* ═══════════════════════════════════════════════════════════════════════════
+        SEARCH BOX — global positioning fix.
+        The pattern in the app is:
+        <div class="search-box">
+            <input class="form-control …">
+            <i class="fa-* fa-search"></i>
+        </div>
+        Bootstrap's .form-control is display:block, so without explicit
+        positioning the <i> drops to its own line beneath the input. Anchor
+            the icon to the right edge of the input instead, on every page that
+            uses the pattern.
+            ═══════════════════════════════════════════════════════════════════════════ */
+            .search-box {
+            position: relative;
+            display: inline-block;
+            min-width: 220px;
+            max-width: 100%;
+            }
+
+            .search-box > input.form-control {
+            padding-right: 34px !important; /* reserve room for the icon */
+            width: 100%;
+            }
+
+            .search-box > i {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            left: auto;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            font-size: 13px;
+            line-height: 1;
+            display: inline-block; /* never block — that's what caused the drop */
+            pointer-events: none; /* clicks pass through to the input */
+            z-index: 3;
+            }
+
+            /* If a page ever wants the icon on the LEFT instead, add .search-box--left
+            to the wrapper and it will flip — no per-page CSS needed. */
+            .search-box.search-box--left > input.form-control {
+            padding-right: 12px !important;
+            padding-left: 34px !important;
+            }
+            .search-box.search-box--left > i {
+            right: auto;
+            left: 12px;
+            }
+            </style>
+
+            @livewireStyles
+
+            <!-- Vendor Scripts (deferred) -->
+            <script src="{{ asset('assets/users/vendor/global/global.min.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/chart.js/Chart.bundle.min.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/bootstrap-select/dist/js/bootstrap-select.min.js') }}"
+                defer></script>
+            <script src="{{ asset('assets/users/vendor/apexchart/apexchart.js') }}" defer></script>
+            <script src="{{ asset('assets/users/js/dashboard/dashboard-1.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/draggable/draggable.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/tagify/dist/tagify.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/datatables/js/jquery.dataTables.min.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/datatables/js/dataTables.buttons.min.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/datatables/js/buttons.html5.min.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/datatables/js/jszip.min.js') }}" defer></script>
+            <script src="{{ asset('assets/users/js/plugins-init/datatables.init.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/moment.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/bootstrap-datetimepicker/js/bootstrap-datetimepicker.min.js') }}"
+                defer></script>
+            <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.min.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.world.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/jqvmap/js/jquery.vmap.usa.js') }}" defer></script>
+            <script
+                src="{{ asset('assets/users/js/custom.js') }}?v={{ filemtime(public_path('assets/users/js/custom.js')) }}"
+                defer></script>
+            <script src="{{ asset('assets/users/js/deznav-init.js') }}" defer></script>
+            <script src="{{ asset('assets/users/js/demo.js') }}" defer></script>
+            <script src="{{ asset('assets/users/js/styleSwitcher.js') }}" defer></script>
+            <script src="{{ asset('assets/users/vendor/ckeditor/ckeditor.js') }}" defer></script>
+            <script src="{{ asset('assets/users/js/dashboard/cms.js') }}" defer></script>
 </head>
 
 <body data-typography="poppins" data-theme-version="light" data-layout="vertical" data-nav-headerbg="color_4"

@@ -9,7 +9,7 @@
             <div class="row justify-content-center">
                 <div class="col-xxl-12">
                     <div class="breadcrumb__wrapper p-relative">
-                        <h2 class="breadcrumb__title">Careers at Polysphere</h2>
+                        <h2 class="breadcrumb__title">Careers </h2>
                         <div class="breadcrumb__menu">
                             <nav>
                                 <ul>
@@ -231,11 +231,8 @@
 
 @push('styles')
     <style>
-        /* ─── Design tokens ─── */
-        .careers-stats-strip,
-        .careers-featured,
-        .careers-listing,
-        .careers-cta {
+        /* ─── Design tokens (global — so cards render everywhere) ─── */
+        :root {
             --c-ink: #0d1b2e;
             --c-accent: #2f6fed;
             --c-surface: #fff;
@@ -248,7 +245,7 @@
         /* ─── Stats strip ─── */
         .careers-stats-strip {
             background: var(--c-bg);
-            padding: 0 0 0;
+            padding: 0;
         }
 
         .careers-stats-grid {
@@ -334,49 +331,98 @@
             margin: 0;
         }
 
-        /* ─── Vacancy card ─── */
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  VACANCY CARD                                               */
+        /* ═══════════════════════════════════════════════════════════ */
+
         .vcard {
+            position: relative;
             display: flex;
             flex-direction: column;
             height: 100%;
             background: #fff;
             border: 1px solid var(--c-border);
-            border-radius: 16px;
+            border-radius: 18px;
             overflow: hidden;
-            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+            transition: transform .25s cubic-bezier(.2, .7, .4, 1),
+                box-shadow .25s ease,
+                border-color .25s ease;
+            isolation: isolate;
         }
 
         .vcard:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 24px 48px rgba(13, 27, 46, .10);
+            transform: translateY(-6px);
+            box-shadow: 0 32px 60px -20px rgba(13, 27, 46, .18),
+                0 8px 20px -10px rgba(13, 27, 46, .08);
             border-color: #d5d9e8;
         }
 
         .vcard--featured {
             border-color: #fcd97a;
-            box-shadow: 0 20px 40px rgba(217, 119, 6, .14);
+            background: linear-gradient(180deg, #fffef9 0%, #ffffff 60%);
         }
 
+        .vcard--featured:hover {
+            box-shadow: 0 32px 60px -20px rgba(217, 119, 6, .22),
+                0 8px 20px -10px rgba(217, 119, 6, .10);
+            border-color: #f5b944;
+        }
+
+        /* ─── Hover gradient glow ─── */
+        .vcard__glow {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: linear-gradient(135deg, rgba(47, 111, 237, 0), rgba(47, 111, 237, 0));
+            mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity .3s ease;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .vcard:hover .vcard__glow {
+            background: linear-gradient(135deg, rgba(99, 102, 241, .5), rgba(47, 111, 237, .15), rgba(99, 102, 241, .5));
+            opacity: 1;
+        }
+
+        .vcard--featured .vcard__glow {
+            background: linear-gradient(135deg, rgba(245, 158, 11, .55), rgba(217, 119, 6, .2), rgba(245, 158, 11, .55));
+        }
+
+        .vcard--featured:hover .vcard__glow {
+            opacity: 1;
+        }
+
+        /* ─── Header ─── */
         .vcard__top {
-            padding: 22px 22px 0;
             display: flex;
             align-items: flex-start;
-            gap: 12px;
+            gap: 14px;
+            padding: 22px 22px 0;
+            position: relative;
+            z-index: 2;
         }
 
         .vcard__dept {
-            width: 46px;
-            height: 46px;
-            border-radius: 12px;
-            background: linear-gradient(135deg, #eef2ff, #dbe4ff);
-            color: #2f6fed;
+            width: 48px;
+            height: 48px;
+            border-radius: 14px;
             display: flex;
             align-items: center;
             justify-content: center;
+            color: #fff;
             font-weight: 800;
             font-size: 15px;
             letter-spacing: -.5px;
             flex-shrink: 0;
+            box-shadow: 0 6px 16px -6px rgba(13, 27, 46, .25),
+                inset 0 1px 0 rgba(255, 255, 255, .25);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, .12);
         }
 
         .vcard__head {
@@ -384,13 +430,81 @@
             min-width: 0;
         }
 
+        /* ─── Badges ─── */
+        .vcard__badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+            min-height: 0;
+        }
+
+        .vcard__badges:empty {
+            display: none;
+        }
+
+        .vbadge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 999px;
+            line-height: 1;
+        }
+
+        .vbadge i {
+            font-size: 9.5px;
+        }
+
+        .vbadge--featured {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+            box-shadow: 0 4px 10px -3px rgba(217, 119, 6, .5);
+        }
+
+        .vbadge--new {
+            background: linear-gradient(135deg, #34d399, #10b981);
+            color: #fff;
+            box-shadow: 0 4px 10px -3px rgba(16, 185, 129, .45);
+        }
+
+        .vbadge--urgent {
+            background: linear-gradient(135deg, #f87171, #ef4444);
+            color: #fff;
+            box-shadow: 0 4px 10px -3px rgba(239, 68, 68, .45);
+            animation: vbadge-pulse 2.2s ease-in-out infinite;
+        }
+
+        .vbadge--soon {
+            background: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fde68a;
+        }
+
+        @keyframes vbadge-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 10px -3px rgba(239, 68, 68, .45);
+            }
+
+            50% {
+                box-shadow: 0 4px 16px -1px rgba(239, 68, 68, .65);
+            }
+        }
+
+        /* ─── Title & subtitle ─── */
         .vcard__title {
             font-size: 17px;
             font-weight: 700;
             color: var(--c-ink);
-            margin: 0 0 4px;
-            line-height: 1.35;
-            letter-spacing: -.2px;
+            margin: 0 0 6px;
+            line-height: 1.32;
+            letter-spacing: -.25px;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
@@ -400,53 +514,60 @@
         .vcard__title a {
             color: inherit;
             text-decoration: none;
+            transition: color .15s ease;
         }
 
         .vcard__title a:hover {
             color: var(--c-accent);
         }
 
-        .vcard__dept-name {
+        .vcard__subtitle {
             font-size: 13px;
             color: var(--c-muted);
-        }
-
-        .vcard__featured-flag {
-            background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #fff;
-            font-size: 10.5px;
-            font-weight: 700;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-            padding: 4px 8px;
-            border-radius: 999px;
-            flex-shrink: 0;
-            display: inline-flex;
+            line-height: 1.5;
+            display: flex;
+            flex-wrap: wrap;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
         }
 
+        .vcard__subtitle i {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-right: 2px;
+        }
+
+        .vcard__dot {
+            color: #cbd5e1;
+            font-weight: 700;
+        }
+
+        /* ─── Chips ─── */
         .vcard__meta {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
             padding: 16px 22px 0;
+            position: relative;
+            z-index: 2;
         }
 
         .vchip {
             display: inline-flex;
             align-items: center;
             gap: 5px;
-            font-size: 12.5px;
+            font-size: 12px;
             color: #475467;
             background: #f1f5f9;
             padding: 5px 10px;
             border-radius: 999px;
             font-weight: 500;
+            white-space: nowrap;
+            transition: background .15s ease;
         }
 
         .vchip i {
-            font-size: 11px;
+            font-size: 10.5px;
             color: #94a3b8;
         }
 
@@ -477,56 +598,187 @@
             color: #f59e0b;
         }
 
+        .vchip--salary {
+            background: rgba(16, 185, 129, .1);
+            color: #047857;
+            font-weight: 600;
+        }
+
+        .vchip--salary i {
+            color: #10b981;
+        }
+
+        /* ─── Summary ─── */
         .vcard__summary {
             padding: 14px 22px 0;
             color: #475467;
-            font-size: 14px;
-            line-height: 1.55;
+            font-size: 13.5px;
+            line-height: 1.6;
+            margin: 0;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            position: relative;
+            z-index: 2;
         }
 
-        .vcard__foot {
-            margin-top: auto;
-            padding: 18px 22px;
+        /* ─── Timeline ─── */
+        .vcard__timeline {
+            margin: 18px 22px 0;
+            padding-top: 14px;
+            border-top: 1px solid #f1f5f9;
+            position: relative;
+            z-index: 2;
+        }
+
+        .vcard__timeline--plain {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
+            justify-content: flex-start;
+            padding-top: 16px;
             border-top: 1px solid #f1f5f9;
         }
 
-        .vcard__foot .vcard__date {
-            font-size: 12.5px;
+        .vcard__timeline-bar {
+            height: 4px;
+            background: #eef2f6;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .vcard__timeline-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #2f6fed);
+            border-radius: inherit;
+            transition: width .4s ease;
+        }
+
+        .vcard__timeline-fill--warn {
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+        }
+
+        .vcard__timeline-fill--danger {
+            background: linear-gradient(90deg, #f87171, #ef4444);
+        }
+
+        .vcard__timeline-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            font-size: 12px;
             color: #94a3b8;
         }
 
+        .vcard__date {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+        }
+
+        .vcard__date i {
+            font-size: 11px;
+        }
+
+        .vcard__deadline {
+            color: #64748b;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .vcard__deadline strong {
+            color: var(--c-ink);
+            font-weight: 700;
+        }
+
+        /* ─── Footer ─── */
+        .vcard__foot {
+            margin-top: auto;
+            padding: 16px 22px 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            border-top: 1px solid #f1f5f9;
+            position: relative;
+            z-index: 2;
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, rgba(248, 250, 252, .5) 100%);
+        }
+
+        .vcard__actions-left {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .vicon-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            border: 1px solid #e7e9f2;
+            background: #fff;
+            color: #64748b;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all .18s ease;
+            flex-shrink: 0;
+        }
+
+        .vicon-btn:hover {
+            border-color: #cbd5e1;
+            color: var(--c-ink);
+            background: #f8fafc;
+            transform: translateY(-1px);
+        }
+
+        .vicon-btn.is-active {
+            border-color: rgba(47, 111, 237, .35);
+            background: rgba(47, 111, 237, .08);
+            color: var(--c-accent);
+        }
+
+        /* ─── Primary action ─── */
         .vcard__apply {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             font-size: 13.5px;
             font-weight: 600;
-            color: var(--c-accent);
+            color: #fff;
             text-decoration: none;
-            padding: 8px 14px;
+            padding: 9px 16px;
             border-radius: 10px;
-            background: rgba(47, 111, 237, .08);
-            transition: background .15s ease, transform .15s ease;
+            background: linear-gradient(135deg, #2f6fed, #4f46e5);
+            box-shadow: 0 8px 18px -8px rgba(47, 111, 237, .55);
+            transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+            white-space: nowrap;
         }
 
         .vcard__apply:hover {
-            background: rgba(47, 111, 237, .15);
-            transform: translateX(2px);
+            transform: translateY(-1px);
+            box-shadow: 0 12px 24px -8px rgba(47, 111, 237, .7);
+            color: #fff;
+            filter: brightness(1.05);
         }
 
         .vcard__apply i {
             font-size: 11px;
+            transition: transform .2s ease;
         }
 
-        /* ─── Filters ─── */
+        .vcard__apply:hover i {
+            transform: translateX(3px);
+        }
+
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  FILTERS                                                    */
+        /* ═══════════════════════════════════════════════════════════ */
+
         .careers-filters {
             display: flex;
             flex-wrap: wrap;
@@ -641,7 +893,10 @@
             }
         }
 
-        /* ─── Empty ─── */
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  EMPTY STATE                                                */
+        /* ═══════════════════════════════════════════════════════════ */
+
         .careers-empty {
             text-align: center;
             padding: 70px 20px;
@@ -682,7 +937,10 @@
             background: #2559c7;
         }
 
-        /* ─── CTA ─── */
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  CTA                                                        */
+        /* ═══════════════════════════════════════════════════════════ */
+
         .careers-cta-card {
             background: linear-gradient(120deg, #0F172A, #312E81);
             color: #fff;
@@ -734,6 +992,10 @@
             font-size: 12px;
         }
 
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  RESPONSIVE                                                 */
+        /* ═══════════════════════════════════════════════════════════ */
+
         @media (max-width: 767.98px) {
             .careers-stats-grid {
                 grid-template-columns: 1fr;
@@ -758,6 +1020,60 @@
 
             .careers-cta-card h3 {
                 font-size: 21px;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            .vcard__top {
+                padding: 18px 18px 0;
+                gap: 12px;
+            }
+
+            .vcard__dept {
+                width: 42px;
+                height: 42px;
+                font-size: 13px;
+                border-radius: 12px;
+            }
+
+            .vcard__title {
+                font-size: 15.5px;
+            }
+
+            .vcard__meta {
+                padding: 14px 18px 0;
+            }
+
+            .vcard__summary {
+                padding: 12px 18px 0;
+            }
+
+            .vcard__timeline {
+                margin: 14px 18px 0;
+                padding-top: 12px;
+            }
+
+            .vcard__timeline--plain {
+                padding-top: 12px;
+            }
+
+            .vcard__foot {
+                padding: 14px 18px 16px;
+            }
+
+            .vcard__apply {
+                padding: 8px 14px;
+                font-size: 13px;
+            }
+
+            .vcard__actions-left {
+                gap: 4px;
+            }
+
+            .vicon-btn {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
             }
         }
     </style>

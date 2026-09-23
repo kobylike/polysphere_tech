@@ -1,7 +1,5 @@
 <div class="position-relative">
 
-
-
     {{-- PAGE TITLES --}}
     <div class="page-titles">
         <ol class="breadcrumb">
@@ -626,7 +624,7 @@
                                 </div>
                             </div>
 
-                            {{-- 🔥 NEW: Date of Birth, Country, City --}}
+                            {{-- Date of Birth, Country, City --}}
                             <div class="col-md-4">
                                 <label class="form-label fw-bold small">Date of Birth</label>
                                 <input type="date" class="form-control @error('date_of_birth') is-invalid @enderror"
@@ -1136,6 +1134,56 @@
         </div>
     @endif
 
+    {{-- ─── CREDENTIALS MODAL — shown after creating a new employee ─── --}}
+    @if($showCredentialsModal)
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);" wire:ignore.self
+            x-data="{ copied: false }">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header"
+                        style="background: linear-gradient(120deg,#0F172A,#312E81); border-radius: calc(0.5rem - 1px) calc(0.5rem - 1px) 0 0;">
+                        <h5 class="modal-title text-white">
+                            <i class="fa-solid fa-circle-check me-2"></i>Employee Created Successfully
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" wire:click="closeCredentialsModal"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="mb-3">
+                            <strong>{{ $createdUserName }}</strong> has been added and emailed their login credentials.
+                            Here's a copy for your records — this password will not be shown again.
+                        </p>
+
+                        <div class="rounded-3 p-3 mb-2" style="background:#F8FAFC; border:1px solid #E2E8F0;">
+                            <div class="small text-uppercase fw-bold text-muted mb-1"
+                                style="letter-spacing:.05em; font-size:11px;">Email</div>
+                            <div class="fw-bold">{{ $createdUserEmail }}</div>
+                        </div>
+
+                        <div class="rounded-3 p-3" style="background:#FFFBEB; border:1px solid #FDE68A;">
+                            <div class="small text-uppercase fw-bold mb-1"
+                                style="letter-spacing:.05em; font-size:11px; color:#B45309;">Temporary Password</div>
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <code class="fs-5 fw-bold" style="color:#78350F;">{{ $createdUserPassword }}</code>
+                                <button type="button" class="btn btn-sm btn-outline-warning flex-shrink-0"
+                                    x-on:click="navigator.clipboard.writeText('{{ $createdUserPassword }}'); copied = true; setTimeout(() => copied = false, 2000);">
+                                    <span x-show="!copied"><i class="fa-regular fa-copy"></i> Copy</span>
+                                    <span x-show="copied" x-cloak><i class="fa-solid fa-check"></i> Copied!</span>
+                                </button>
+                            </div>
+                            <div class="small mt-2" style="color:#92400E;">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                The employee has also received this by email and is required to change it on first login.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" wire:click="closeCredentialsModal">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
 </div>
 
 {{-- STYLES --}}
@@ -1356,8 +1404,6 @@
 
 {{-- ALPINE & CHART --}}
 <script>
-
-
     (function () {
         let chartInstance = null;
         const centerTextPlugin = {

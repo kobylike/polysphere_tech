@@ -22,11 +22,11 @@
         <div class="d-flex gap-2">
             @can('manage-permissions')
                 <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                    <i class="fa-regular fa-plus me-1"></i> New Permission
+                    <i class="fa-solid fa-plus me-1"></i> New Permission
                 </button>
             @endcan
             <button class="btn btn-outline-secondary btn-sm" wire:click="resetFilters">
-                <i class="fa-regular fa-undo me-1"></i> Reset
+                <i class="fa-solid fa-undo me-1"></i> Reset
             </button>
         </div>
     </div>
@@ -52,7 +52,7 @@
                             <span class="fs-14">In Use</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['used']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-link fs-24"></i>
+                        <i class="fa-solid fa-link fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -74,7 +74,7 @@
                             <span class="fs-14">Guard Types</span>
                             <h3 class="text-white mb-0">{{ number_format($stats['guard_types']) }}</h3>
                         </div>
-                        <i class="fa-regular fa-shield-halved fs-24"></i>
+                        <i class="fa-solid fa-shield-halved fs-24"></i>
                     </div>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                     <div class="search-box">
                         <input type="text" class="form-control form-control-sm" placeholder="Search permissions…"
                             wire:model.live.debounce.300ms="search">
-                        <i class="fa-regular fa-search"></i>
+                        <i class="fa-solid fa-search"></i>
                     </div>
                     <select class="default-select style-1 form-control form-control-sm w-auto"
                         wire:model.live="perPage">
@@ -104,7 +104,7 @@
                         <span class="badge bg-dark text-white p-2">{{ count($selectedPermissions) }} selected</span>
                         @can('manage-permissions')
                             <button class="btn btn-danger btn-sm" wire:click="confirmBulkDelete">
-                                <i class="fa-regular fa-trash"></i> Delete
+                                <i class="fa-solid fa-trash"></i> Delete
                             </button>
                         @endcan
                     </div>
@@ -135,11 +135,11 @@
                                             Permission
                                             <span class="ms-1">
                                                 @if($sortBy === 'name' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'name' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -147,11 +147,11 @@
                                             Guard
                                             <span class="ms-1">
                                                 @if($sortBy === 'guard_name' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'guard_name' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -160,11 +160,11 @@
                                             Created
                                             <span class="ms-1">
                                                 @if($sortBy === 'created_at' && $sortDir === 'asc')
-                                                    <i class="fa-regular fa-sort-up"></i>
+                                                    <i class="fa-solid fa-sort-up"></i>
                                                 @elseif($sortBy === 'created_at' && $sortDir === 'desc')
-                                                    <i class="fa-regular fa-sort-down"></i>
+                                                    <i class="fa-solid fa-sort-down"></i>
                                                 @else
-                                                    <i class="fa-regular fa-sort"></i>
+                                                    <i class="fa-solid fa-sort"></i>
                                                 @endif
                                             </span>
                                         </th>
@@ -228,17 +228,17 @@
                                                         </button>
                                                         <button class="btn btn-sm btn-warning"
                                                             wire:click="openEdit({{ $perm->id }})" title="Edit">
-                                                            <i class="fa-regular fa-pen"></i>
+                                                            <i class="fa-solid fa-pen"></i>
                                                         </button>
                                                         @if(!$isUsed)
                                                             <button class="btn btn-sm btn-danger"
                                                                 wire:click="confirmDelete({{ $perm->id }})" title="Delete">
-                                                                <i class="fa-regular fa-trash"></i>
+                                                                <i class="fa-solid fa-trash"></i>
                                                             </button>
                                                         @else
                                                             <button class="btn btn-sm btn-secondary" disabled
                                                                 title="Used by roles — cannot delete">
-                                                                <i class="fa-regular fa-lock"></i>
+                                                                <i class="fa-solid fa-lock"></i>
                                                             </button>
                                                         @endif
                                                     @endcan
@@ -254,7 +254,7 @@
                                                     permission.</p>
                                                 @can('manage-permissions')
                                                     <button class="btn btn-primary btn-sm" wire:click="openCreate">
-                                                        <i class="fa-regular fa-plus"></i> Create First Permission
+                                                        <i class="fa-solid fa-plus"></i> Create First Permission
                                                     </button>
                                                 @endcan
                                             </td>
@@ -329,7 +329,7 @@
                         @can('manage-permissions')
                             <button class="btn btn-primary"
                                 wire:click="openEdit({{ $viewingPermission->id }}); $set('showViewModal', false)">
-                                <i class="fa-regular fa-pen"></i> Edit Permission
+                                <i class="fa-solid fa-pen"></i> Edit Permission
                             </button>
                         @endcan
                     </div>
@@ -369,7 +369,7 @@
                         <button class="btn btn-primary" wire:click="savePermission" wire:loading.attr="disabled">
                             <span wire:loading.remove><i class="fa-regular {{ $isEditing ? 'fa-save' : 'fa-plus' }}"></i>
                                 {{ $isEditing ? 'Save Changes' : 'Create Permission' }}</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Saving…</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Saving…</span>
                         </button>
                     </div>
                 </div>
@@ -394,8 +394,8 @@
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showDeleteModal', false)">Keep</button>
                         <button class="btn btn-danger" wire:click="deletePermission" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Yes, Delete</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Yes, Delete</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>
@@ -421,8 +421,8 @@
                     <div class="modal-footer justify-content-center">
                         <button class="btn btn-secondary" wire:click="$set('showBulkDeleteModal', false)">Cancel</button>
                         <button class="btn btn-danger" wire:click="bulkDelete" wire:loading.attr="disabled">
-                            <span wire:loading.remove><i class="fa-regular fa-trash"></i> Delete All</span>
-                            <span wire:loading><i class="fa-regular fa-spinner fa-spin"></i> Deleting…</span>
+                            <span wire:loading.remove><i class="fa-solid fa-trash"></i> Delete All</span>
+                            <span wire:loading><i class="fa-solid fa-spinner fa-spin"></i> Deleting…</span>
                         </button>
                     </div>
                 </div>
