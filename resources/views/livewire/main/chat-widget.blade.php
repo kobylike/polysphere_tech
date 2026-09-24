@@ -7,77 +7,96 @@
         });
     }
 }" x-init="scrollToBottom()" @message-sent.window="scrollToBottom()" x-effect="if (open) scrollToBottom()"
-    class="ps-chat-root">
-    {{-- Launcher button --}}
-    <button wire:click="toggle" class="ps-launcher" x-show="!open" x-transition aria-label="Open chat">
-        <i class="fal fa-comment-dots"></i>
-        @if($hasUnread)
-            <span class="ps-badge"></span>
-        @endif
-    </button>
+class="ps-chat-root">
+{{-- Launcher button --}}
+<button wire:click="toggle" class="ps-launcher" x-show="!open" x-transition aria-label="Open chat">
+    <i class="fal fa-comment-dots"></i>
+    @if($hasUnread)
+        <span class="ps-badge"></span>
+    @endif
+</button>
 
-    {{-- Chat window --}}
-    <div class="ps-window" x-show="open" x-transition:enter="ps-transition-enter"
-        x-transition:enter-start="ps-transition-enter-start" x-transition:enter-end="ps-transition-enter-end"
-        @click.outside="open = false" style="display: none;">
-        <div class="ps-header">
-            <div class="ps-header-info">
-                <div class="ps-avatar">
-                    <i class="fal fa-sparkles"></i>
-                </div>
-                <div>
-                    <div class="ps-header-title">Sphere</div>
-                    <div class="ps-header-subtitle">
-                        <span class="ps-status-dot"></span> Polysphere Tech Assistant
-                    </div>
+{{-- Chat window --}}
+<div class="ps-window" x-show="open" x-transition:enter="ps-transition-enter"
+    x-transition:enter-start="ps-transition-enter-start" x-transition:enter-end="ps-transition-enter-end"
+    @click.outside="open = false" style="display: none;">
+    <div class="ps-header">
+        <div class="ps-header-info">
+            <div class="ps-avatar">
+                <i class="fal fa-sparkles"></i>
+            </div>
+            <div>
+                <div class="ps-header-title">Sphere</div>
+                <div class="ps-header-subtitle">
+                    <span class="ps-status-dot"></span> Polysphere Tech Assistant
                 </div>
             </div>
-            <button wire:click="toggle" class="ps-close" aria-label="Close chat">
-                <i class="fal fa-times"></i>
-            </button>
         </div>
+        <button wire:click="toggle" class="ps-close" aria-label="Close chat">
+            <i class="fal fa-times"></i>
+        </button>
+    </div>
 
-        <div class="ps-messages" x-ref="scrollArea">
-            @foreach($messages as $message)
-                <div class="ps-row {{ $message['role'] === 'user' ? 'ps-row-user' : 'ps-row-bot' }}">
-                    @if($message['role'] !== 'user')
-                        <div class="ps-avatar-sm">
-                            <i class="fal fa-sparkles"></i>
-                        </div>
-                    @endif
-                    <div class="ps-bubble-group">
-                        <div class="ps-bubble {{ $message['role'] === 'user' ? 'ps-bubble-user' : 'ps-bubble-bot' }}">
-                            {!! $this->linkify($message['content']) !!}
-                        </div>
-                        <div class="ps-time {{ $message['role'] === 'user' ? 'ps-time-user' : '' }}">
-                            {{ $message['time'] ?? '' }}
-                        </div>
-                    </div>
-                </div>
-            @endforeach
-
-            @if($isThinking)
-                <div class="ps-row ps-row-bot">
+    <div class="ps-messages" x-ref="scrollArea">
+        @foreach($messages as $message)
+            <div class="ps-row {{ $message['role'] === 'user' ? 'ps-row-user' : 'ps-row-bot' }}">
+                @if($message['role'] !== 'user')
                     <div class="ps-avatar-sm">
                         <i class="fal fa-sparkles"></i>
                     </div>
-                    <div class="ps-bubble ps-bubble-bot ps-typing">
-                        <span></span><span></span><span></span>
+                @endif
+                <div class="ps-bubble-group">
+                    <div class="ps-bubble {{ $message['role'] === 'user' ? 'ps-bubble-user' : 'ps-bubble-bot' }}">
+                        {!! $this->linkify($message['content']) !!}
+                    </div>
+                    <div class="ps-time {{ $message['role'] === 'user' ? 'ps-time-user' : '' }}">
+                        {{ $message['time'] ?? '' }}
                     </div>
                 </div>
-            @endif
-        </div>
+            </div>
+        @endforeach
 
-        <form wire:submit="send" class="ps-input-row">
-            <input type="text" wire:model="newMessage" placeholder="Ask about Polysphere Tech..." class="ps-input"
-                autocomplete="off" @keydown.escape.window="open = false">
-            <button type="submit" class="ps-send" wire:loading.attr="disabled" wire:target="send">
-                <i class="fal fa-paper-plane"></i>
-            </button>
-        </form>
-
-        <div class="ps-footer-note">Powered by Gemini &middot; Polysphere Tech</div>
+        @if($isThinking)
+            <div class="ps-row ps-row-bot">
+                <div class="ps-avatar-sm">
+                    <i class="fal fa-sparkles"></i>
+                </div>
+                <div class="ps-bubble ps-bubble-bot ps-typing">
+                    <span></span><span></span><span></span>
+                </div>
+            </div>
+        @endif
     </div>
+
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    {{-- Quick reply chips                                      --}}
+    {{-- ═══════════════════════════════════════════════════════ --}}
+    @if($this->shouldShowQuickReplies)
+        <div class="ps-chips" aria-label="Suggested questions">
+            @foreach($quickReplies as $key => $chip)
+                <button type="button"
+                    class="ps-chip"
+                    wire:click="sendQuickReply('{{ $key }}')"
+                    wire:loading.attr="disabled"
+                    wire:target="sendQuickReply"
+                    title="{{ $chip['message'] }}">
+                    <i class="{{ $chip['icon'] }}" aria-hidden="true"></i>
+                    <span>{{ $chip['label'] }}</span>
+                </button>
+            @endforeach
+        </div>
+    @endif
+
+    <form wire:submit="send" class="ps-input-row">
+        <input type="text" wire:model="newMessage" placeholder="Ask about Polysphere Tech..." class="ps-input"
+            autocomplete="off" @keydown.escape.window="open = false">
+        <button type="submit" class="ps-send" wire:loading.attr="disabled" wire:target="send">
+            <i class="fal fa-paper-plane"></i>
+        </button>
+    </form>
+
+    <div class="ps-footer-note">Powered by Gemini &middot; Polysphere Tech</div>
+</div>
 </div>
 
 @push('scripts')
@@ -349,6 +368,73 @@
             }
         }
 
+        /* ═══════════════════════════════════════════════════════════ */
+        /*  QUICK REPLY CHIPS                                          */
+        /* ═══════════════════════════════════════════════════════════ */
+
+        .ps-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            padding: 10px 12px 4px;
+            background: #fff;
+            border-top: 1px solid #eef2f6;
+            flex-shrink: 0;
+        }
+
+        .ps-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 12px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 999px;
+            color: #475569;
+            font-size: 12.5px;
+            font-weight: 500;
+            line-height: 1;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        .ps-chip i {
+            font-size: 11px;
+            color: #6366f1;
+            flex-shrink: 0;
+        }
+
+        .ps-chip:hover:not(:disabled) {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-color: transparent;
+            color: #fff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+        }
+
+        .ps-chip:hover:not(:disabled) i {
+            color: #fff;
+        }
+
+        .ps-chip:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .ps-chip:focus-visible {
+            outline: 2px solid rgba(99, 102, 241, 0.5);
+            outline-offset: 2px;
+        }
+
+        @media (max-width: 480px) {
+            .ps-chip {
+                font-size: 12px;
+                padding: 6px 10px;
+            }
+        }
+
         .ps-input-row {
             display: flex;
             gap: 8px;
@@ -356,6 +442,12 @@
             border-top: 1px solid #eef2f6;
             background: #fff;
             flex-shrink: 0;
+        }
+
+        .ps-chips + .ps-input-row {
+            /* When chips are present, they already provide the top border */
+            border-top: 0;
+            padding-top: 8px;
         }
 
         .ps-input {

@@ -42,4 +42,9 @@ return [
         'property_id' => env('GA4_PROPERTY_ID'),
         'credentials_path' => env('GA4_CREDENTIALS_PATH', storage_path('app/ga4/service-account.json')),
     ],
+
+    'whatsapp' => [
+        'number'          => env('WHATSAPP_NUMBER'),
+        'default_message' => env('WHATSAPP_DEFAULT_MESSAGE', 'Hi Polysphere Tech!'),
+    ],
 ];

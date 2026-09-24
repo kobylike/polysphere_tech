@@ -4,9 +4,11 @@ namespace App\Livewire\Main;
 
 use App\Helpers\NotificationHelper;
 use App\Mail\NewChatLeadNotification;
+use App\Mail\VisitorLeadAcknowledgement;
 use App\Models\ChatLead;
 use App\Models\User;
 use App\Services\ChatKnowledgeBase;
+use App\Services\LeadSpamFilter;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -33,12 +35,139 @@ class ChatWidget extends Component
 
     protected string $model = 'gemini-3.6-flash';
 
-    /**
-     * A lead stays "editable in place" (for typo corrections / follow-up
-     * emails in the same chat) for this many minutes. Past this window, a
-     * different email creates a fresh lead instead of overwriting.
-     */
     protected int $leadLockMinutes = 30;
+
+    /** Session rate limit: 15 messages per minute. */
+    protected int $sessionRateLimit = 15;
+
+    /** IP rate limit: 60 messages per hour. */
+    protected int $ipRateLimit = 60;
+
+    protected int $ipRateWindowSeconds = 3600;
+
+    /* ──────────────────────────────────────────────────────────── */
+    /*  Quick reply chips                                          */
+    /* ──────────────────────────────────────────────────────────── */
+
+    public array $quickReplies = [
+        'services' => [
+            'label'   => 'See our services',
+            'icon'    => 'fal fa-briefcase',
+            'message' => 'What services does Polysphere Tech offer?',
+        ],
+        'projects' => [
+            'label'   => 'Show projects',
+            'icon'    => 'fal fa-layer-group',
+            'message' => 'Can you show me some of your recent projects?',
+        ],
+        'hiring' => [
+            'label'   => 'Are you hiring?',
+            'icon'    => 'fal fa-user-plus',
+            'message' => 'Are you currently hiring?',
+        ],
+        'human' => [
+            'label'   => 'Talk to a human',
+            'icon'    => 'fal fa-user-headset',
+            'message' => "I'd like to speak to a human, please.",
+        ],
+    ];
+
+    public function getShouldShowQuickRepliesProperty(): bool
+    {
+        foreach ($this->messages as $msg) {
+            if (($msg['role'] ?? '') === 'user') {
+                return false;
+            }
+        }
+
+        return ! $this->isThinking;
+    }
+
+    public function sendQuickReply(string $key): void
+    {
+        if ($this->isThinking) {
+            return;
+        }
+
+        $chip = $this->quickReplies[$key] ?? null;
+        if (! $chip) {
+            return;
+        }
+
+        $this->newMessage = $chip['message'];
+        $this->send();
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /*  Human handoff — short-circuit                              */
+    /* ──────────────────────────────────────────────────────────── */
+
+    /**
+     * Detect messages where the visitor clearly wants a human.
+     * These get a canned reply without calling Gemini — so a
+     * Gemini hiccup never blocks the most important conversion path.
+     */
+    protected function isHumanHandoffRequest(string $text): bool
+    {
+        $normalized = mb_strtolower(trim($text));
+
+        $phrases = [
+            'talk to a human',
+            'speak to a human',
+            'talk to someone',
+            'speak to someone',
+            'talk to a person',
+            'speak to a person',
+            'talk to a real person',
+            'speak to a real person',
+            'talk to an agent',
+            'speak to an agent',
+            'real person',
+            'real human',
+            'human please',
+            'chat with a human',
+            'chat with someone',
+            'someone from the team',
+            'talk to the team',
+            'speak to the team',
+            'talk to your team',
+            'speak to your team',
+            'customer support',
+            'customer service',
+            'representative',
+            'get a callback',
+            'request a callback',
+            'book a call',
+            'schedule a call',
+        ];
+
+        foreach ($phrases as $phrase) {
+            if (str_contains($normalized, $phrase)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Canned reply for the human-handoff path. Varies slightly by
+     * whether the visitor has already shared an email.
+     */
+    protected function humanHandoffReply(): string
+    {
+        $sessionId    = session()->getId();
+        $existingLead = ChatLead::where('session_id', $sessionId)->first();
+
+        if ($existingLead && ! empty($existingLead->email)) {
+            return "Absolutely — I've already passed your details to the team, and someone will be in touch soon. "
+                . "If you'd like to add a phone number or anything else useful, just drop it here and I'll make sure it reaches them.";
+        }
+
+        return "Of course — I'll get a real person from our team to reach out. "
+            . "What's the best email address for them to use? "
+            . "You can also add a phone number if you'd like a call instead.";
+    }
 
     /* ──────────────────────────────────────────────────────────── */
     /*  Prompt construction                                        */
@@ -65,7 +194,11 @@ class ChatWidget extends Component
             . "- Warmly acknowledge that you've got their details.\n"
             . "- Confirm that someone from the team will reach out within 24 hours.\n"
             . "- DO NOT ask them to email contact@polyspheretech.com — the connection is already made.\n"
-            . "- If they asked a question in the same message, still answer it briefly."
+            . "- If they asked a question in the same message, still answer it briefly.\n"
+            . "- You may ALSO naturally ask ONE follow-up question to help the team prepare: "
+            .   "either \"What company are you with?\" OR \"Is there a phone number that works best "
+            .   "for a callback?\" — pick whichever fits the flow. Do not ask for both. Do not "
+            .   "make it feel like a form."
             : '';
 
         return <<<PROMPT
@@ -142,6 +275,33 @@ class ChatWidget extends Component
             - Ask a clarifying question when the request is vague.
 
             ═══════════════════════════
+            LEAD CAPTURE — HOW TO COLLECT CONTACT DETAILS
+            ═══════════════════════════
+            Your goal is to help genuine visitors get in touch with the team. Do this
+            NATURALLY — never sound like a form or a sales script.
+
+            - Ask for their EMAIL first when they show real interest (asking for a
+              quote, a timeline, a call, discussing a specific project).
+            - Once you have their email, you may ask ONE additional follow-up
+              question — not more — to help the team prepare:
+                • "What company are you with?" OR
+                • "Is there a phone number that works best for a callback?"
+              Pick whichever feels more natural in context. Do NOT ask for both.
+              Do NOT ask for these if the visitor hasn't yet shown real interest.
+            - If they volunteer a company name or phone number on their own, that's
+              great — you don't need to ask.
+            - ONE nudge per conversation. If they decline to share, drop it and move on.
+
+            ═══════════════════════════
+            HUMAN HANDOFF
+            ═══════════════════════════
+            If the visitor asks to speak to a human, a person, an agent, or the team
+            directly — or if they express frustration that they can't get what they
+            need from you — respond warmly and ask for their email so a human can
+            follow up. Do NOT keep answering as the bot. Prioritise getting their
+            contact details so a real person can take over within 24 hours.
+
+            ═══════════════════════════
             LINKS (STRICT)
             ═══════════════════════════
             - Only share URLs from the canonical list above or the LIVE KNOWLEDGE BASE.
@@ -152,10 +312,6 @@ class ChatWidget extends Component
             ═══════════════════════════
             - Pricing: depends on scope, complexity, timeline. Invite them to share
               their email OR contact@polyspheretech.com. Never invent a number.
-            - Leads: if the visitor signals interest in a project, quote, or consultation,
-              ask for their email naturally — ONE nudge per conversation, not every
-              message. Example: "Happy to have someone reach out — what's a good email
-              for you?"
             - Off-topic requests (weather, trivia, poems, jokes, unrelated coding):
               DO NOT answer. Politely decline and offer what you CAN help with.
             - Frustration / complaints: acknowledge, point them at contact@polyspheretech.com.
@@ -169,6 +325,7 @@ class ChatWidget extends Component
             - If you don't know, say so and redirect to the team.
             - Never claim to be human. Never pretend to take real actions.
             - Never produce creative writing on request.
+            - Never ask for more than two pieces of contact info in one conversation.
             {$leadContext}
             PROMPT;
     }
@@ -196,7 +353,7 @@ class ChatWidget extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Send / reply                                               */
+    /*  Send                                                       */
     /* ──────────────────────────────────────────────────────────── */
 
     public function send(): void
@@ -207,9 +364,10 @@ class ChatWidget extends Component
             return;
         }
 
-        $key = 'chat-widget:' . session()->getId();
+        // ─── Rate limiting: session (15/min) ───────────────────────
+        $sessionKey = 'chat-widget:' . session()->getId();
 
-        if (RateLimiter::tooManyAttempts($key, 15)) {
+        if (RateLimiter::tooManyAttempts($sessionKey, $this->sessionRateLimit)) {
             $this->messages[] = [
                 'role'    => 'assistant',
                 'content' => "You're sending messages a bit fast — give me a few seconds and try again.",
@@ -218,10 +376,55 @@ class ChatWidget extends Component
             return;
         }
 
-        RateLimiter::hit($key, 60);
+        RateLimiter::hit($sessionKey, 60);
 
-        // Reset each turn — captureLeadIfPresent() sets it back to true if
-        // this message is the one that creates a brand-new lead.
+        // ─── Rate limiting: IP (60/hour) ───────────────────────────
+        $ipKey = 'chat-widget-ip:' . request()->ip();
+
+        if (RateLimiter::tooManyAttempts($ipKey, $this->ipRateLimit)) {
+            Log::warning('Chat widget IP rate limit hit', [
+                'ip'    => request()->ip(),
+                'agent' => request()->userAgent(),
+            ]);
+
+            $this->messages[] = [
+                'role'    => 'assistant',
+                'content' => "We've received a lot of messages from this network. Please try again later, or email contact@polyspheretech.com.",
+                'time'    => now()->format('g:i A'),
+            ];
+            return;
+        }
+
+        RateLimiter::hit($ipKey, $this->ipRateWindowSeconds);
+
+        // ─── Human handoff short-circuit ───────────────────────────
+        if ($this->isHumanHandoffRequest($text)) {
+            $this->messages[] = [
+                'role'    => 'user',
+                'content' => $text,
+                'time'    => now()->format('g:i A'),
+            ];
+
+            $this->messages[] = [
+                'role'    => 'assistant',
+                'content' => $this->humanHandoffReply(),
+                'time'    => now()->format('g:i A'),
+            ];
+
+            $this->newMessage = '';
+
+            // Also try to capture an email if they included one in the
+            // same message ("talk to a human, my email is x@y.com").
+            $this->captureLeadIfPresent($text);
+
+            if (! $this->isOpen) {
+                $this->hasUnread = true;
+            }
+
+            return;
+        }
+
+        // ─── Normal flow ───────────────────────────────────────────
         $this->leadJustCaptured = false;
 
         $this->messages[] = [
@@ -236,12 +439,14 @@ class ChatWidget extends Component
             $this->messages = array_slice($this->messages, -$this->maxHistory);
         }
 
-        // Detect + persist lead BEFORE calling Gemini, so the bot's reply
-        // can acknowledge the capture in the same turn.
         $this->captureLeadIfPresent($text);
 
         $this->dispatch('message-sent');
     }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /*  Reply                                                      */
+    /* ──────────────────────────────────────────────────────────── */
 
     #[On('message-sent')]
     public function reply(): void
@@ -265,7 +470,7 @@ class ChatWidget extends Component
                 ],
                 'contents' => $contents,
                 'generationConfig' => [
-                    'maxOutputTokens' => 800,
+                    'maxOutputTokens' => 2000,
                     'thinkingConfig'  => [
                         'thinkingLevel' => 'minimal',
                     ],
@@ -275,7 +480,7 @@ class ChatWidget extends Component
             if ($response->failed()) {
                 Log::error('Gemini API error', [
                     'status' => $response->status(),
-                    'body'   => $response->body(),
+                    'body'   => mb_substr($response->body(), 0, 1000),
                 ]);
                 $this->pushAssistantMessage(
                     "Sorry, I'm having trouble connecting right now. Please try again, or email contact@polyspheretech.com."
@@ -285,12 +490,31 @@ class ChatWidget extends Component
 
             $data = $response->json();
 
-            $text = $data['candidates'][0]['content']['parts'][0]['text']
-                ?? "Sorry, I didn't quite catch that — could you rephrase?";
+            $finishReason = $data['candidates'][0]['finishReason'] ?? null;
+            $text         = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
+
+            if (empty($text)) {
+                Log::warning('Gemini returned no text', [
+                    'finish_reason'   => $finishReason,
+                    'usage_metadata'  => $data['usageMetadata'] ?? null,
+                    'prompt_feedback' => $data['promptFeedback'] ?? null,
+                    'user_message'    => end($this->messages)['content'] ?? null,
+                    'body'            => mb_substr($response->body(), 0, 800),
+                ]);
+
+                $this->pushAssistantMessage(
+                    "I didn't quite catch that — could you rephrase, or email contact@polyspheretech.com so a human can help?"
+                );
+                return;
+            }
 
             $this->pushAssistantMessage(trim($text));
         } catch (\Throwable $e) {
-            Log::error('Chat widget exception', ['message' => $e->getMessage()]);
+            Log::error('Chat widget exception', [
+                'message' => $e->getMessage(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+            ]);
             $this->pushAssistantMessage('Something went wrong on our end. Please try again shortly.');
         } finally {
             $this->isThinking = false;
@@ -314,21 +538,6 @@ class ChatWidget extends Component
     /*  Lead capture                                               */
     /* ──────────────────────────────────────────────────────────── */
 
-    /**
-     * Rule set:
-     *   1. No email in the message                 → do nothing.
-     *   2. No lead in this session                 → create a new lead + notify.
-     *   3. Same email as existing session lead     → do nothing.
-     *   4. Different email, different person name  → create a NEW lead.
-     *   5. Different email, existing lead is:
-     *        - status === 'new'
-     *        - created < 30 min ago
-     *        - not a different person
-     *                                              → UPDATE existing lead's email
-     *                                                + log change in notes.
-     *   6. Different email, existing lead is
-     *      contacted OR older than 30 min         → create a NEW lead.
-     */
     protected function captureLeadIfPresent(string $text): void
     {
         $email = $this->extractEmail($text);
@@ -339,21 +548,18 @@ class ChatWidget extends Component
         $sessionId = session()->getId();
         $newName   = $this->extractName($text);
 
-        // ─── Look for an existing lead in this session ─────────────
+        // ─── Existing lead in this session? ────────────────────────
         $existing = ChatLead::where('session_id', $sessionId)
             ->orderByDesc('created_at')
             ->first();
 
         if ($existing) {
-            // Same email → nothing to do.
             if (strtolower($existing->email) === $email) {
                 return;
             }
 
-            // Different email — is this a different person?
             $differentPerson = $this->looksLikeDifferentPerson($existing, $newName);
 
-            // Same session, same lead, same "shift" → fold in.
             $isNewEnough = $existing->created_at->gt(now()->subMinutes($this->leadLockMinutes));
             $isUntouched = $existing->status === 'new';
 
@@ -361,17 +567,19 @@ class ChatWidget extends Component
                 $this->updateLeadEmailInPlace($existing, $email);
                 return;
             }
-
-            // Otherwise fall through to create a fresh lead.
         }
 
-        // ─── Create a brand-new lead ───────────────────────────────
+        // ─── New lead — evaluate for spam ──────────────────────────
         try {
+            $spam   = app(LeadSpamFilter::class)->evaluate($email, $text);
+            $isSpam = $spam['is_spam'];
+            $reason = $spam['reason'];
+
             $lead = ChatLead::create([
                 'email'        => $email,
                 'name'         => $newName,
                 'phone'        => $this->extractPhone($text),
-                'company'      => null,
+                'company'      => $this->extractCompany($text),
                 'session_id'   => $sessionId,
                 'ip_address'   => request()->ip(),
                 'user_agent'   => mb_substr((string) request()->userAgent(), 0, 500),
@@ -380,12 +588,40 @@ class ChatWidget extends Component
                 'message'      => $text,
                 'conversation' => $this->messages,
                 'page_url'     => mb_substr((string) request()->header('referer'), 0, 500),
+                'status'       => $isSpam ? 'spam' : 'new',
+                'is_spam'      => $isSpam,
+                'notes'        => $isSpam ? "[Auto-flagged] {$reason}" : null,
             ]);
 
+            // ─── Spam leads: skip all notifications ────────────────
+            if ($isSpam) {
+                Log::info('Chat lead flagged as spam', [
+                    'lead_id' => $lead->id,
+                    'email'   => $email,
+                    'reason'  => $reason,
+                ]);
+
+                return;
+            }
+
+            // ─── Genuine lead — notify normally ────────────────────
             $this->leadJustCaptured = true;
 
+            // 1. Notify the team
             Mail::to(NewChatLeadNotification::RECIPIENT)
                 ->queue(new NewChatLeadNotification($lead));
+
+            // 2. Acknowledge the visitor — wrapped separately so a failure
+            //    here never blocks the admin notification above.
+            try {
+                Mail::to($lead->email)->queue(new VisitorLeadAcknowledgement($lead));
+            } catch (\Throwable $e) {
+                Log::warning('Visitor acknowledgement email failed to queue', [
+                    'lead_id' => $lead->id,
+                    'email'   => $lead->email,
+                    'error'   => $e->getMessage(),
+                ]);
+            }
 
             $lead->update(['notified_at' => now()]);
 
@@ -398,11 +634,6 @@ class ChatWidget extends Component
         }
     }
 
-    /**
-     * Fold a corrected / secondary email into the existing lead rather than
-     * forking a duplicate. Adds an audit trail to notes so admins see
-     * exactly what changed and when.
-     */
     protected function updateLeadEmailInPlace(ChatLead $lead, string $newEmail): void
     {
         try {
@@ -414,7 +645,6 @@ class ChatWidget extends Component
             $lead->email = $newEmail;
             $lead->notes = trim(($lead->notes ? $lead->notes . "\n\n" : '') . $note);
 
-            // Fill in name if the existing lead didn't have one yet.
             if (empty($lead->name)) {
                 $freshName = $this->extractNameFromMessages();
                 if ($freshName) {
@@ -422,19 +652,20 @@ class ChatWidget extends Component
                 }
             }
 
-            // Keep the "intent" fresh if it wasn't set yet.
+            if (empty($lead->company)) {
+                $freshCompany = $this->extractCompanyFromMessages();
+                if ($freshCompany) {
+                    $lead->company = $freshCompany;
+                }
+            }
+
             if (empty($lead->intent)) {
                 $lead->intent = $this->inferIntent();
             }
 
-            // Refresh conversation snapshot so the admin sees the latest thread.
             $lead->conversation = $this->messages;
 
             $lead->save();
-
-            // Deliberately NOT setting $this->leadJustCaptured. The bot should
-            // not say "I've got your details" a second time — it already said
-            // it when the lead was first created.
 
             Log::info('Chat lead email updated in place', [
                 'lead_id'   => $lead->id,
@@ -449,16 +680,6 @@ class ChatWidget extends Component
         }
     }
 
-    /**
-     * Decide whether a second email in the same session looks like a
-     * different person rather than the same visitor correcting themselves.
-     *
-     * Logic:
-     *   - If the existing lead has NO name → cannot tell → assume same person.
-     *   - If the new message has NO name  → cannot tell → assume same person.
-     *   - If both names exist and match (case-insensitive) → same person.
-     *   - If both names exist and differ   → different person.
-     */
     protected function looksLikeDifferentPerson(ChatLead $existing, ?string $newName): bool
     {
         $existingName = trim((string) $existing->name);
@@ -471,11 +692,6 @@ class ChatWidget extends Component
         return strcasecmp($existingName, $newName) !== 0;
     }
 
-    /**
-     * Scan the conversation history for the first name the visitor used.
-     * Used to backfill `name` when a lead was created from an email-only
-     * message and the visitor introduces themselves later.
-     */
     protected function extractNameFromMessages(): ?string
     {
         foreach ($this->messages as $msg) {
@@ -483,6 +699,19 @@ class ChatWidget extends Component
                 $name = $this->extractName((string) ($msg['content'] ?? ''));
                 if ($name) {
                     return $name;
+                }
+            }
+        }
+        return null;
+    }
+
+    protected function extractCompanyFromMessages(): ?string
+    {
+        foreach ($this->messages as $msg) {
+            if (($msg['role'] ?? '') === 'user') {
+                $company = $this->extractCompany((string) ($msg['content'] ?? ''));
+                if ($company) {
+                    return $company;
                 }
             }
         }
@@ -599,6 +828,35 @@ class ChatWidget extends Component
                 return trim($m[0]);
             }
         }
+        return null;
+    }
+
+    /**
+     * Extract a company name when the visitor clearly states it.
+     */
+    protected function extractCompany(string $text): ?string
+    {
+        $patterns = [
+            '/\b(?:i\'m from|im from|i am from)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
+            '/\b(?:i work at|i work for)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
+            '/\b(?:my company is|our company is|company name is|company:)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
+            '/\b(?:we\'re|we are)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text, $m)) {
+                $company = trim($m[1]);
+
+                $company = rtrim($company, '.,;:!?');
+                $company = preg_replace('/\s+(and|or|but|so|because|and then|the|a|an)$/i', '', $company) ?? $company;
+                $company = trim($company);
+
+                if (mb_strlen($company) >= 2 && mb_strlen($company) <= 80) {
+                    return $company;
+                }
+            }
+        }
+
         return null;
     }
 

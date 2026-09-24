@@ -26,6 +26,9 @@
                                 <span><a href="{{ $socials['youtube'] }}" target="_blank" rel="noopener noreferrer"><i
                                             class="fab fa-youtube"></i></a></span>
                             </div>
+
+                            {{-- WhatsApp card block --}}
+                            @livewire('main.partials.whatsapp-button', ['variant' => 'footer'])
                         </div>
                     </div>
 

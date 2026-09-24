@@ -8,6 +8,9 @@
                     <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>
                 </span>
                 <span class="time p-relative">Hours: Mon - Fri: 8.00 AM - 8.00 PM</span>
+
+                {{-- WhatsApp — plain link styled to match the rest of the top bar --}}
+                @livewire('main.partials.whatsapp-button', ['variant' => 'topbar'])
             </div>
             <div class="header-top-socials">
                 <span><a href="https://web.facebook.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
