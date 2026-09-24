@@ -3,6 +3,7 @@
 namespace App\Livewire\Admin\Users;
 
 use App\Helpers\ActivityLogger;
+use App\Helpers\NotificationHelper;
 use App\Mail\AccountCreatedMail;
 use App\Mail\InvitationMail;
 use App\Models\Department;
@@ -39,7 +40,6 @@ class UserManagement extends Component
     public int $perPage = 15;
 
     // ─── Deep-link: ?edit={identifier} opens the edit modal ────────────
-    // Accepts a username OR a numeric id — resolved at mount.
     #[Url(as: 'edit', except: null)]
     public ?string $openUser = null;
 
@@ -129,8 +129,6 @@ class UserManagement extends Component
 
     /**
      * Reserved words that must never become a username.
-     * Kept in sync with UserAccountService so admin-created users and
-     * HR-created users share the same protection.
      */
     protected array $reservedUsernames = [
         'admin',
@@ -186,8 +184,6 @@ class UserManagement extends Component
         $this->emp_emergency_updateCountryInfo();
         $this->emp_loadDepartmentsAndPositions();
 
-        // Deep-link support: /user-management?edit=samuelatuahene
-        // or /user-management?edit=42 — both resolve.
         if ($this->openUser) {
             $identifier = $this->openUser;
             $this->openUser = null;
@@ -224,6 +220,37 @@ class UserManagement extends Component
             $this->availableRoles,
             fn($role) => $role !== $this->protectedRole && $role !== $this->defaultRole
         ));
+    }
+
+    // ─── Notification helper ─────────────────────────────────────────────
+    /**
+     * Send an in-app notification to a user, swallowing any failures
+     * so a broken notification never breaks the admin action itself.
+     */
+    private function notifyUser(
+        int $userId,
+        string $title,
+        string $body,
+        string $type = 'info',
+        string $icon = 'fa-bell',
+        ?string $link = null
+    ): void {
+        try {
+            $user = User::find($userId);
+            if (!$user) {
+                return;
+            }
+
+            NotificationHelper::sendToUser($user, [
+                'title' => $title,
+                'body'  => $body,
+                'type'  => $type,
+                'icon'  => $icon,
+                'link'  => $link ?? route('account', ['tab' => 'security']),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     // ─── Departments & Positions for conversion ──────────────────────────
@@ -572,10 +599,6 @@ class UserManagement extends Component
         $this->showUserModal = true;
     }
 
-    /**
-     * Generate a unique, URL-safe username from first + last name.
-     * Never returns a reserved word.
-     */
     private function generateUsername(string $firstName, string $lastName): string
     {
         $base = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $firstName . $lastName));
@@ -646,7 +669,14 @@ class UserManagement extends Component
 
         try {
             if ($this->isEditing) {
-                $user = User::findOrFail($this->selectedUserId);
+                $user = User::with('profile')->findOrFail($this->selectedUserId);
+
+                // 🔔 Capture previous state BEFORE mutating
+                $oldRoles     = $user->roles->pluck('name')
+                    ->reject(fn($r) => $r === $this->protectedRole)
+                    ->values()->toArray();
+                $oldFeatured  = (bool) ($user->profile?->is_featured_team ?? false);
+                $oldSpotlight = (bool) ($user->profile?->is_spotlight ?? false);
 
                 if ($this->isSelf && !$user->hasRole('Super Admin')) {
                     $currentRoles = $user->roles->pluck('name')->toArray();
@@ -675,7 +705,6 @@ class UserManagement extends Component
                     $data['email_verification_sent_at'] = null;
                 }
 
-                // Backfill username if missing (legacy accounts)
                 if (empty($user->username)) {
                     $data['username'] = $this->generateUsername($this->first_name, $this->last_name);
                 }
@@ -706,6 +735,82 @@ class UserManagement extends Component
                 $this->logActivity($user->id, 'admin_update', "Account updated by admin ({$fullName}, {$this->email}).");
                 if ($emailChanged) {
                     $this->logActivity($user->id, 'email_changed', 'Email address changed by admin; verification reset.');
+                }
+
+                // 🔔 Role change notifications
+                if (!$this->isSelf) {
+                    $addedRoles   = array_values(array_diff($roleNames, $oldRoles));
+                    $removedRoles = array_values(array_diff($oldRoles, $roleNames));
+
+                    if (!empty($addedRoles)) {
+                        $this->notifyUser(
+                            $user->id,
+                            'Role Assigned',
+                            'You have been assigned the following role(s): ' . implode(', ', $addedRoles) . '.',
+                            'success',
+                            'fa-user-shield'
+                        );
+                    }
+
+                    if (!empty($removedRoles)) {
+                        $this->notifyUser(
+                            $user->id,
+                            'Role Removed',
+                            'The following role(s) were removed from your account: ' . implode(', ', $removedRoles) . '.',
+                            'warning',
+                            'fa-user-shield'
+                        );
+                    }
+                }
+
+                // 🔔 Spotlight change
+                if ($oldSpotlight !== (bool) $this->is_spotlight) {
+                    $this->notifyUser(
+                        $user->id,
+                        $this->is_spotlight ? 'You are in the Spotlight!' : 'Removed from Spotlight',
+                        $this->is_spotlight
+                            ? 'You have been added to the homepage/about spotlight.'
+                            : 'You have been removed from the homepage/about spotlight.',
+                        $this->is_spotlight ? 'success' : 'info',
+                        'fa-star',
+                        route('account', ['tab' => 'profile'])
+                    );
+                }
+
+                // 🔔 Featured team change
+                if ($oldFeatured !== (bool) $this->is_featured_team) {
+                    $this->notifyUser(
+                        $user->id,
+                        $this->is_featured_team ? 'You are now a Featured Team Member' : 'Removed from Featured Team',
+                        $this->is_featured_team
+                            ? 'Your profile is now featured on the team members section.'
+                            : 'Your profile is no longer featured on the team members section.',
+                        $this->is_featured_team ? 'success' : 'info',
+                        'fa-users',
+                        route('account', ['tab' => 'profile'])
+                    );
+                }
+
+                // 🔔 Password changed by admin
+                if (!empty($this->password)) {
+                    $this->notifyUser(
+                        $user->id,
+                        'Password Changed',
+                        'An administrator has changed your password. Please log in with the new password.',
+                        'warning',
+                        'fa-key'
+                    );
+                }
+
+                // 🔔 Email changed
+                if ($emailChanged) {
+                    $this->notifyUser(
+                        $user->id,
+                        'Email Address Updated',
+                        'Your email address was updated by an administrator. Please verify your new email.',
+                        'info',
+                        'fa-envelope'
+                    );
                 }
 
                 $this->dispatch('notify', ['type' => 'success', 'title' => 'User updated!', 'message' => "{$fullName}'s account has been updated."]);
@@ -747,6 +852,15 @@ class UserManagement extends Component
                 ], 'user');
 
                 $this->logActivity($user->id, 'admin_create', "Account created by admin ({$fullName}, {$this->email}).");
+
+                // 🔔 Welcome notification
+                $this->notifyUser(
+                    $user->id,
+                    'Welcome to ' . config('app.name'),
+                    'Your account has been created by an administrator. Check your email for login details.',
+                    'success',
+                    'fa-user-plus'
+                );
 
                 try {
                     Mail::to($user->email)->queue(
@@ -901,6 +1015,17 @@ class UserManagement extends Component
         ], 'user');
 
         $this->logActivity($user->id, 'converted_to_employee', "User converted to employee (ID: {$this->emp_employee_id}) by admin.");
+
+        // 🔔 Employee conversion notification
+        $this->notifyUser(
+            $user->id,
+            'Employee Profile Activated',
+            "You have been registered as an employee (ID: {$this->emp_employee_id}).",
+            'success',
+            'fa-id-badge',
+            route('account', ['tab' => 'profile'])
+        );
+
         $this->showConvertEmployeeModal = false;
         $this->convertUserId = null;
 
@@ -1022,6 +1147,15 @@ class UserManagement extends Component
                 'activated_by' => Auth::id(),
             ], 'user');
             $this->logActivity((int) $id, 'bulk_activate', 'Account activated via bulk admin action.');
+
+            // 🔔 Bulk activation notification
+            $this->notifyUser(
+                (int) $id,
+                'Account Activated',
+                'Your account has been reactivated by an administrator.',
+                'success',
+                'fa-circle-check'
+            );
         }
 
         $this->selectedUsers = [];
@@ -1042,6 +1176,15 @@ class UserManagement extends Component
                 'suspended_by' => Auth::id(),
             ], 'user');
             $this->logActivity((int) $id, 'bulk_suspend', 'Account suspended via bulk admin action.');
+
+            // 🔔 Bulk suspension notification
+            $this->notifyUser(
+                (int) $id,
+                'Account Suspended',
+                'Your account has been suspended by an administrator.',
+                'warning',
+                'fa-ban'
+            );
         }
 
         $this->selectedUsers = [];
@@ -1081,6 +1224,18 @@ class UserManagement extends Component
         ], 'user');
 
         $this->logActivity($user->id, 'status_toggle', "Status changed to '{$newStatus}' by admin.");
+
+        // 🔔 Status toggle notification
+        $this->notifyUser(
+            $user->id,
+            $newStatus === 'active' ? 'Account Activated' : 'Account Suspended',
+            $newStatus === 'active'
+                ? 'Your account has been reactivated. Welcome back!'
+                : 'Your account has been suspended by an administrator.',
+            $newStatus === 'active' ? 'success' : 'warning',
+            $newStatus === 'active' ? 'fa-circle-check' : 'fa-ban'
+        );
+
         $this->showToggleStatusModal = false;
         $this->toggleUserId = null;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Status changed', 'message' => "User status changed to '{$newStatus}'."]);
@@ -1117,6 +1272,18 @@ class UserManagement extends Component
         ], 'user');
 
         $this->logActivity($user->id, 'verification_toggle', "Email marked as {$action} by admin.");
+
+        // 🔔 Verification toggle notification
+        $this->notifyUser(
+            $user->id,
+            $action === 'verified' ? 'Email Verified' : 'Email Unverified',
+            $action === 'verified'
+                ? 'Your email address has been verified by an administrator.'
+                : 'Your email verification was reset by an administrator.',
+            $action === 'verified' ? 'success' : 'info',
+            'fa-envelope-circle-check'
+        );
+
         $this->showToggleVerifyModal = false;
         $this->verifyUserId = null;
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Verification', 'message' => "User email marked as {$action}."]);
@@ -1145,6 +1312,16 @@ class UserManagement extends Component
         ], 'user');
 
         $this->logActivity($user->id, 'verification_resent', 'Verification email resent by admin.');
+
+        // 🔔 Verification email resent notification
+        $this->notifyUser(
+            $user->id,
+            'Verification Email Sent',
+            'A new verification email was sent to ' . $user->email . '.',
+            'info',
+            'fa-paper-plane'
+        );
+
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Sent', 'message' => "Verification email sent to {$user->email}."]);
     }
 
@@ -1221,6 +1398,19 @@ class UserManagement extends Component
         ], 'user');
 
         $this->logActivity($user->id, 'spotlight_toggle', $profile->is_spotlight ? 'Added to homepage/About spotlight by admin.' : 'Removed from homepage/About spotlight by admin.');
+
+        // 🔔 Spotlight toggle notification
+        $this->notifyUser(
+            $user->id,
+            $profile->is_spotlight ? 'You are in the Spotlight!' : 'Removed from Spotlight',
+            $profile->is_spotlight
+                ? 'You have been added to the homepage/about spotlight.'
+                : 'You have been removed from the homepage/about spotlight.',
+            $profile->is_spotlight ? 'success' : 'info',
+            'fa-star',
+            route('account', ['tab' => 'profile'])
+        );
+
         $this->showSpotlightModal = false;
         $this->spotlightUserId = null;
         $this->dispatch('notify', ['type' => 'success', 'title' => $profile->is_spotlight ? 'Spotlighted!' : 'Removed', 'message' => $profile->is_spotlight ? "{$user->name} now appears in the spotlight." : "{$user->name} was removed from the spotlight."]);

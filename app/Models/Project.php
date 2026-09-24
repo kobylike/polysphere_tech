@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ChatKnowledgeBase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -60,6 +61,19 @@ class Project extends Model
         'custom_fields'      => 'array',
         'published_at'       => 'datetime',
     ];
+
+    // ─── Lifecycle ──────────────────────────────────────────
+
+    protected static function booted(): void
+    {
+        // Chat bot knowledge base: bust cache on any change
+        $bust = fn() => ChatKnowledgeBase::bust();
+
+        static::saved($bust);
+        static::deleted($bust);
+        static::restored($bust);
+        static::forceDeleted($bust);
+    }
 
     // ─── Activity log ───────────────────────────────────────
 

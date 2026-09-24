@@ -1,12 +1,12 @@
 <div x-data="{
-        open: @entangle('isOpen'),
-        scrollToBottom() {
-            this.$nextTick(() => {
-                const el = this.$refs.scrollArea;
-                if (el) el.scrollTop = el.scrollHeight;
-            });
-        }
-    }" x-init="scrollToBottom()" @message-sent.window="scrollToBottom()" x-effect="if (open) scrollToBottom()"
+    open: @entangle('isOpen'),
+    scrollToBottom() {
+        this.$nextTick(() => {
+            const el = this.$refs.scrollArea;
+            if (el) el.scrollTop = el.scrollHeight;
+        });
+    }
+}" x-init="scrollToBottom()" @message-sent.window="scrollToBottom()" x-effect="if (open) scrollToBottom()"
     class="ps-chat-root">
     {{-- Launcher button --}}
     <button wire:click="toggle" class="ps-launcher" x-show="!open" x-transition aria-label="Open chat">
@@ -47,7 +47,7 @@
                     @endif
                     <div class="ps-bubble-group">
                         <div class="ps-bubble {{ $message['role'] === 'user' ? 'ps-bubble-user' : 'ps-bubble-bot' }}">
-                            {{ $message['content'] }}
+                            {!! $this->linkify($message['content']) !!}
                         </div>
                         <div class="ps-time {{ $message['role'] === 'user' ? 'ps-time-user' : '' }}">
                             {{ $message['time'] ?? '' }}
@@ -273,6 +273,14 @@
             font-size: 14px;
             line-height: 1.5;
             word-wrap: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .ps-bubble a {
+            color: inherit;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            word-break: break-all;
         }
 
         .ps-bubble-bot {
@@ -280,6 +288,10 @@
             color: #0f172a;
             border: 1px solid #e2e8f0;
             border-bottom-left-radius: 4px;
+        }
+
+        .ps-bubble-bot a {
+            color: #4f46e5;
         }
 
         .ps-bubble-user {

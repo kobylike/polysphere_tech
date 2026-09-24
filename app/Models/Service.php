@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ChatKnowledgeBase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
@@ -25,6 +26,17 @@ class Service extends Model
     protected $casts = [
         'additional_images' => 'array',
     ];
+
+    // ─── Lifecycle ──────────────────────────────────────────
+
+    protected static function booted(): void
+    {
+        // Chat bot knowledge base: bust cache on any change
+        $bust = fn() => ChatKnowledgeBase::bust();
+
+        static::saved($bust);
+        static::deleted($bust);
+    }
 
     // ─── Activity log ───────────────────────────────────────
 

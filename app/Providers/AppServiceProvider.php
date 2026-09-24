@@ -12,7 +12,12 @@ use App\Models\Role;
 use App\Models\Service;
 use App\Models\Subscriber;
 use App\Models\User;
+use App\Models\UserProfile;
 use App\Models\Vacancy;
+use App\Observers\ProjectObserver;
+use App\Observers\ServiceObserver;
+use App\Observers\UserProfileObserver;
+use App\Observers\VacancyObserver;
 use App\Policies\ApplicationPolicy;
 use App\Policies\CategoryPolicy;
 use App\Policies\DepartmentPolicy;
@@ -61,5 +66,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-permissions', function ($user) {
             return $user->hasRole('Super Admin');
         });
+
+
+
+        //observers
+        Vacancy::observe(VacancyObserver::class);
+        Project::observe(ProjectObserver::class);
+        Service::observe(ServiceObserver::class);
+        UserProfile::observe(UserProfileObserver::class);
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\EmploymentType;
 use App\Enums\ExperienceLevel;
 use App\Enums\VacancyStatus;
 use App\Enums\WorkplaceType;
+use App\Services\ChatKnowledgeBase;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -123,6 +124,7 @@ class Vacancy extends Model
             })
             ->useLogName('vacancy');
     }
+
     /*
     |--------------------------------------------------------------------------
     | Lifecycle
@@ -150,6 +152,14 @@ class Vacancy extends Model
                 $vacancy->updated_by = Auth::id();
             }
         });
+
+        // Chat bot knowledge base: bust cache on any change
+        $bust = fn() => ChatKnowledgeBase::bust();
+
+        static::saved($bust);
+        static::deleted($bust);
+        static::restored($bust);
+        static::forceDeleted($bust);
     }
 
     public static function generateUniqueSlug(string $title, ?int $ignoreId = null): string

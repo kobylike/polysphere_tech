@@ -7,23 +7,28 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>{{ $title ?? 'Polysphere Tech - IT Solutions & Software Development' }}</title>
 
-    <!-- Primary Meta Tags -->
-    <meta name="description"
-        content="Polysphere Tech delivers custom software development, SaaS platforms, and digital transformation solutions. We build future-ready technology for modern businesses.">
-    <meta name="keywords"
-        content="IT solutions, software development, SaaS platform, digital transformation, custom software, IT consulting, Polysphere Tech">
+    {{-- Admin panel: never index, never follow, never share --}}
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+    <meta name="bingbot" content="noindex, nofollow">
 
-    <!-- Open Graph / Social Media Meta Tags -->
-    <meta property="og:title" content="Polysphere Tech - IT Solutions & Software Development">
-    <meta property="og:description"
-        content="Custom software development, SaaS platforms, and digital transformation solutions for modern businesses.">
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="{{ url('/') }}">
+    <title>{{ $title ?? 'Admin · Polysphere Tech' }}</title>
+
+    <meta name="description" content="Polysphere Tech admin panel.">
+    <meta name="author" content="Polysphere Tech">
+
+    <!-- Canonical (defensive — in case noindex is ever removed) -->
+    <link rel="canonical" href="{{ url()->current() }}">
+
+    <!-- Theme color (address bar on mobile, PWA) -->
+    <meta name="theme-color" content="#3b82f6">
 
     <!-- Favicon -->
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/main/imgs/favicon.svg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/main/imgs/favicon.svg') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/main/imgs/apple-touch-icon.png') }}">
+
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     <!-- Vendor CSS -->
@@ -263,6 +268,7 @@
             </style>
 
             @livewireStyles
+            @stack('styles')
 
             <!-- Vendor Scripts (deferred) -->
             <script src="{{ asset('assets/users/vendor/global/global.min.js') }}" defer></script>

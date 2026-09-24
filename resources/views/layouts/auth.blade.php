@@ -7,7 +7,17 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Auth pages (login/register/password reset) have no reason to rank -->
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="googlebot" content="noindex, nofollow">
+
     <title>{{ $title ?? 'Polysphere Tech - IT Solutions & Software Development' }}</title>
+
+    <!-- Canonical (defensive — in case noindex is ever removed) -->
+    <link rel="canonical" href="{{ url()->current() }}">
+
+    <!-- Theme color (address bar on mobile, PWA) -->
+    <meta name="theme-color" content="#3b82f6">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,65 +25,28 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
         rel="stylesheet">
 
- <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/main/imgs/favicon.svg') }}">
-    <!-- Font Awesome 7  (Free) -->
-    <link rel="stylesheet" href="{{ asset('assets/auth/css/all.min.css')}}">
+    <!-- Favicon -->
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/main/imgs/favicon.svg') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/main/imgs/favicon.svg') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/main/imgs/apple-touch-icon.png') }}">
 
-    <!-- Tailwind CSS -->
+    <!-- Font Awesome 7 (Free) -->
+    <link rel="stylesheet" href="{{ asset('assets/auth/css/all.min.css') }}">
+
+    {{--
+    Tailwind CSS is compiled via Vite.
+    The Polysphere brand palette, fonts, and animations live in
+    tailwind.config.js (see snippet in the notes below).
+    --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-
-    <!-- Tailwind Custom Config -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        'sans': ['Inter', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        'polysphere': {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            200: '#c7d2fe',
-                            300: '#a5b4fc',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            800: '#3730a3',
-                            900: '#312e81',
-                            950: '#1e1b4b',
-                        }
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.6s ease-out',
-                        'float': 'float 6s ease-in-out infinite',
-                        'pulse-slow': 'pulse 3s ease-in-out infinite',
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0', transform: 'translateY(20px)' },
-                            '100%': { opacity: '1', transform: 'translateY(0)' },
-                        },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px)' },
-                            '50%': { transform: 'translateY(-20px)' },
-                        },
-                    }
-                }
-            }
-        }
-    </script>
 
     <!-- Livewire Styles -->
     @livewireStyles
 
-
+    @stack('styles')
 </head>
 
 <body class="bg-gray-50 font-sans antialiased">
-
-
 
     {{-- Main Container --}}
     <div class="min-h-screen lg:h-screen lg:overflow-hidden flex flex-col lg:flex-row">
@@ -102,7 +75,7 @@
                 {{-- Mobile welcome (shown only on small screens) --}}
                 <div class="lg:hidden mb-4">
                     <h1 class="text-xl font-bold">Welcome to Polysphere Tech</h1>
-                    <p class="text-white/70 text-sm">IT solutions & software development</p>
+                    <p class="text-white/70 text-sm">IT solutions &amp; software development</p>
                 </div>
 
                 {{-- Desktop content --}}

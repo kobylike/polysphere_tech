@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ChatKnowledgeBase;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,7 +25,7 @@ class UserProfile extends Model
         'is_spotlight',
         'display_order',
         'employee_id',
-        'department_id', // ← was 'department' (string); now a real FK
+        'department_id',
         'hire_date',
         'employment_type',
         'is_employee',
@@ -44,6 +45,19 @@ class UserProfile extends Model
         'hire_date' => 'date',
         'date_of_birth' => 'date',
     ];
+
+    // ─── Lifecycle ──────────────────────────────────────────
+
+    protected static function booted(): void
+    {
+        // Chat bot knowledge base: bust cache on any change
+        $bust = fn() => ChatKnowledgeBase::bust();
+
+        static::saved($bust);
+        static::deleted($bust);
+    }
+
+    // ─── Activity log ───────────────────────────────────────
 
     public function getActivitylogOptions(): LogOptions
     {
@@ -76,7 +90,8 @@ class UserProfile extends Model
             })
             ->useLogName('user_profile');
     }
-    // ─── Relationships ───────────────────────────────────────────────
+
+    // ─── Relationships ──────────────────────────────────────
 
     public function scopeSpotlight($query)
     {
@@ -93,39 +108,23 @@ class UserProfile extends Model
         return $this->belongsTo(Department::class);
     }
 
-    // ─── Helpers ─────────────────────────────────────────────────────
+    // ─── Helpers ────────────────────────────────────────────
 
-    /**
-     * Backward-compat accessor: any older code/view that still does
-     * $profile->department expecting a plain string (instead of the new
-     * belongsTo relation) gets the department's name instead of an error.
-     * Safe to remove once every reference has been migrated to
-     * $profile->department?->name or $profile->department_id.
-     */
     public function getDepartmentNameAttribute(): ?string
     {
         return $this->department?->name;
     }
 
-    /**
-     * Get a specific social link by platform.
-     */
     public function getSocialLink(string $platform): ?string
     {
         return $this->social_links[$platform] ?? null;
     }
 
-    /**
-     * Get skills as a flat array of names.
-     */
     public function getSkillNamesAttribute(): array
     {
         return array_column($this->skills ?? [], 'name');
     }
 
-    /**
-     * Get skills as an array of name => level.
-     */
     public function getSkillLevelsAttribute(): array
     {
         $result = [];
