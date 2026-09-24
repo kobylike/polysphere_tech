@@ -10,8 +10,8 @@ use Livewire\Component;
 #[Title('Terms & Conditions - Polysphere Tech')]
 class TermsComponent extends Component
 {
-    public string $lastUpdated = 'September 11, 2026';
-    public string $version = '1.0';
+    public string $lastUpdated = 'September 24, 2026';
+    public string $version = '2.0';
 
     public function render()
     {

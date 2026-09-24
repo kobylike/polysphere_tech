@@ -78,6 +78,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'View Applications',
             'Edit Applications',
             'Delete Applications',
+
+            // ─── Chat Leads (visitors who shared details via the chat widget)
+            'View Chat Leads',
+            'Edit Chat Leads',
+            'Delete Chat Leads',
         ];
 
         foreach ($permissions as $perm) {
@@ -138,6 +143,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'View Applications',
             'Edit Applications',
             'Delete Applications',
+
+            // ─── Chat Lead permissions ───────────────────────────────────
+            'View Chat Leads',
+            'Edit Chat Leads',
+            'Delete Chat Leads',
         ]);
 
         $userRole = Role::firstOrCreate(['name' => 'User', 'guard_name' => 'web']);

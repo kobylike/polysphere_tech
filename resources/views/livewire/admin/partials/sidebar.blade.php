@@ -93,6 +93,41 @@ Sidebar start
                 </li>
             @endcan
 
+            {{-- Chat Leads --}}
+            @can('viewAny', App\Models\ChatLead::class)
+                @php
+                    $newLeadCount = \Illuminate\Support\Facades\Cache::remember(
+                        'sidebar.new_lead_count',
+                        60,
+                        fn() => \App\Models\ChatLead::where('status', 'new')
+                            ->where('is_spam', false)
+                            ->count()
+                    );
+                @endphp
+                <li>
+                    <a href="{{ route('admin.leads') }}" wire:navigate.hover
+                        class="{{ request()->routeIs('admin.leads') ? 'mm-active' : '' }}">
+                        <div class="menu-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M3 7C3 5.89543 3.89543 5 5 5H19C20.1046 5 21 5.89543 21 7V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17V7Z"
+                                    stroke="#888888" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                                <path d="M3 7L12 13L21 7" stroke="#888888" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M9 12L12 14.5L15 12" stroke="#888888" stroke-width="1.5" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <span class="nav-text">Chat Leads</span>
+                        @if($newLeadCount > 0)
+                            <span class="badge bg-danger ms-auto" style="font-size:10px;">
+                                {{ $newLeadCount > 99 ? '99+' : $newLeadCount }}
+                            </span>
+                        @endif
+                    </a>
+                </li>
+            @endcan
+
             {{-- Departments --}}
             @can('View Departments', $authUser)
                 <li>

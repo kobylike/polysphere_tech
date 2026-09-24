@@ -12,6 +12,7 @@ use App\Livewire\Admin\Dashboard\DashboardComponent;
 use App\Livewire\Admin\Dashboard\UserDashboardComponent;
 use App\Livewire\Admin\Departments\DepartmentComponent;
 use App\Livewire\Admin\Hrm\HrDashboard;
+use App\Livewire\Admin\Leads\LeadManagement;
 use App\Livewire\Admin\Messenger\ChatMessengerComponent;
 use App\Livewire\Admin\Messenger\ChatMessengerMain;
 use App\Livewire\Admin\Newsletter\SubscriberManagement;
@@ -225,6 +226,9 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
             ->middleware('can:View Users')
             ->name('users.profile');
 
+        Route::get('/chat-leads', LeadManagement::class)
+            ->middleware('can:View Users')
+            ->name('admin.leads');
 
         // ─── HR Dashboard ────────────────────────────────────────────────────
         Route::get('/hr', HrDashboard::class)

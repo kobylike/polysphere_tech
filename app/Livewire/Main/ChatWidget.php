@@ -2,9 +2,14 @@
 
 namespace App\Livewire\Main;
 
+use App\Helpers\NotificationHelper;
+use App\Mail\NewChatLeadNotification;
+use App\Models\ChatLead;
+use App\Models\User;
 use App\Services\ChatKnowledgeBase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -21,9 +26,19 @@ class ChatWidget extends Component
 
     public bool $hasUnread = false;
 
+    /** Set to true on the request where we captured a brand-new lead. */
+    public bool $leadJustCaptured = false;
+
     protected int $maxHistory = 20;
 
     protected string $model = 'gemini-3.6-flash';
+
+    /**
+     * A lead stays "editable in place" (for typo corrections / follow-up
+     * emails in the same chat) for this many minutes. Past this window, a
+     * different email creates a fresh lead instead of overwriting.
+     */
+    protected int $leadLockMinutes = 30;
 
     /* ──────────────────────────────────────────────────────────── */
     /*  Prompt construction                                        */
@@ -42,6 +57,17 @@ class ChatWidget extends Component
         $kb       = app(ChatKnowledgeBase::class)->build();
         $baseUrl  = rtrim(config('app.url'), '/');
 
+        $leadContext = $this->leadJustCaptured
+            ? "\n\n═══════════════════════════\nIMPORTANT — LEAD JUST CAPTURED\n═══════════════════════════\n"
+            . "The visitor just shared their email address in their last message. Their contact "
+            . "details have been saved and the Polysphere Tech team has been notified. In your "
+            . "response:\n"
+            . "- Warmly acknowledge that you've got their details.\n"
+            . "- Confirm that someone from the team will reach out within 24 hours.\n"
+            . "- DO NOT ask them to email contact@polyspheretech.com — the connection is already made.\n"
+            . "- If they asked a question in the same message, still answer it briefly."
+            : '';
+
         return <<<PROMPT
             You are Sphere, the AI assistant embedded on the Polysphere Tech website.
             You represent the brand — warm, natural, human. Never sound like a script.
@@ -59,8 +85,8 @@ class ChatWidget extends Component
             - Digital transformation (modernizing legacy systems / workflows)
             - IT consulting (strategy, architecture review, tooling advice)
 
-            Contact & canonical URLs (these are the ONLY general URLs you may share
-            that are not in the LIVE KNOWLEDGE BASE below):
+            Contact & canonical URLs (the ONLY general URLs you may share that are
+            not in the LIVE KNOWLEDGE BASE below):
             - Homepage: {$baseUrl}
             - Services index: {$baseUrl}/services
             - Projects / portfolio: {$baseUrl}/projects
@@ -74,20 +100,14 @@ class ChatWidget extends Component
             ═══════════════════════════
             OFFICIAL FAQ (primary source of truth)
             ═══════════════════════════
-            When a visitor's question matches or closely relates to one of these,
-            answer using this information rather than improvising. You may
-            paraphrase for a chat tone, but never contradict these answers or
-            invent numbers/timelines that differ from them.
-
             {$faqBlock}
 
             ═══════════════════════════
-            LIVE KNOWLEDGE BASE (refreshed from the database)
+            LIVE KNOWLEDGE BASE
             ═══════════════════════════
-            Everything below is real, current data pulled from Polysphere Tech's
-            own systems. Treat each section as the SINGLE SOURCE OF TRUTH for its
-            topic. If something isn't listed, it does not exist (yet). Never invent
-            people, projects, clients, roles, salaries, or technologies.
+            Real, current data pulled from Polysphere Tech's own systems. Treat each
+            section as the SINGLE SOURCE OF TRUTH for its topic. If something isn't
+            listed, it does not exist (yet).
 
             {$kb}
 
@@ -96,111 +116,60 @@ class ChatWidget extends Component
             ═══════════════════════════
 
             JOBS / CAREERS / HIRING
-            - Always consult LIVE JOB VACANCIES first for anything job-related
-              ("are you hiring?", "any remote roles?", "any engineering jobs?").
-            - If the section says NO open positions: say so plainly, then invite the
-              visitor to email careers@polyspheretech.com with their CV — Polysphere
-              keeps strong candidates on file. Do not invent roles.
-            - If roles ARE open: summarise the 2-4 most relevant (title, department,
-              location, workplace type, salary band if shown, closing date if shown).
-              Do not dump the full list unless the visitor asks for it.
-            - If they filter ("remote only", "engineering", "in Accra"), filter the
-              list yourself against the relevant field and only show matches.
-            - When interest is shown in a specific role, share its URL from the list
-              (or {$baseUrl}/careers) and tell them to apply there.
-            - Never invent salary. If the list shows one, you may quote it exactly as
-              shown. If not, say the band isn't published and to ask
-              careers@polyspheretech.com.
-            - Never invent a closing date. If one is listed, quote it. If not, say
-              the role is open until filled.
+            - Consult LIVE JOB VACANCIES for anything job-related.
+            - If no positions: say so, invite them to email careers@polyspheretech.com.
+            - If positions are open: summarise the 2-4 most relevant. Filter for
+              "remote only", "engineering", "Accra" etc. when asked.
+            - Never invent salary or closing dates. Quote only what's listed.
 
             TEAM
-            - When asked "who works there?", "who's the CEO?", "tell me about your
-              team", consult LIVE TEAM. Only describe people who are listed.
-            - If someone asks about a person not in the list, say that person isn't
-              listed on the public team page and point them to {$baseUrl}/team.
-            - STRICT: describe each person using ONLY the fields shown (Name, Role,
-              Dept, Skills, Bio). Do not infer responsibilities, seniority, years of
-              experience, education, achievements, or anything else beyond what is
-              literally listed. If the visitor asks something not covered by the
-              listed fields, say you don't have that detail and point them at the
-              person's profile URL or the team index.
+            - Only describe people listed in LIVE TEAM.
+            - STRICT: use ONLY the fields shown (Name, Role, Dept, Skills, Bio). Do not
+              infer seniority, years of experience, education, or achievements.
 
-            PROJECTS / CASE STUDIES / PORTFOLIO
-            - When asked "what have you built?", "show me examples", "do you have
-              experience in X?", consult LIVE PROJECTS. Recommend the most relevant
-              ones and share their URLs.
-            - Never claim a project exists that isn't listed.
-            - If they ask about industries you haven't built for, say so honestly
-              and offer to connect them with the team.
+            PROJECTS
+            - Recommend only projects from LIVE PROJECTS. Share their URLs.
 
             SERVICES
-            - LIVE SERVICES lists what Polysphere offers right now. Use it when
-              someone asks "what do you do?", "do you offer X?".
-            - If a service isn't listed, it isn't offered — redirect to
-              contact@polyspheretech.com to discuss custom work.
+            - LIVE SERVICES lists what Polysphere offers right now.
 
             ═══════════════════════════
             CONVERSATION STYLE
             ═══════════════════════════
-            - Greetings ("hi", "hello") → respond briefly and warmly, then invite
-              them to ask about services, pricing, projects, team, or jobs. Vary
-              your phrasing — don't repeat the intro verbatim.
-            - Keep answers to 2-4 sentences unless the visitor asks for detail.
-            - Plain, confident language — no corporate filler ("synergize",
-              "leverage", "cutting-edge"). Say what you mean.
+            - Greetings: brief and warm, then invite them to ask.
+            - Keep answers to 2-4 sentences unless detail is requested.
+            - Plain, confident language — no corporate filler.
             - Ask a clarifying question when the request is vague.
 
             ═══════════════════════════
             LINKS (STRICT)
             ═══════════════════════════
-            - You may ONLY share URLs that appear in the LIVE KNOWLEDGE BASE above
-              or in the canonical URL list under COMPANY OVERVIEW.
-            - Never guess, construct, or invent a URL. If the visitor asks for a
-              link you don't have, give them the closest index page from the
-              canonical list (e.g. {$baseUrl}/projects, {$baseUrl}/team).
-            - Write URLs as plain, full, clickable URLs — e.g.
-              "{$baseUrl}/careers". Do not use markdown link syntax like
-              [text](url).
+            - Only share URLs from the canonical list above or the LIVE KNOWLEDGE BASE.
+            - Write URLs as plain, full, clickable URLs. No markdown link syntax.
 
             ═══════════════════════════
             HANDLING SPECIFIC TOPICS
             ═══════════════════════════
-            - Pricing: depends on scope, complexity, timeline. Invite them to email
-              contact@polyspheretech.com or request a call. Never invent a number.
-            - Timelines / process / support SLAs: use FAQ figures — don't contradict.
-            - Jobs / careers / team / projects / services: follow the LIVE DATA rules.
-            - Team member bios, client names, stats, awards, "years in business":
-              never invent. If it's not in the LIVE DATA, say so honestly.
-            - Off-topic requests (weather, trivia, poems, jokes, unrelated coding
-              help, general knowledge, other companies): DO NOT answer them. Reply
-              with a short, polite decline, then offer what you CAN help with about
-              Polysphere Tech. Example: "That's outside what I can help with here —
-              is there anything about Polysphere Tech's services, projects, team,
-              or open roles I can help with?"
-            - Leads: if they signal interest in a project, quote, or consultation,
-              ask for their email or point them at contact@polyspheretech.com. One
-              natural nudge per conversation — not every message.
-            - Frustration / complaints: acknowledge it, then point them at
-              contact@polyspheretech.com for a human. Don't try to resolve
-              account-specific issues yourself — you have no access to client systems.
+            - Pricing: depends on scope, complexity, timeline. Invite them to share
+              their email OR contact@polyspheretech.com. Never invent a number.
+            - Leads: if the visitor signals interest in a project, quote, or consultation,
+              ask for their email naturally — ONE nudge per conversation, not every
+              message. Example: "Happy to have someone reach out — what's a good email
+              for you?"
+            - Off-topic requests (weather, trivia, poems, jokes, unrelated coding):
+              DO NOT answer. Politely decline and offer what you CAN help with.
+            - Frustration / complaints: acknowledge, point them at contact@polyspheretech.com.
 
             ═══════════════════════════
             HARD RULES
             ═══════════════════════════
-            - Never fabricate facts about Polysphere Tech: clients, results, staff,
-              numbers, awards, "years in business", job openings, team members,
-              projects, or services. Only use what's stated above.
-            - Never guess or invent URLs. Only share URLs from the canonical list
-              or the LIVE KNOWLEDGE BASE.
-            - Never invent salary bands, closing dates, or timelines. Quote only
-              what the LIVE DATA or FAQ states.
-            - If you don't know something, say so plainly and redirect to the team.
-            - Never claim to be human. Never pretend to take real actions (booking
-              calls, sending emails, processing payments, submitting applications).
-              You can only guide the visitor.
-            - Never produce creative writing on request (poems, stories, songs,
-              jokes). Politely decline and steer back to Polysphere topics.
+            - Never fabricate facts: clients, results, staff, numbers, awards, years
+              in business, job openings, team members, projects, or services.
+            - Never invent URLs, salaries, dates, or timelines.
+            - If you don't know, say so and redirect to the team.
+            - Never claim to be human. Never pretend to take real actions.
+            - Never produce creative writing on request.
+            {$leadContext}
             PROMPT;
     }
 
@@ -251,6 +220,10 @@ class ChatWidget extends Component
 
         RateLimiter::hit($key, 60);
 
+        // Reset each turn — captureLeadIfPresent() sets it back to true if
+        // this message is the one that creates a brand-new lead.
+        $this->leadJustCaptured = false;
+
         $this->messages[] = [
             'role'    => 'user',
             'content' => $text,
@@ -262,6 +235,10 @@ class ChatWidget extends Component
         if (count($this->messages) > $this->maxHistory) {
             $this->messages = array_slice($this->messages, -$this->maxHistory);
         }
+
+        // Detect + persist lead BEFORE calling Gemini, so the bot's reply
+        // can acknowledge the capture in the same turn.
+        $this->captureLeadIfPresent($text);
 
         $this->dispatch('message-sent');
     }
@@ -331,6 +308,308 @@ class ChatWidget extends Component
         if (! $this->isOpen) {
             $this->hasUnread = true;
         }
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /*  Lead capture                                               */
+    /* ──────────────────────────────────────────────────────────── */
+
+    /**
+     * Rule set:
+     *   1. No email in the message                 → do nothing.
+     *   2. No lead in this session                 → create a new lead + notify.
+     *   3. Same email as existing session lead     → do nothing.
+     *   4. Different email, different person name  → create a NEW lead.
+     *   5. Different email, existing lead is:
+     *        - status === 'new'
+     *        - created < 30 min ago
+     *        - not a different person
+     *                                              → UPDATE existing lead's email
+     *                                                + log change in notes.
+     *   6. Different email, existing lead is
+     *      contacted OR older than 30 min         → create a NEW lead.
+     */
+    protected function captureLeadIfPresent(string $text): void
+    {
+        $email = $this->extractEmail($text);
+        if (! $email) {
+            return;
+        }
+
+        $sessionId = session()->getId();
+        $newName   = $this->extractName($text);
+
+        // ─── Look for an existing lead in this session ─────────────
+        $existing = ChatLead::where('session_id', $sessionId)
+            ->orderByDesc('created_at')
+            ->first();
+
+        if ($existing) {
+            // Same email → nothing to do.
+            if (strtolower($existing->email) === $email) {
+                return;
+            }
+
+            // Different email — is this a different person?
+            $differentPerson = $this->looksLikeDifferentPerson($existing, $newName);
+
+            // Same session, same lead, same "shift" → fold in.
+            $isNewEnough = $existing->created_at->gt(now()->subMinutes($this->leadLockMinutes));
+            $isUntouched = $existing->status === 'new';
+
+            if (! $differentPerson && $isNewEnough && $isUntouched) {
+                $this->updateLeadEmailInPlace($existing, $email);
+                return;
+            }
+
+            // Otherwise fall through to create a fresh lead.
+        }
+
+        // ─── Create a brand-new lead ───────────────────────────────
+        try {
+            $lead = ChatLead::create([
+                'email'        => $email,
+                'name'         => $newName,
+                'phone'        => $this->extractPhone($text),
+                'company'      => null,
+                'session_id'   => $sessionId,
+                'ip_address'   => request()->ip(),
+                'user_agent'   => mb_substr((string) request()->userAgent(), 0, 500),
+                'source'       => 'chat-widget',
+                'intent'       => $this->inferIntent(),
+                'message'      => $text,
+                'conversation' => $this->messages,
+                'page_url'     => mb_substr((string) request()->header('referer'), 0, 500),
+            ]);
+
+            $this->leadJustCaptured = true;
+
+            Mail::to(NewChatLeadNotification::RECIPIENT)
+                ->queue(new NewChatLeadNotification($lead));
+
+            $lead->update(['notified_at' => now()]);
+
+            $this->notifyAdminsOfNewLead($lead);
+        } catch (\Throwable $e) {
+            Log::error('Failed to save chat lead', [
+                'email' => $email,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Fold a corrected / secondary email into the existing lead rather than
+     * forking a duplicate. Adds an audit trail to notes so admins see
+     * exactly what changed and when.
+     */
+    protected function updateLeadEmailInPlace(ChatLead $lead, string $newEmail): void
+    {
+        try {
+            $oldEmail = $lead->email;
+
+            $stamp = now()->format('M j, Y g:i A');
+            $note  = "[{$stamp}] Visitor updated their email from {$oldEmail} to {$newEmail}.";
+
+            $lead->email = $newEmail;
+            $lead->notes = trim(($lead->notes ? $lead->notes . "\n\n" : '') . $note);
+
+            // Fill in name if the existing lead didn't have one yet.
+            if (empty($lead->name)) {
+                $freshName = $this->extractNameFromMessages();
+                if ($freshName) {
+                    $lead->name = $freshName;
+                }
+            }
+
+            // Keep the "intent" fresh if it wasn't set yet.
+            if (empty($lead->intent)) {
+                $lead->intent = $this->inferIntent();
+            }
+
+            // Refresh conversation snapshot so the admin sees the latest thread.
+            $lead->conversation = $this->messages;
+
+            $lead->save();
+
+            // Deliberately NOT setting $this->leadJustCaptured. The bot should
+            // not say "I've got your details" a second time — it already said
+            // it when the lead was first created.
+
+            Log::info('Chat lead email updated in place', [
+                'lead_id'   => $lead->id,
+                'old_email' => $oldEmail,
+                'new_email' => $newEmail,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to update chat lead email', [
+                'lead_id' => $lead->id,
+                'error'   => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Decide whether a second email in the same session looks like a
+     * different person rather than the same visitor correcting themselves.
+     *
+     * Logic:
+     *   - If the existing lead has NO name → cannot tell → assume same person.
+     *   - If the new message has NO name  → cannot tell → assume same person.
+     *   - If both names exist and match (case-insensitive) → same person.
+     *   - If both names exist and differ   → different person.
+     */
+    protected function looksLikeDifferentPerson(ChatLead $existing, ?string $newName): bool
+    {
+        $existingName = trim((string) $existing->name);
+        $newName      = trim((string) $newName);
+
+        if ($existingName === '' || $newName === '') {
+            return false;
+        }
+
+        return strcasecmp($existingName, $newName) !== 0;
+    }
+
+    /**
+     * Scan the conversation history for the first name the visitor used.
+     * Used to backfill `name` when a lead was created from an email-only
+     * message and the visitor introduces themselves later.
+     */
+    protected function extractNameFromMessages(): ?string
+    {
+        foreach ($this->messages as $msg) {
+            if (($msg['role'] ?? '') === 'user') {
+                $name = $this->extractName((string) ($msg['content'] ?? ''));
+                if ($name) {
+                    return $name;
+                }
+            }
+        }
+        return null;
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /*  Admin notifications for new leads                          */
+    /* ──────────────────────────────────────────────────────────── */
+
+    protected function notifyAdminsOfNewLead(ChatLead $lead): void
+    {
+        if (! class_exists(NotificationHelper::class)) {
+            return;
+        }
+
+        try {
+            $recipients = User::permission('View Chat Leads')->get();
+        } catch (\Throwable $e) {
+            report($e);
+            return;
+        }
+
+        if ($recipients->isEmpty()) {
+            return;
+        }
+
+        $title = $this->buildLeadNotificationTitle($lead);
+        $body  = $this->buildLeadNotificationBody($lead);
+        $type  = $lead->score >= 70 ? 'success' : 'info';
+        $link  = route('admin.leads', ['statusFilter' => 'new']);
+
+        foreach ($recipients as $user) {
+            try {
+                NotificationHelper::sendToUser($user, [
+                    'title' => $title,
+                    'body'  => $body,
+                    'type'  => $type,
+                    'icon'  => 'fa-inbox',
+                    'link'  => $link,
+                ]);
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
+    protected function buildLeadNotificationTitle(ChatLead $lead): string
+    {
+        $who   = $lead->name ?: $lead->email;
+        $emoji = $lead->score >= 70 ? '🔥' : '🎯';
+
+        return "{$emoji} New chat lead: {$who}";
+    }
+
+    protected function buildLeadNotificationBody(ChatLead $lead): string
+    {
+        $parts = [];
+
+        $parts[] = $lead->name
+            ? "{$lead->name} ({$lead->email})"
+            : $lead->email;
+
+        $tier    = strtoupper($lead->score_tier);
+        $parts[] = "Score: {$lead->score} ({$tier})";
+
+        if (! empty($lead->message)) {
+            $snippet = trim((string) $lead->message);
+            if (mb_strlen($snippet) > 120) {
+                $snippet = mb_substr($snippet, 0, 120) . '…';
+            }
+            $parts[] = "\"{$snippet}\"";
+        }
+
+        return implode(' • ', $parts);
+    }
+
+    /* ──────────────────────────────────────────────────────────── */
+    /*  Lead extraction helpers                                    */
+    /* ──────────────────────────────────────────────────────────── */
+
+    protected function extractEmail(string $text): ?string
+    {
+        if (! preg_match('/\b[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}\b/', $text, $m)) {
+            return null;
+        }
+
+        $email = strtolower($m[0]);
+
+        $blacklist = [
+            'contact@polyspheretech.com',
+            'careers@polyspheretech.com',
+            'noreply@polyspheretech.com',
+            'admin@polyspheretech.com',
+            'sales@polyspheretech.com',
+        ];
+
+        return in_array($email, $blacklist, true) ? null : $email;
+    }
+
+    protected function extractName(string $text): ?string
+    {
+        if (preg_match('/\b(?:my name is|i am|i\'m|this is|it\'s)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)/i', $text, $m)) {
+            return trim($m[1]);
+        }
+        return null;
+    }
+
+    protected function extractPhone(string $text): ?string
+    {
+        if (preg_match('/(?:\+?\d[\d\s\-\(\)]{7,}\d)/', $text, $m)) {
+            $digits = preg_replace('/\D+/', '', $m[0]);
+            if (strlen((string) $digits) >= 8 && strlen((string) $digits) <= 15) {
+                return trim($m[0]);
+            }
+        }
+        return null;
+    }
+
+    protected function inferIntent(): ?string
+    {
+        foreach ($this->messages as $msg) {
+            if (($msg['role'] ?? '') === 'user') {
+                return mb_substr(trim((string) $msg['content']), 0, 500);
+            }
+        }
+        return null;
     }
 
     /* ──────────────────────────────────────────────────────────── */

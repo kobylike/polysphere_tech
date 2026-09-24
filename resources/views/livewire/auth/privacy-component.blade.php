@@ -43,7 +43,7 @@
                 </div>
                 <div class="legal-meta-item">
                     <i class="fal fa-clock"></i>
-                    <span>~12 min read</span>
+                    <span>~18 min read</span>
                 </div>
                 <div class="legal-meta-item legal-meta-actions">
                     <button type="button" @click="toggleToc()" class="legal-btn-toggle d-lg-none">
@@ -75,6 +75,7 @@
                                 <li><a href="#controller" @click.prevent="scrollTo('controller')"
                                         :class="active === 'controller' ? 'active' : ''">2. Data Controller</a></li>
                                 <li><a href="#collect" @click.prevent="scrollTo('collect')"
+                                        @click.prevent="scrollTo('collect')"
                                         :class="active === 'collect' ? 'active' : ''">3. Data We Collect</a></li>
                                 <li><a href="#how" @click.prevent="scrollTo('how')"
                                         :class="active === 'how' ? 'active' : ''">4. How We Collect</a></li>
@@ -82,32 +83,39 @@
                                         :class="active === 'basis' ? 'active' : ''">5. Legal Basis</a></li>
                                 <li><a href="#use" @click.prevent="scrollTo('use')"
                                         :class="active === 'use' ? 'active' : ''">6. How We Use Data</a></li>
+                                <li><a href="#ai" @click.prevent="scrollTo('ai')"
+                                        :class="active === 'ai' ? 'active' : ''">7. AI Chat Assistant</a></li>
+                                <li><a href="#recruitment" @click.prevent="scrollTo('recruitment')"
+                                        :class="active === 'recruitment' ? 'active' : ''">8. Recruitment Data</a></li>
                                 <li><a href="#cookies" @click.prevent="scrollTo('cookies')"
-                                        :class="active === 'cookies' ? 'active' : ''">7. Cookies</a></li>
+                                        :class="active === 'cookies' ? 'active' : ''">9. Cookies & Tracking</a></li>
                                 <li><a href="#thirdparty" @click.prevent="scrollTo('thirdparty')"
-                                        :class="active === 'thirdparty' ? 'active' : ''">8. Third-Party Processors</a>
+                                        :class="active === 'thirdparty' ? 'active' : ''">10. Third-Party Processors</a>
                                 </li>
                                 <li><a href="#sharing" @click.prevent="scrollTo('sharing')"
-                                        :class="active === 'sharing' ? 'active' : ''">9. Data Sharing</a></li>
+                                        :class="active === 'sharing' ? 'active' : ''">11. Data Sharing</a></li>
                                 <li><a href="#transfers" @click.prevent="scrollTo('transfers')"
-                                        :class="active === 'transfers' ? 'active' : ''">10. International Transfers</a>
+                                        :class="active === 'transfers' ? 'active' : ''">12. International Transfers</a>
                                 </li>
                                 <li><a href="#retention" @click.prevent="scrollTo('retention')"
-                                        :class="active === 'retention' ? 'active' : ''">11. Retention</a></li>
+                                        :class="active === 'retention' ? 'active' : ''">13. Retention</a></li>
                                 <li><a href="#security" @click.prevent="scrollTo('security')"
-                                        :class="active === 'security' ? 'active' : ''">12. Security</a></li>
+                                        :class="active === 'security' ? 'active' : ''">14. Security</a></li>
                                 <li><a href="#rights" @click.prevent="scrollTo('rights')"
-                                        :class="active === 'rights' ? 'active' : ''">13. Your Rights</a></li>
+                                        :class="active === 'rights' ? 'active' : ''">15. Your Rights</a></li>
                                 <li><a href="#children" @click.prevent="scrollTo('children')"
-                                        :class="active === 'children' ? 'active' : ''">14. Children</a></li>
+                                        :class="active === 'children' ? 'active' : ''">16. Children</a></li>
                                 <li><a href="#marketing" @click.prevent="scrollTo('marketing')"
-                                        :class="active === 'marketing' ? 'active' : ''">15. Marketing</a></li>
+                                        :class="active === 'marketing' ? 'active' : ''">17. Marketing</a></li>
+                                <li><a href="#automated" @click.prevent="scrollTo('automated')"
+                                        :class="active === 'automated' ? 'active' : ''">18. Automated Processing</a>
+                                </li>
                                 <li><a href="#breach" @click.prevent="scrollTo('breach')"
-                                        :class="active === 'breach' ? 'active' : ''">16. Breach Notification</a></li>
+                                        :class="active === 'breach' ? 'active' : ''">19. Breach Notification</a></li>
                                 <li><a href="#changes" @click.prevent="scrollTo('changes')"
-                                        :class="active === 'changes' ? 'active' : ''">17. Changes</a></li>
+                                        :class="active === 'changes' ? 'active' : ''">20. Changes</a></li>
                                 <li><a href="#contact" @click.prevent="scrollTo('contact')"
-                                        :class="active === 'contact' ? 'active' : ''">18. Contact / DPO</a></li>
+                                        :class="active === 'contact' ? 'active' : ''">21. Contact / DPO</a></li>
                             </ul>
                         </nav>
                         <div class="legal-toc-footer">
@@ -141,29 +149,35 @@
                                 </li>
                                 <li><a href="#use" @click.prevent="scrollTo('use'); toggleToc()">6. How We Use Data</a>
                                 </li>
-                                <li><a href="#cookies" @click.prevent="scrollTo('cookies'); toggleToc()">7. Cookies</a>
+                                <li><a href="#ai" @click.prevent="scrollTo('ai'); toggleToc()">7. AI Chat Assistant</a>
                                 </li>
-                                <li><a href="#thirdparty" @click.prevent="scrollTo('thirdparty'); toggleToc()">8.
+                                <li><a href="#recruitment" @click.prevent="scrollTo('recruitment'); toggleToc()">8.
+                                        Recruitment Data</a></li>
+                                <li><a href="#cookies" @click.prevent="scrollTo('cookies'); toggleToc()">9. Cookies &
+                                        Tracking</a></li>
+                                <li><a href="#thirdparty" @click.prevent="scrollTo('thirdparty'); toggleToc()">10.
                                         Third-Party Processors</a></li>
-                                <li><a href="#sharing" @click.prevent="scrollTo('sharing'); toggleToc()">9. Data
+                                <li><a href="#sharing" @click.prevent="scrollTo('sharing'); toggleToc()">11. Data
                                         Sharing</a></li>
-                                <li><a href="#transfers" @click.prevent="scrollTo('transfers'); toggleToc()">10.
+                                <li><a href="#transfers" @click.prevent="scrollTo('transfers'); toggleToc()">12.
                                         International Transfers</a></li>
-                                <li><a href="#retention" @click.prevent="scrollTo('retention'); toggleToc()">11.
+                                <li><a href="#retention" @click.prevent="scrollTo('retention'); toggleToc()">13.
                                         Retention</a></li>
-                                <li><a href="#security" @click.prevent="scrollTo('security'); toggleToc()">12.
+                                <li><a href="#security" @click.prevent="scrollTo('security'); toggleToc()">14.
                                         Security</a></li>
-                                <li><a href="#rights" @click.prevent="scrollTo('rights'); toggleToc()">13. Your
+                                <li><a href="#rights" @click.prevent="scrollTo('rights'); toggleToc()">15. Your
                                         Rights</a></li>
-                                <li><a href="#children" @click.prevent="scrollTo('children'); toggleToc()">14.
+                                <li><a href="#children" @click.prevent="scrollTo('children'); toggleToc()">16.
                                         Children</a></li>
-                                <li><a href="#marketing" @click.prevent="scrollTo('marketing'); toggleToc()">15.
+                                <li><a href="#marketing" @click.prevent="scrollTo('marketing'); toggleToc()">17.
                                         Marketing</a></li>
-                                <li><a href="#breach" @click.prevent="scrollTo('breach'); toggleToc()">16. Breach
+                                <li><a href="#automated" @click.prevent="scrollTo('automated'); toggleToc()">18.
+                                        Automated Processing</a></li>
+                                <li><a href="#breach" @click.prevent="scrollTo('breach'); toggleToc()">19. Breach
                                         Notification</a></li>
-                                <li><a href="#changes" @click.prevent="scrollTo('changes'); toggleToc()">17. Changes</a>
+                                <li><a href="#changes" @click.prevent="scrollTo('changes'); toggleToc()">20. Changes</a>
                                 </li>
-                                <li><a href="#contact" @click.prevent="scrollTo('contact'); toggleToc()">18. Contact /
+                                <li><a href="#contact" @click.prevent="scrollTo('contact'); toggleToc()">21. Contact /
                                         DPO</a></li>
                             </ul>
                         </nav>
@@ -180,8 +194,10 @@
                             <div>
                                 <strong>Your Privacy Matters</strong>
                                 <p class="mb-0">This Privacy Policy explains how Polysphere Tech collects, uses, stores,
-                                    and protects your personal data in accordance with the <strong>Ghana Data Protection
-                                        Act, 2012 (Act 843)</strong>.</p>
+                                    and protects your personal data across our website, applications, AI chat
+                                    assistant, careers portal, and client platforms, in accordance with the
+                                    <strong>Ghana Data Protection Act, 2012 (Act 843)</strong>.
+                                </p>
                             </div>
                         </div>
 
@@ -190,10 +206,15 @@
                             <div class="legal-section-number">01</div>
                             <h2>Introduction</h2>
                             <p>Polysphere Tech ("we", "us", "our") is committed to protecting your privacy. This Privacy
-                                Policy explains what personal data we collect, why we collect it, how we use it, and
-                                your rights over it.</p>
-                            <p>This policy applies to all visitors, registered users, invited users, commenters, and
-                                clients of our website, applications, and Services.</p>
+                                Policy explains what personal data we collect, why we collect it, how we use it, how
+                                long
+                                we keep it, who we share it with, and your rights over it.</p>
+                            <p>This policy applies to all visitors, registered users, invited users, blog commenters,
+                                chat widget users, job applicants, employees, messenger users, newsletter subscribers,
+                                and clients interacting with our website, applications, and Services.</p>
+                            <p>By using any part of our Services — including our public website, our AI chat assistant
+                                ("Sphere"), our careers portal, or our client platforms — you acknowledge that you have
+                                read and understood this Privacy Policy.</p>
                         </section>
 
                         {{-- 2 --}}
@@ -206,7 +227,8 @@
                                 <ul>
                                     <li><i class="fal fa-map-marker-alt"></i> Accra, Ghana</li>
                                     <li><i class="fal fa-envelope"></i>
-                                        href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a></li>
+                                        <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>
+                                    </li>
                                     <li><i class="fal fa-phone"></i> <a href="tel:+233597563427">+233 (59) 756-3427</a>
                                     </li>
                                 </ul>
@@ -225,49 +247,90 @@
 
                             <h6 class="legal-subhead">A. Identity & Contact Data</h6>
                             <ul>
-                                <li>Full name, username</li>
-                                <li>Email address</li>
+                                <li>Full name, username, and any preferred display name</li>
+                                <li>Email address (personal and/or work)</li>
                                 <li>Phone number (with country code)</li>
                                 <li>Country, city, date of birth, gender</li>
-                                <li>Profile picture, position, department</li>
+                                <li>Profile picture, position/job title, department</li>
+                                <li>Company or organization name (for B2B interactions)</li>
                             </ul>
 
                             <h6 class="legal-subhead">B. Account & Authentication Data</h6>
                             <ul>
                                 <li>Hashed passwords (never stored in plain text)</li>
-                                <li>Two-Factor Authentication secrets (encrypted)</li>
-                                <li>Recovery codes (encrypted)</li>
+                                <li>Two-Factor Authentication (2FA) secrets — encrypted at rest</li>
+                                <li>2FA recovery codes — encrypted at rest</li>
+                                <li>Two-factor confirmation timestamps</li>
                                 <li>Failed login attempts, account lock status</li>
+                                <li>Last login time, last login IP, last seen timestamp</li>
+                                <li>Google Account identifier (only if you sign in with Google)</li>
                             </ul>
 
                             <h6 class="legal-subhead">C. Technical & Usage Data</h6>
                             <ul>
-                                <li>IP address, browser type, device information</li>
-                                <li>User agent, referring URL</li>
+                                <li>IP address, browser type and version, device information</li>
+                                <li>User agent string, referring URL, and query parameters</li>
                                 <li>Pages visited, time on page, clickstream data</li>
-                                <li>Session and authentication tokens</li>
+                                <li>Session identifiers, CSRF tokens, and authentication cookies</li>
+                                <li>Error and performance telemetry (via our error-monitoring provider)</li>
                             </ul>
 
-                            <h6 class="legal-subhead">D. Communication & Content Data</h6>
+                            <h6 class="legal-subhead">D. AI Chat Assistant Data ("Sphere")</h6>
                             <ul>
-                                <li>Blog comments (registered and guest)</li>
-                                <li>Chat messages sent through our messenger</li>
-                                <li>Contact form submissions</li>
-                                <li>Files and content you upload</li>
+                                <li>Messages you send to our AI assistant, including any personal data you voluntarily
+                                    type into the chat</li>
+                                <li>AI responses generated during your session</li>
+                                <li>Session identifier and conversation timestamps</li>
+                                <li>The page you were on when you opened the chat</li>
+                                <li>If you share an email address: your name (if provided), email, and any phone
+                                    number you voluntarily include</li>
+                                <li>A scoring value generated internally to help us prioritise responses</li>
                             </ul>
 
-                            <h6 class="legal-subhead">E. Payment Data (via Paystack)</h6>
+                            <h6 class="legal-subhead">E. Recruitment & Job Application Data</h6>
                             <ul>
-                                <li>Transaction ID, amount, currency, status</li>
-                                <li>Last 4 digits of card, card brand</li>
-                                <li>Billing country (for tax purposes)</li>
+                                <li>Your full name, email, phone number, and location</li>
+                                <li>CV / résumé, cover letter, and any documents or portfolios you upload</li>
+                                <li>Employment history, education, qualifications, and references</li>
+                                <li>Right-to-work information (where legally required)</li>
+                                <li>Answers to screening questions specific to the vacancy</li>
+                                <li>Recruitment status, interview notes, and internal assessments</li>
+                                <li>Any additional information you voluntarily provide in the application wizard</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">F. Employment & HR Data (for our team members)</h6>
+                            <ul>
+                                <li>Employee ID, department, position, hire date, employment type</li>
+                                <li>Emergency contact name and phone number</li>
+                                <li>Employment status, skills, education, and profile information</li>
+                                <li>Internal HR activity such as role changes, status changes, and audit logs</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">G. Communication & Content Data</h6>
+                            <ul>
+                                <li>Blog comments (both registered and guest comments, including verification tokens)
+                                </li>
+                                <li>Messages sent through our internal Messenger feature between users</li>
+                                <li>Contact form submissions (name, email, subject, message, category)</li>
+                                <li>Newsletter subscription data (email, verification status, subscription timestamps)
+                                </li>
+                                <li>Files and content you upload to the platform</li>
+                                <li>Notification and system messages sent to your account</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">H. Payment Data (via Paystack)</h6>
+                            <ul>
+                                <li>Transaction ID, amount, currency, and payment status</li>
+                                <li>Last 4 digits of the card used, card brand, and expiry month/year</li>
+                                <li>Billing country (for tax and compliance purposes)</li>
+                                <li>Receipts and invoice records</li>
                             </ul>
 
                             <div class="legal-highlight">
                                 <i class="fal fa-lock"></i>
                                 <span><strong>We never store your full card number, CVV, or PIN.</strong> All sensitive
-                                    payment data is handled exclusively by Paystack, a PCI-DSS compliant
-                                    processor.</span>
+                                    payment data is handled exclusively by Paystack, a PCI-DSS compliant processor
+                                    licensed by the Bank of Ghana.</span>
                             </div>
                         </section>
 
@@ -276,14 +339,17 @@
                             <div class="legal-section-number">04</div>
                             <h2>How We Collect Data</h2>
                             <ul>
-                                <li><strong>Directly from you:</strong> when you register, complete forms, comment,
-                                    chat, or contact us.</li>
+                                <li><strong>Directly from you:</strong> when you register, apply for a job, complete
+                                    forms, post a comment, use the chat assistant, subscribe to our newsletter, or
+                                    contact us.</li>
                                 <li><strong>Automatically:</strong> through cookies, server logs, and analytics tools
                                     when you browse the site.</li>
-                                <li><strong>From third parties:</strong> Paystack (payment confirmation), Google (if you
-                                    sign in with Google).</li>
+                                <li><strong>From third parties:</strong> Paystack (payment confirmations), Google
+                                    (if you sign in with Google), and error-monitoring providers.</li>
                                 <li><strong>From invited users:</strong> your inviter may provide basic information
-                                    (name, email, position) to create your account.</li>
+                                    (name, email, position) when they invite you to the platform.</li>
+                                <li><strong>From your browsing behaviour:</strong> aggregated analytics data about
+                                    which pages you view and how you interact with the site.</li>
                             </ul>
                         </section>
 
@@ -294,16 +360,18 @@
                             <p>Under the Ghana Data Protection Act, 2012 (Act 843), we rely on the following legal
                                 grounds:</p>
                             <ul>
-                                <li><strong>Consent:</strong> You have given clear consent (e.g., for marketing emails).
-                                </li>
-                                <li><strong>Contract:</strong> Processing is necessary to fulfil our contract with you.
-                                </li>
+                                <li><strong>Consent:</strong> You have given clear consent (e.g., for marketing emails,
+                                    AI chat interactions where you voluntarily share data).</li>
+                                <li><strong>Contract:</strong> Processing is necessary to fulfil our contract with you
+                                    (e.g., delivering the Services, processing a job application you submitted).</li>
                                 <li><strong>Legal Obligation:</strong> We must comply with Ghanaian law (e.g., tax
-                                    records, court orders).</li>
-                                <li><strong>Vital Interests:</strong> To protect someone's life or safety.</li>
+                                    records, employment law, court orders).</li>
+                                <li><strong>Vital Interests:</strong> To protect someone's life or safety (e.g., in
+                                    an emergency involving an employee).</li>
                                 <li><strong>Public Interest:</strong> For tasks carried out in the public interest.</li>
-                                <li><strong>Legitimate Interests:</strong> For fraud prevention, security, and service
-                                    improvement, provided these do not override your rights.</li>
+                                <li><strong>Legitimate Interests:</strong> For fraud prevention, security, improving
+                                    our Services, and responding to enquiries, provided these do not override your
+                                    rights.</li>
                             </ul>
                         </section>
 
@@ -314,13 +382,19 @@
                             <ul>
                                 <li>To create, secure, and manage your Account</li>
                                 <li>To provide and improve the Services</li>
-                                <li>To process payments and prevent fraud</li>
+                                <li>To process payments, invoices, and prevent fraud</li>
                                 <li>To send transactional emails (verification, password reset, receipts)</li>
                                 <li>To send notifications and security alerts</li>
-                                <li>To respond to your enquiries</li>
+                                <li>To respond to your enquiries through our contact forms or AI chat</li>
+                                <li>To operate our AI chat assistant and provide useful, context-aware answers</li>
+                                <li>To capture and respond to business enquiries submitted through the chat widget</li>
+                                <li>To assess and process job applications for vacancies you have applied to</li>
+                                <li>To manage our team, departments, and internal HR workflows</li>
+                                <li>To operate our internal Messenger and notification systems</li>
+                                <li>To deliver our newsletter if you have opted in</li>
                                 <li>To analyse usage and improve user experience</li>
                                 <li>To comply with legal and regulatory obligations</li>
-                                <li>To enforce our Terms & Conditions</li>
+                                <li>To enforce our Terms & Conditions and protect our legal rights</li>
                             </ul>
                             <div class="legal-highlight legal-highlight-success">
                                 <i class="fal fa-check-circle"></i>
@@ -329,25 +403,126 @@
                         </section>
 
                         {{-- 7 --}}
-                        <section id="cookies" class="legal-section-block">
+                        <section id="ai" class="legal-section-block">
                             <div class="legal-section-number">07</div>
+                            <h2>AI Chat Assistant ("Sphere")</h2>
+                            <p>Our website includes an AI-powered chat assistant named <strong>Sphere</strong>. Because
+                                this is a newer technology, we want to be especially transparent about how it works and
+                                what data it processes.</p>
+
+                            <h6 class="legal-subhead">A. Who processes your messages</h6>
+                            <ul>
+                                <li>Every message you send to Sphere is transmitted to <strong>Google's Gemini
+                                        API</strong>
+                                    so that an AI-generated reply can be produced.</li>
+                                <li>Your message is processed by Google according to Google's API terms and data-use
+                                    policies. Google does <strong>not</strong> use API data to train its public models.
+                                </li>
+                                <li>We do not send any information to Sphere that you have not typed into the chat.</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">B. When we store a conversation</h6>
+                            <ul>
+                                <li>Anonymous chat sessions are held in your browser session only and are not
+                                    permanently stored on our servers.</li>
+                                <li>If you share an <strong>email address</strong> during the chat, we may save a
+                                    "lead" record containing your email, name (if provided), phone (if provided), the
+                                    full conversation transcript, the page you were on, your IP, and your user agent.
+                                </li>
+                                <li>That record is used to follow up on your enquiry and is subject to the retention
+                                    rules in Section 13.</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">C. Lead scoring</h6>
+                            <ul>
+                                <li>We compute an internal score for each captured lead based on signals such as the
+                                    detail of your message, whether you provided a phone number, and which page you
+                                    were on.</li>
+                                <li>This score is used only to help our team prioritise responses. It has no legal
+                                    effect and you are not subject to any decision based solely on it.</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">D. What not to share with Sphere</h6>
+                            <div class="legal-highlight">
+                                <i class="fal fa-exclamation-triangle"></i>
+                                <span>Please do <strong>not</strong> share passwords, payment card numbers, national
+                                    IDs, health information, or any other sensitive personal data with Sphere. The
+                                    assistant is designed for business enquiries only and should not be used to
+                                    transmit confidential or high-risk information.</span>
+                            </div>
+
+                            <h6 class="legal-subhead">E. Automated processing</h6>
+                            <ul>
+                                <li>Sphere generates replies automatically. It does not make decisions that produce
+                                    legal effects on you.</li>
+                                <li>All commercial decisions (quotes, contracts, hiring) are made by a human team
+                                    member.</li>
+                            </ul>
+                        </section>
+
+                        {{-- 8 --}}
+                        <section id="recruitment" class="legal-section-block">
+                            <div class="legal-section-number">08</div>
+                            <h2>Recruitment & Job Applications</h2>
+                            <p>If you apply for a vacancy through our careers portal, we collect and process additional
+                                data as part of our hiring process.</p>
+
+                            <h6 class="legal-subhead">A. What we collect</h6>
+                            <ul>
+                                <li>Your application details (name, email, phone, location, CV, cover letter, and any
+                                    supporting documents)</li>
+                                <li>Answers to vacancy-specific questions</li>
+                                <li>Any notes our team adds during the screening and interview process</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">B. Why we process it</h6>
+                            <ul>
+                                <li>To assess your suitability for the role you applied to</li>
+                                <li>To communicate with you about your application</li>
+                                <li>To comply with Ghanaian employment and anti-discrimination law</li>
+                                <li>To keep a record of our hiring decisions</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">C. How long we keep it</h6>
+                            <ul>
+                                <li><strong>Unsuccessful applicants:</strong> We retain application data for up to
+                                    <strong>12 months</strong> after the role is filled, unless you ask us to delete
+                                    it sooner or consent to us keeping it longer for future opportunities.
+                                </li>
+                                <li><strong>Successful applicants:</strong> Your application becomes part of your
+                                    employee HR record and is subject to our employment data-retention practices.</li>
+                            </ul>
+
+                            <h6 class="legal-subhead">D. Your rights as an applicant</h6>
+                            <ul>
+                                <li>You can request access to the data we hold about your application.</li>
+                                <li>You can request correction of inaccurate information.</li>
+                                <li>You can withdraw your application and request deletion at any time.</li>
+                                <li>You can withdraw consent for us to keep your data on file for future roles.</li>
+                            </ul>
+                        </section>
+
+                        {{-- 9 --}}
+                        <section id="cookies" class="legal-section-block">
+                            <div class="legal-section-number">09</div>
                             <h2>Cookies & Tracking</h2>
                             <p>We use cookies and similar technologies to:</p>
                             <ul>
                                 <li><strong>Essential cookies:</strong> Required for authentication, session management,
-                                    and security (e.g., CSRF tokens).</li>
+                                    CSRF protection, and security. These cannot be disabled without breaking the
+                                    Services.</li>
                                 <li><strong>Preference cookies:</strong> Remember your settings and preferences.</li>
                                 <li><strong>Analytics cookies:</strong> Help us understand how visitors use the site
-                                    (e.g., Google Analytics).</li>
+                                    (e.g., Google Analytics 4). These are anonymised where possible.</li>
                                 <li><strong>Marketing cookies:</strong> Used only with your explicit consent.</li>
                             </ul>
                             <p>You can control cookies through your browser settings. Disabling essential cookies may
                                 prevent the Services from working properly.</p>
                         </section>
 
-                        {{-- 8 --}}
+                        {{-- 10 --}}
                         <section id="thirdparty" class="legal-section-block">
-                            <div class="legal-section-number">08</div>
+                            <div class="legal-section-number">10</div>
                             <h2>Third-Party Data Processors</h2>
                             <p>We share your data with the following trusted processors, each bound by data protection
                                 agreements:</p>
@@ -369,9 +544,32 @@
                                             <td data-label="Data Shared">Name, email, phone, transaction amount, IP</td>
                                         </tr>
                                         <tr>
-                                            <td data-label="Provider"><strong>Google Analytics</strong></td>
+                                            <td data-label="Provider"><strong>Google Gemini API</strong></td>
+                                            <td data-label="Purpose">AI chat assistant responses</td>
+                                            <td data-label="Data Shared">Messages you send to the AI chat, session
+                                                context</td>
+                                        </tr>
+                                        <tr>
+                                            <td data-label="Provider"><strong>Google Analytics 4</strong></td>
                                             <td data-label="Purpose">Website traffic analysis</td>
                                             <td data-label="Data Shared">Anonymised IP, device, browsing behaviour</td>
+                                        </tr>
+                                        <tr>
+                                            <td data-label="Provider"><strong>Google OAuth</strong></td>
+                                            <td data-label="Purpose">"Sign in with Google" authentication</td>
+                                            <td data-label="Data Shared">Name, email, Google account identifier</td>
+                                        </tr>
+                                        <tr>
+                                            <td data-label="Provider"><strong>Sentry</strong></td>
+                                            <td data-label="Purpose">Error monitoring and performance diagnostics</td>
+                                            <td data-label="Data Shared">Error traces, stack details, user ID, IP,
+                                                browser metadata</td>
+                                        </tr>
+                                        <tr>
+                                            <td data-label="Provider"><strong>Pusher</strong></td>
+                                            <td data-label="Purpose">Realtime messaging and notifications</td>
+                                            <td data-label="Data Shared">User ID, event metadata (message content is
+                                                not stored on Pusher)</td>
                                         </tr>
                                         <tr>
                                             <td data-label="Provider"><strong>Cloud Hosting Provider</strong></td>
@@ -380,8 +578,9 @@
                                         </tr>
                                         <tr>
                                             <td data-label="Provider"><strong>Email Service Provider</strong></td>
-                                            <td data-label="Purpose">Transactional emails (verification, receipts)</td>
-                                            <td data-label="Data Shared">Name, email address</td>
+                                            <td data-label="Purpose">Transactional emails (verification, receipts,
+                                                notifications)</td>
+                                            <td data-label="Data Shared">Name, email address, message content</td>
                                         </tr>
                                         <tr>
                                             <td data-label="Provider"><strong>SMS Gateway</strong> (if used)</td>
@@ -392,33 +591,35 @@
                                 </table>
                             </div>
 
-                            <p class="mt-3">Paystack is licensed by the Bank of Ghana and complies with PCI-DSS. We do
-                                not share more data than is necessary for each service.</p>
+                            <p class="mt-3">We do not share more data than is necessary for each service, and each
+                                provider is contractually required to protect your information.</p>
                         </section>
 
-                        {{-- 9 --}}
+                        {{-- 11 --}}
                         <section id="sharing" class="legal-section-block">
-                            <div class="legal-section-number">09</div>
+                            <div class="legal-section-number">11</div>
                             <h2>Data Sharing & Disclosure</h2>
                             <p>We will <strong>never sell</strong> your personal data. We may disclose your data only:
                             </p>
                             <ul>
-                                <li>To service providers acting on our behalf (see section 8);</li>
+                                <li>To service providers acting on our behalf (see Section 10);</li>
                                 <li>To comply with legal obligations (court orders, tax authorities, the Data Protection
-                                    Commission);</li>
-                                <li>To protect our rights, property, or safety, or that of our users;</li>
+                                    Commission, or employment regulators);</li>
+                                <li>To protect our rights, property, or safety, or that of our users or employees;</li>
+                                <li>To prospective employers or partners strictly in connection with your own
+                                    application or enquiry;</li>
                                 <li>In connection with a merger, acquisition, or sale of assets (with notice to you).
                                 </li>
                             </ul>
                         </section>
 
-                        {{-- 10 --}}
+                        {{-- 12 --}}
                         <section id="transfers" class="legal-section-block">
-                            <div class="legal-section-number">10</div>
+                            <div class="legal-section-number">12</div>
                             <h2>International Data Transfers</h2>
-                            <p>Some of our processors (e.g., Google, Paystack) may store data outside Ghana. When we
-                                transfer personal data internationally, we ensure appropriate safeguards are in place,
-                                including:</p>
+                            <p>Some of our processors (e.g., Google, Paystack, Sentry, Pusher) may store data outside
+                                Ghana. When we transfer personal data internationally, we ensure appropriate safeguards
+                                are in place, including:</p>
                             <ul>
                                 <li>Standard Contractual Clauses approved by the Data Protection Commission;</li>
                                 <li>Verification that the recipient country provides adequate protection;</li>
@@ -426,25 +627,32 @@
                             </ul>
                         </section>
 
-                        {{-- 11 --}}
+                        {{-- 13 --}}
                         <section id="retention" class="legal-section-block">
-                            <div class="legal-section-number">11</div>
+                            <div class="legal-section-number">13</div>
                             <h2>Data Retention</h2>
                             <p>We retain personal data only as long as necessary:</p>
                             <ul>
                                 <li><strong>Active accounts:</strong> Kept while your account is active.</li>
                                 <li><strong>Inactive accounts:</strong> Deleted after 24 months of inactivity (with
                                     prior notice).</li>
+                                <li><strong>Chat transcripts (leads):</strong> Retained for up to 24 months unless
+                                    converted to a client relationship.</li>
+                                <li><strong>Job applications (unsuccessful):</strong> Up to 12 months, unless you ask
+                                    us to delete them sooner.</li>
+                                <li><strong>Employee HR records:</strong> Retained for the duration of employment plus
+                                    any legal minimum required by Ghanaian employment law.</li>
                                 <li><strong>Transaction records:</strong> Retained for 6 years as required by Ghanaian
                                     tax law.</li>
-                                <li><strong>Security logs:</strong> Retained for 12 months.</li>
+                                <li><strong>Security logs and audit trails:</strong> Retained for 12 months.</li>
+                                <li><strong>Newsletter subscriptions:</strong> Retained until you withdraw consent.</li>
                                 <li><strong>Marketing data:</strong> Retained until you withdraw consent.</li>
                             </ul>
                         </section>
 
-                        {{-- 12 --}}
+                        {{-- 14 --}}
                         <section id="security" class="legal-section-block">
-                            <div class="legal-section-number">12</div>
+                            <div class="legal-section-number">14</div>
                             <h2>Data Security</h2>
                             <p>We implement industry-standard security measures to protect your data:</p>
                             <ul>
@@ -457,14 +665,16 @@
                                 <li><strong>Access controls:</strong> Role-based permissions limit internal access.</li>
                                 <li><strong>Audit logging:</strong> All sensitive actions are logged.</li>
                                 <li><strong>Regular backups:</strong> With encryption and access controls.</li>
+                                <li><strong>Error monitoring:</strong> Sentry tracks issues so we can respond quickly
+                                    to incidents.</li>
                             </ul>
                             <p>While no system is 100% impenetrable, we continuously monitor and improve our security
                                 posture.</p>
                         </section>
 
-                        {{-- 13 --}}
+                        {{-- 15 --}}
                         <section id="rights" class="legal-section-block">
-                            <div class="legal-section-number">13</div>
+                            <div class="legal-section-number">15</div>
                             <h2>Your Rights</h2>
                             <p>Under the Ghana Data Protection Act, 2012 (Act 843), you have the right to:</p>
                             <ul>
@@ -481,13 +691,14 @@
                                     Ghana.</li>
                             </ul>
                             <p>To exercise any of these rights, email us at
-                                href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>. We will
-                                respond within <strong>30 days</strong>.</p>
+                                <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>. We will
+                                respond within <strong>30 days</strong>.
+                            </p>
                         </section>
 
-                        {{-- 14 --}}
+                        {{-- 16 --}}
                         <section id="children" class="legal-section-block">
-                            <div class="legal-section-number">14</div>
+                            <div class="legal-section-number">16</div>
                             <h2>Children's Privacy</h2>
                             <p>Our Services are not directed to individuals under the age of <strong>18</strong>. We do
                                 not knowingly collect personal data from children. If we become aware that we have
@@ -496,9 +707,9 @@
                                 data, please contact us immediately.</p>
                         </section>
 
-                        {{-- 15 --}}
+                        {{-- 17 --}}
                         <section id="marketing" class="legal-section-block">
-                            <div class="legal-section-number">15</div>
+                            <div class="legal-section-number">17</div>
                             <h2>Marketing Communications</h2>
                             <p>We may send you marketing emails (product updates, newsletters) only if you have opted
                                 in. You can unsubscribe at any time by:</p>
@@ -506,15 +717,36 @@
                                 <li>Clicking the "Unsubscribe" link in any marketing email;</li>
                                 <li>Updating your notification preferences in your Account settings;</li>
                                 <li>Emailing us at
-                                    href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>.</li>
+                                    <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>.
+                                </li>
                             </ul>
-                            <p>You will still receive transactional emails (security alerts, password resets, receipts)
-                                as these are essential to the Service.</p>
+                            <p>You will still receive transactional emails (security alerts, password resets, receipts,
+                                application updates) as these are essential to the Service.</p>
                         </section>
 
-                        {{-- 16 --}}
+                        {{-- 18 --}}
+                        <section id="automated" class="legal-section-block">
+                            <div class="legal-section-number">18</div>
+                            <h2>Automated Processing & AI</h2>
+                            <p>We use automated systems — including an AI chat assistant and internal lead scoring —
+                                to help us respond to enquiries and prioritise work. Here is how we handle them:</p>
+                            <ul>
+                                <li><strong>No legal-effect decisions:</strong> No automated system makes decisions
+                                    that produce legal effects on you or significantly affect you.</li>
+                                <li><strong>Human in the loop:</strong> All commercial, contractual, employment, and
+                                    candidate decisions are reviewed by a human team member.</li>
+                                <li><strong>Right to human review:</strong> You can request human review of any
+                                    automated interaction by emailing us at
+                                    <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>.
+                                </li>
+                                <li><strong>Right to object:</strong> You may object to automated processing by
+                                    contacting us. We will respond within 30 days.</li>
+                            </ul>
+                        </section>
+
+                        {{-- 19 --}}
                         <section id="breach" class="legal-section-block">
-                            <div class="legal-section-number">16</div>
+                            <div class="legal-section-number">19</div>
                             <h2>Data Breach Notification</h2>
                             <p>In the unfortunate event of a data breach that poses a risk to your rights, we will:</p>
                             <ul>
@@ -526,9 +758,9 @@
                             </ul>
                         </section>
 
-                        {{-- 17 --}}
+                        {{-- 20 --}}
                         <section id="changes" class="legal-section-block">
-                            <div class="legal-section-number">17</div>
+                            <div class="legal-section-number">20</div>
                             <h2>Changes to This Policy</h2>
                             <p>We may update this Privacy Policy from time to time. Material changes will be announced
                                 via email or a prominent notice on the site at least <strong>14 days</strong> before
@@ -536,16 +768,17 @@
                             <p>The "Effective Date" at the top indicates when the latest version took effect.</p>
                         </section>
 
-                        {{-- 18 --}}
+                        {{-- 21 --}}
                         <section id="contact" class="legal-section-block">
-                            <div class="legal-section-number">18</div>
+                            <div class="legal-section-number">21</div>
                             <h2>Contact & Data Protection Officer</h2>
                             <div class="legal-info-card">
                                 <h6>Data Protection Officer (DPO)</h6>
                                 <ul>
                                     <li><i class="fal fa-map-marker-alt"></i> Accra, Ghana</li>
                                     <li><i class="fal fa-envelope"></i>
-                                        href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a></li>
+                                        <a href="mailto:contact@polyspheretech.com">contact@polyspheretech.com</a>
+                                    </li>
                                     <li><i class="fal fa-phone"></i> <a href="tel:+233597563427">+233 (59) 756-3427</a>
                                     </li>
                                 </ul>

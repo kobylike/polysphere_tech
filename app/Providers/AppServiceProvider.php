@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Models\Application;
 use App\Models\Category;
+use App\Models\ChatLead;
 use App\Models\Department;
 use App\Models\Permission;
 use App\Models\Post;
@@ -20,6 +21,7 @@ use App\Observers\UserProfileObserver;
 use App\Observers\VacancyObserver;
 use App\Policies\ApplicationPolicy;
 use App\Policies\CategoryPolicy;
+use App\Policies\ChatLeadPolicy;
 use App\Policies\DepartmentPolicy;
 use App\Policies\PermissionPolicy;
 use App\Policies\PostPolicy;
@@ -58,6 +60,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Vacancy::class, VacancyPolicy::class);
         Gate::policy(Application::class, ApplicationPolicy::class);
         Gate::policy(Department::class, DepartmentPolicy::class);
+        Gate::policy(ChatLead::class, ChatLeadPolicy::class);
 
         Gate::define('manage-roles', function ($user) {
             return $user->hasRole('Super Admin');
@@ -67,9 +70,7 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole('Super Admin');
         });
 
-
-
-        //observers
+        // Observers — bust the chat knowledge base cache on save/delete
         Vacancy::observe(VacancyObserver::class);
         Project::observe(ProjectObserver::class);
         Service::observe(ServiceObserver::class);
