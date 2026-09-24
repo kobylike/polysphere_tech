@@ -19,7 +19,7 @@
         <a class="text-primary fs-13" data-bs-toggle="offcanvas" href="#offcanvasExample1" role="button" aria-controls="offcanvasExample1">+ Add Task</a>
     </div>
 
-    {{-- ─── PROFILE HERO ───────────────────────────────────────────────────── --}}
+
     @php
         $roles = $user->roles->pluck('name')->map(fn($r) => ucfirst($r))->implode(', ');
         $statusClass = $user->status === 'active' ? 'success' : 'danger';

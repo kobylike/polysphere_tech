@@ -13,7 +13,8 @@ Sidebar start
                 $isAdmin = $authUser->hasRole(['Super Admin', 'Admin']);
                 $executiveActive = request()->routeIs('dashboard');
                 $userDashboardActive = request()->routeIs('dashboard.user');
-                $anyDashboardActive = $executiveActive || $userDashboardActive;
+                $analyticsActive = request()->routeIs('dashboard.analytics');
+                $anyDashboardActive = $executiveActive || $userDashboardActive || $analyticsActive;
             @endphp
 
             @if($isAdmin)
@@ -43,6 +44,12 @@ Sidebar start
                             <a href="{{ route('dashboard.user') }}" wire:navigate.hover
                                 class="{{ $userDashboardActive ? 'mm-active' : '' }}">
                                 My Dashboard
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{{ route('dashboard.analytics') }}" wire:navigate.hover
+                                class="{{ $analyticsActive ? 'mm-active' : '' }}">
+                                Advanced Analytics
                             </a>
                         </li>
                     </ul>

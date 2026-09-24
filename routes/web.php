@@ -7,6 +7,7 @@ use App\Livewire\Admin\Blog\Category\CategoryComponent;
 use App\Livewire\Admin\Blog\Category\CategoryFormComponent;
 use App\Livewire\Admin\Blog\Post\PostFormComponent;
 use App\Livewire\Admin\Blog\Post\PostManagement;
+use App\Livewire\Admin\Dashboard\AdvancedAnalyticsComponent;
 use App\Livewire\Admin\Dashboard\DashboardComponent;
 use App\Livewire\Admin\Dashboard\UserDashboardComponent;
 use App\Livewire\Admin\Departments\DepartmentComponent;
@@ -195,6 +196,8 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
         Route::get('/dashboard/user', UserDashboardComponent::class)
             ->name('dashboard.user');
 
+        Route::get('/dashboard/analytics', AdvancedAnalyticsComponent::class)
+            ->name('dashboard.analytics');
         // Chat messenger – accessible to everyone (may have internal permissions)
         Route::get('/chat-messenger', ChatMessengerMain::class)->name('messenger');
 
