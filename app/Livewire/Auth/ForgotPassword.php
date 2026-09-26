@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Auth;
 
-use App\Helpers\ActivityLogger; // <-- Added
+use App\Helpers\ActivityLogger;
 use Livewire\Component;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -43,18 +43,16 @@ class ForgotPassword extends Component
         'email.exists' => 'We couldn\'t find an account with this email address.',
     ];
 
-    protected $listeners = [
-        'startCountdown',
-        'resetSent',
-        'rateLimitReset',
-        'showNotification'
-    ];
+    // ⚠️ Removed: `protected $listeners = [...]`
+    // These were being treated as server-side event => method-name bindings
+    // (e.g. Livewire tried to call $this->resetSent() when the "resetSent"
+    // event fired), but no such methods exist and none of these events are
+    // actually listened for server-side. The dispatch() calls below are
+    // pure browser events and don't need to be declared here at all.
 
     public function mount(Request $request)
     {
         if (Auth::check()) {
-            // Redirect to appropriate dashboard
-
             /** @var \App\Models\User $user */
             $user = Auth::user();
             $route = $user->hasRole(['Super Admin', 'Admin']) ? 'dashboard' : 'dashboard.user';
@@ -99,7 +97,6 @@ class ForgotPassword extends Component
                 ? 'Too many requests from your network. Please wait ' . $this->remainingSeconds . ' seconds.'
                 : 'A reset link was already sent recently. Please wait ' . $this->remainingSeconds . ' seconds.';
 
-            // 🔥 Log rate limit hit
             ActivityLogger::log('Password reset rate limit hit', [
                 'email' => $this->email,
                 'ip'    => request()->ip(),
@@ -107,22 +104,18 @@ class ForgotPassword extends Component
                 'remaining_seconds' => $this->remainingSeconds,
             ], 'auth');
 
-            $this->dispatch('showNotification', [
-                'message' => $message,
-                'type' => 'error'
-            ]);
+            // ✅ Fixed: match the event name your Blade view listens for
+            $this->dispatch('show-toast', type: 'error', message: $message);
             return;
         }
 
         $this->loading = true;
         $this->checkProgress = 0;
 
-        // Set rate limits
         $waitSeconds = 60;
         Cache::put($this->ipKey, time() + $waitSeconds, $waitSeconds);
         Cache::put($this->emailKey, time() + $waitSeconds, $waitSeconds);
 
-        // Simulate progress animation
         $this->dispatch('startProgressAnimation');
 
         try {
@@ -131,7 +124,6 @@ class ForgotPassword extends Component
             ]);
 
             if ($status === Password::RESET_LINK_SENT) {
-                // 🔥 Log successful reset link request
                 ActivityLogger::log('Password reset link sent', [
                     'email' => $this->email,
                     'ip'    => request()->ip(),
@@ -145,10 +137,8 @@ class ForgotPassword extends Component
                 $this->dispatch('resetSent');
                 $this->dispatch('startCountdown', ['seconds' => $waitSeconds]);
 
-                // Start redirect countdown
                 $this->startRedirectCountdown();
             } else {
-                // 🔥 Log failed attempt (invalid email or other)
                 ActivityLogger::log('Password reset request failed', [
                     'email'  => $this->email,
                     'ip'     => request()->ip(),
@@ -156,13 +146,11 @@ class ForgotPassword extends Component
                 ], 'auth');
 
                 $this->addError('email', __($status));
-                $this->dispatch('showNotification', [
-                    'message' => __($status),
-                    'type' => 'error'
-                ]);
+
+                // ✅ Fixed
+                $this->dispatch('show-toast', type: 'error', message: __($status));
             }
         } catch (\Exception $e) {
-            // 🔥 Log exception
             Log::error('Password reset exception: ' . $e->getMessage(), [
                 'email' => $this->email,
                 'ip'    => request()->ip(),
@@ -175,10 +163,9 @@ class ForgotPassword extends Component
             ], 'auth');
 
             $this->addError('email', 'An error occurred. Please try again.');
-            $this->dispatch('showNotification', [
-                'message' => 'An error occurred. Please try again.',
-                'type' => 'error'
-            ]);
+
+            // ✅ Fixed
+            $this->dispatch('show-toast', type: 'error', message: 'An error occurred. Please try again.');
         }
 
         $this->loading = false;
@@ -205,23 +192,18 @@ class ForgotPassword extends Component
         Cache::forget($this->emailKey);
         $this->checkRateLimit();
 
-        // 🔥 Log manual reset of rate limits
         ActivityLogger::log('Password reset rate limits manually cleared', [
             'ip' => request()->ip(),
         ], 'auth');
 
-        $this->dispatch('showNotification', [
-            'message' => 'Rate limits cleared. You can request a new reset link.',
-            'type' => 'success'
-        ]);
+        // ✅ Fixed
+        $this->dispatch('show-toast', type: 'success', message: 'Rate limits cleared. You can request a new reset link.');
     }
 
     protected function startRedirectCountdown()
     {
         $this->redirectProgress = 0;
         $this->redirectCountdown = 5;
-
-        $interval = $this->redirectCountdown * 1000 / 100;
 
         $this->dispatch('startRedirectCountdown');
     }

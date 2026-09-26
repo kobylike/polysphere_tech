@@ -3,7 +3,7 @@
 namespace App\Livewire\Auth;
 
 use App\Helpers\ActivityLogger;
-use App\Helpers\NotificationHelper; // <-- Added
+use App\Helpers\NotificationHelper;
 use App\Models\User;
 use Livewire\Component;
 use Illuminate\Support\Str;
@@ -149,7 +149,13 @@ class PasswordReset extends Component
             ], 'auth');
 
             session()->flash('status', 'Your password has been reset successfully.');
-            $this->redirectRoute('dashboard');
+
+            // ✅ Fixed: redirect based on role, same pattern as ForgotPassword::mount()
+            /** @var \App\Models\User $user */
+            $user = Auth::user();
+            $route = $user->hasRole(['Super Admin', 'Admin']) ? 'dashboard' : 'dashboard.user';
+
+            $this->redirectRoute($route, navigate: true);
             return;
         }
 
