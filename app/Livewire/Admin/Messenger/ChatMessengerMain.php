@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
@@ -23,7 +24,23 @@ class ChatMessengerMain extends Component
 
     // Core
     public $friends;
+
+    /**
+     * FIX: #[Url] keeps this property mirrored to a query-string parameter
+     * (e.g. /chat-messenger?friend=5). Livewire restores it from the URL
+     * automatically on every request — including a plain page reload —
+     * BEFORE mount() runs. Previously this was a plain public property
+     * with no persistence of its own, so a reload always re-mounted the
+     * component with activeFriendId defaulting back to null, dropping the
+     * user back to the "Select a conversation" empty state even though
+     * they were mid-conversation. `as: 'friend'` just keeps the query
+     * param short; `keep: false` (the default) means it's omitted from
+     * the URL entirely whenever no conversation is open (goBack() sets
+     * this back to null, which removes the param the same way).
+     */
+    #[Url(as: 'friend')]
     public ?int $activeFriendId = null;
+
     public string $messageText  = '';
     public int $totalReceivedMessages = 0;
     public ?int $firstUnreadMessageId = null;
@@ -73,7 +90,26 @@ class ChatMessengerMain extends Component
         $this->updateUserOnlineStatus();
         $this->loadFriends();
 
-        if ($friendId) $this->setActiveFriend($friendId);
+        /**
+         * FIX: $this->activeFriendId may already be populated at this
+         * point — not from the $friendId route/mount parameter below, but
+         * because #[Url] restored it from the page's own query string
+         * (e.g. after a reload on /chat-messenger?friend=5). An explicit
+         * $friendId argument (if this component is ever invoked with one
+         * directly, e.g. @livewire(..., ['friendId' => $id])) still takes
+         * priority over that restored value.
+         *
+         * Also re-validate against the current friend list rather than
+         * trusting the URL blindly — the id in the query string could be
+         * stale (friend removed, wrong account, hand-edited URL, etc.).
+         */
+        $targetFriendId = $friendId ?? $this->activeFriendId;
+
+        if ($targetFriendId && $this->friends->contains('id', $targetFriendId)) {
+            $this->setActiveFriend($targetFriendId);
+        } else {
+            $this->activeFriendId = null;
+        }
 
         $this->dispatch('subscribe-to-presence');
     }

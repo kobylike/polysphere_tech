@@ -6,6 +6,9 @@
      )" x-init="init()" wire:ignore.self :data-panel="activePanel" :data-tier="tier" x-cloak>
 
     <style>
+        /* ═══════════════════════════════════════════════════════════════
+           0. RESET / TOKENS
+        ═══════════════════════════════════════════════════════════════ */
         [x-cloak] {
             display: none !important;
         }
@@ -19,14 +22,14 @@
             --ptp-text: #0f172a;
             --ptp-text-mid: #475569;
             --ptp-text-muted: #94a3b8;
-            --ptp-accent: #6366f1;
-            --ptp-accent-2: #8b5cf6;
-            --ptp-accent-soft: #eef2ff;
+            --ptp-accent: #3b82f6;
+            --ptp-accent-2: #2563eb;
+            --ptp-accent-soft: #eff6ff;
             --ptp-danger: #ef4444;
             --ptp-success: #10b981;
             --ptp-warning: #f59e0b;
 
-            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            font-family: inherit;
             color: var(--ptp-text);
             display: block;
             box-sizing: border-box;
@@ -39,57 +42,36 @@
             box-sizing: border-box;
         }
 
-        /* ══ SHELL ════════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           1. SHELL / LAYOUT
+        ═══════════════════════════════════════════════════════════════ */
         #ptp-chat-app .ptp-wrap {
-            background: var(--ptp-bg);
-            padding: 16px;
-            min-height: calc(100vh - 60px);
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding: 16px;
+            overflow: hidden;
+            height: var(--ptp-wrap-height, calc(100dvh - 140px));
+            max-height: var(--ptp-wrap-height, calc(100dvh - 140px));
+            min-height: 420px;
         }
 
-        #ptp-chat-app .ptp-topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-            padding: 4px;
-        }
-
-        #ptp-chat-app .ptp-topbar h1 {
-            font-size: 22px;
-            font-weight: 700;
-            letter-spacing: -0.02em;
-            margin: 0;
-            color: var(--ptp-text);
-        }
-
-        #ptp-chat-app .ptp-topbar p {
-            font-size: 13px;
-            color: var(--ptp-text-muted);
-            margin: 2px 0 0;
-        }
-
-        #ptp-chat-app .ptp-topbar .ptp-breadcrumb {
-            font-size: 12.5px;
-            color: var(--ptp-text-muted);
-        }
-
-        #ptp-chat-app .ptp-topbar .ptp-breadcrumb a {
-            color: var(--ptp-accent);
-            text-decoration: none;
+        #ptp-chat-app .ptp-wrap>.page-titles,
+        #ptp-chat-app .ptp-wrap>.ptp-topbar {
+            flex-shrink: 0;
+            margin-bottom: 0;
         }
 
         #ptp-chat-app .ptp-shell {
             background: var(--ptp-surface);
             border-radius: 16px;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -12px rgba(15, 23, 42, .08);
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .04),
+                0 12px 32px -12px rgba(15, 23, 42, .08);
             overflow: hidden;
             display: grid;
             grid-template-columns: 320px minmax(0, 1fr) 320px;
-            height: calc(100vh - 160px);
-            min-height: 560px;
+            flex: 1 1 auto;
+            min-height: 0;
             width: 100%;
         }
 
@@ -116,56 +98,15 @@
         }
 
         /* ═══════════════════════════════════════════════════════════════
-           CHAT PANE — STICKY HEADER + COMPOSER, SCROLLING MESSAGES
-           Only the messages area scrolls. Header, search bar, pinned
-           bar, attachment preview, reply bar, and composer stay
-           locked to the top / bottom of the pane. Works on EVERY
-           breakpoint (desktop / tablet / mobile).
+           2. LEFT PANE — CONTACTS
         ═══════════════════════════════════════════════════════════════ */
-        #ptp-chat-app .ptp-pane--chat {
-            height: 100% !important;
-            min-height: 0 !important;
-            max-height: 100% !important;
-            overflow: hidden !important;
-            flex-direction: column !important;
-        }
-
-        #ptp-chat-app .ptp-pane--chat>.d-flex.flex-column.h-100 {
-            display: flex !important;
-            flex-direction: column !important;
-            flex: 1 1 auto !important;
-            height: 100% !important;
-            min-height: 0 !important;
-            max-height: 100% !important;
-            overflow: hidden !important;
-        }
-
-        /* Every direct child of the chat wrapper holds its natural size… */
-        #ptp-chat-app .ptp-pane--chat>.d-flex.flex-column.h-100>* {
-            flex-shrink: 0 !important;
-            flex-grow: 0 !important;
-            flex-basis: auto !important;
-        }
-
-        /* …except the messages area, which grows and scrolls internally. */
-        #ptp-chat-app .ptp-pane--chat>.d-flex.flex-column.h-100>.chat-box-area {
-            flex: 1 1 auto !important;
-            flex-grow: 1 !important;
-            flex-shrink: 1 !important;
-            flex-basis: 0 !important;
-            min-height: 0 !important;
-            max-height: 100% !important;
-            overflow-y: auto !important;
-            overflow-x: hidden !important;
-        }
-
-        /* ══ LEFT PANE — contacts ═════════════════════════════════════════ */
         #ptp-chat-app .ptp-me {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 18px 20px;
             border-bottom: 1px solid var(--ptp-border-soft);
+            flex-shrink: 0;
         }
 
         #ptp-chat-app .ptp-me__avatar {
@@ -226,6 +167,7 @@
 
         #ptp-chat-app .ptp-search {
             padding: 14px 16px 10px;
+            flex-shrink: 0;
         }
 
         #ptp-chat-app .ptp-search__box {
@@ -242,7 +184,7 @@
         #ptp-chat-app .ptp-search__box:focus-within {
             border-color: var(--ptp-accent);
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .12);
         }
 
         #ptp-chat-app .ptp-search__box svg {
@@ -272,6 +214,7 @@
             padding: 6px 8px 16px;
             scrollbar-width: thin;
             scrollbar-color: var(--ptp-border) transparent;
+            -webkit-overflow-scrolling: touch;
         }
 
         #ptp-chat-app .ptp-people::-webkit-scrollbar {
@@ -410,10 +353,12 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 6px rgba(99, 102, 241, .35);
+            box-shadow: 0 2px 6px rgba(59, 130, 246, .35);
         }
 
-        /* ══ MIDDLE — header ══════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           3. CHAT HEADER
+        ═══════════════════════════════════════════════════════════════ */
         #ptp-chat-app .ptp-chat-header {
             display: flex;
             align-items: center;
@@ -603,136 +548,172 @@
             color: var(--ptp-text);
         }
 
-        /* ══ MESSAGES ════════════════════════════════════════════════════ */
-        #ptp-chat-app .chat-box-area {
+        #ptp-chat-app .pinned-bar {
+            background: #fffbe6;
+            border-bottom: 1px solid #ffe89a;
+            padding: 6px 12px;
+            font-size: .8rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           4. CHAT BODY
+        ═══════════════════════════════════════════════════════════════ */
+        #ptp-chat-app .ptp-pane--chat {
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        #ptp-chat-app .ptp-chat-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
+            height: 100%;
+        }
+
+        #ptp-chat-app .ptp-chat-body>* {
+            flex-shrink: 0;
+            flex-grow: 0;
+            flex-basis: auto;
+        }
+
+        #ptp-chat-app .ptp-chat-body>.chat-box-area {
             flex: 1 1 auto !important;
             min-height: 0 !important;
-            height: auto !important;
-            max-height: none !important;
+            max-height: 100%;
             overflow-y: auto !important;
             overflow-x: hidden !important;
-            -webkit-overflow-scrolling: touch !important;
-            overscroll-behavior: contain !important;
-            position: relative !important;
-            padding: 16px 22px 8px !important;
-            background: var(--ptp-surface) !important;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+            position: relative;
+            padding: 16px 22px 8px;
+            background: var(--ptp-surface);
         }
 
         #ptp-chat-app .msg-row {
-            position: relative !important;
+            position: relative;
         }
 
         #ptp-chat-app .msg-row .msg-actions {
-            position: absolute !important;
-            top: -12px !important;
-            right: 8px !important;
-            display: flex !important;
-            gap: 4px !important;
-            padding: 4px 6px !important;
-            background: #fff !important;
-            border-radius: 20px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, .12) !important;
-            opacity: 0 !important;
-            transition: opacity .15s !important;
-            pointer-events: none !important;
-            z-index: 5 !important;
+            position: absolute;
+            top: -12px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            padding: 4px 6px;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .12);
+            opacity: 0;
+            transition: opacity .15s;
+            pointer-events: none;
+            z-index: 5;
         }
 
         #ptp-chat-app .msg-row:hover .msg-actions {
-            opacity: 1 !important;
-            pointer-events: auto !important;
+            opacity: 1;
+            pointer-events: auto;
         }
 
         #ptp-chat-app .msg-row.mine .msg-actions {
-            right: auto !important;
-            left: 8px !important;
+            right: auto;
+            left: 8px;
         }
 
         #ptp-chat-app .msg-action-btn {
-            position: static !important;
-            border: none !important;
-            background: transparent !important;
-            padding: 4px 6px !important;
-            border-radius: 50% !important;
-            font-size: .9rem !important;
-            color: #666 !important;
-            cursor: pointer !important;
+            border: none;
+            background: transparent;
+            padding: 4px 6px;
+            border-radius: 50%;
+            font-size: .9rem;
+            color: #666;
+            cursor: pointer;
         }
 
         #ptp-chat-app .msg-action-btn:hover {
-            background: #f1f3f5 !important;
-            color: #111 !important;
+            background: #f1f3f5;
+            color: #111;
         }
 
         #ptp-chat-app .reaction-pills {
-            display: flex !important;
-            gap: 4px !important;
-            flex-wrap: wrap !important;
-            margin-top: -6px !important;
-            position: relative !important;
-            z-index: 2 !important;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-top: -6px;
+            position: relative;
+            z-index: 2;
         }
 
         #ptp-chat-app .reaction-pill {
-            position: static !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 4px !important;
-            padding: 1px 8px !important;
-            font-size: .75rem !important;
-            background: #fff !important;
-            border: 1px solid #e9ecef !important;
-            border-radius: 20px !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, .06) !important;
-            cursor: pointer !important;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 1px 8px;
+            font-size: .75rem;
+            background: #fff;
+            border: 1px solid #e9ecef;
+            border-radius: 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06);
+            cursor: pointer;
         }
 
         #ptp-chat-app .reaction-pill.mine {
-            background: #e7f3ff !important;
-            border-color: #bfe0ff !important;
+            background: #e7f3ff;
+            border-color: #bfe0ff;
         }
 
         #ptp-chat-app .quote-bubble {
-            background: rgba(0, 0, 0, .05) !important;
-            border-left: 3px solid #0d99ff !important;
-            padding: 6px 10px !important;
-            margin-bottom: 6px !important;
-            border-radius: 6px !important;
-            font-size: .8rem !important;
+            background: rgba(0, 0, 0, .05);
+            border-left: 3px solid #0d99ff;
+            padding: 6px 10px;
+            margin-bottom: 6px;
+            border-radius: 6px;
+            font-size: .8rem;
         }
 
         #ptp-chat-app .msg-row.mine .quote-bubble {
-            border-left-color: #fff !important;
-            background: rgba(255, 255, 255, .15) !important;
+            border-left-color: #fff;
+            background: rgba(255, 255, 255, .15);
         }
 
         #ptp-chat-app .msg-row.same-sender .avatar-spacer {
-            width: 34px !important;
+            width: 34px;
         }
 
         #ptp-chat-app .chat-link {
-            color: #0d99ff !important;
-            text-decoration: underline !important;
-            word-break: break-all !important;
+            color: #0d99ff;
+            text-decoration: underline;
+            word-break: break-all;
         }
 
         #ptp-chat-app .message-sent .chat-link {
+            color: #fff;
+            text-decoration: underline;
+        }
+
+        #ptp-chat-app .message-received p {
+            background-color: #e9ecef !important;
+            border: 1px solid #dee2e6;
+            color: var(--ptp-text) !important;
+        }
+
+        #ptp-chat-app .message-sent p {
+            background: linear-gradient(135deg, var(--ptp-accent) 0%, var(--ptp-accent-2) 100%) !important;
             color: #fff !important;
-            text-decoration: underline !important;
         }
 
-        #ptp-chat-app .pinned-bar {
-            background: #fffbe6 !important;
-            border-bottom: 1px solid #ffe89a !important;
-            padding: 6px 12px !important;
-            font-size: .8rem !important;
-            display: flex !important;
-            align-items: center !important;
-            gap: 8px !important;
-            flex-shrink: 0 !important;
+        #ptp-chat-app video,
+        #ptp-chat-app audio {
+            pointer-events: auto !important;
         }
 
-        /* Empty states */
         #ptp-chat-app .ptp-empty {
             flex: 1;
             display: flex;
@@ -771,7 +752,6 @@
             line-height: 1.5;
         }
 
-        /* Search-in-chat empty state */
         #ptp-chat-app .ptp-search-empty {
             text-align: center;
             padding: 60px 20px;
@@ -803,12 +783,11 @@
             margin: 0;
         }
 
-        #ptp-chat-app .ptp-search-empty .ptp-search-empty__q {
+        #ptp-chat-app .ptp-search-empty__q {
             color: var(--ptp-accent);
             font-weight: 600;
         }
 
-        /* Reply bar */
         #ptp-chat-app .ptp-replybar {
             display: flex;
             align-items: center;
@@ -849,7 +828,9 @@
             text-overflow: ellipsis;
         }
 
-        /* ══ COMPOSER ═════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           5. COMPOSER
+        ═══════════════════════════════════════════════════════════════ */
         #ptp-chat-app .ptp-composer {
             position: relative;
             padding: 12px 20px 16px;
@@ -912,7 +893,7 @@
         #ptp-chat-app .ptp-composer__field:focus-within {
             border-color: var(--ptp-accent);
             background: #fff;
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, .1);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, .1);
         }
 
         #ptp-chat-app .ptp-composer__field textarea {
@@ -949,13 +930,13 @@
             cursor: pointer;
             transition: transform .1s, box-shadow .15s;
             flex-shrink: 0;
-            box-shadow: 0 4px 12px -4px rgba(99, 102, 241, .45);
+            box-shadow: 0 4px 12px -4px rgba(59, 130, 246, .45);
             font-size: 13px;
         }
 
         #ptp-chat-app .ptp-composer__send:hover {
             transform: translateY(-1px);
-            box-shadow: 0 6px 16px -4px rgba(99, 102, 241, .55);
+            box-shadow: 0 6px 16px -4px rgba(59, 130, 246, .55);
         }
 
         #ptp-chat-app .ptp-composer__send:active {
@@ -1013,7 +994,9 @@
             }
         }
 
-        /* Popovers */
+        /* ═══════════════════════════════════════════════════════════════
+           6. POPOVERS
+        ═══════════════════════════════════════════════════════════════ */
         #ptp-chat-app .ptp-pop {
             position: absolute;
             bottom: calc(100% + 8px);
@@ -1022,7 +1005,8 @@
             background: var(--ptp-surface);
             border: 1px solid var(--ptp-border);
             border-radius: 16px;
-            box-shadow: 0 12px 40px -8px rgba(15, 23, 42, .18), 0 4px 12px rgba(15, 23, 42, .06);
+            box-shadow: 0 12px 40px -8px rgba(15, 23, 42, .18),
+                0 4px 12px rgba(15, 23, 42, .06);
             animation: ptp-pop .18s ease;
         }
 
@@ -1104,7 +1088,9 @@
             transform: scale(1.15);
         }
 
-        /* ══ INFO PANE ════════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           7. INFO PANE
+        ═══════════════════════════════════════════════════════════════ */
         #ptp-chat-app .ptp-info__head {
             display: flex;
             flex-direction: column;
@@ -1275,7 +1261,9 @@
             font-style: italic;
         }
 
-        /* Context menu */
+        /* ═══════════════════════════════════════════════════════════════
+           8. CONTEXT MENU / DROP OVERLAY
+        ═══════════════════════════════════════════════════════════════ */
         #ptp-chat-app .ptp-ctx {
             position: fixed;
             z-index: 9999;
@@ -1283,7 +1271,8 @@
             background: var(--ptp-surface);
             border: 1px solid var(--ptp-border);
             border-radius: 14px;
-            box-shadow: 0 20px 50px -12px rgba(15, 23, 42, .25), 0 8px 16px rgba(15, 23, 42, .06);
+            box-shadow: 0 20px 50px -12px rgba(15, 23, 42, .25),
+                0 8px 16px rgba(15, 23, 42, .06);
             padding: 6px;
             display: none;
         }
@@ -1373,7 +1362,7 @@
             inset: 12px;
             border: 2px dashed var(--ptp-accent);
             border-radius: 16px;
-            background: rgba(99, 102, 241, .06);
+            background: rgba(59, 130, 246, .06);
             color: var(--ptp-accent);
             font-weight: 600;
             display: none;
@@ -1389,7 +1378,9 @@
             display: flex;
         }
 
-        /* ══ RESPONSIVE ══════════════════════════════════════════════════ */
+        /* ═══════════════════════════════════════════════════════════════
+           9. RESPONSIVE
+        ═══════════════════════════════════════════════════════════════ */
         @media (max-width: 1199.98px) {
             #ptp-chat-app .ptp-shell {
                 grid-template-columns: 300px minmax(0, 1fr);
@@ -1403,7 +1394,18 @@
         @media (max-width: 767.98px) {
             #ptp-chat-app .ptp-wrap {
                 padding: 0;
-                min-height: 100vh;
+                gap: 0;
+                /* FIX: the base rule still applied
+                   `max-height: var(--ptp-wrap-height, calc(100dvh - 140px))`
+                   here because the mobile override only touched `height`.
+                   On a 545px viewport that silently capped the panel at
+                   ~405px, leaving empty space under the composer. Setting
+                   max-height to none lets the wrap flex to whatever space
+                   its parent gives it (fixed overlay on chat, natural flow
+                   on contacts). */
+                height: auto;
+                max-height: none;
+                min-height: 0;
             }
 
             #ptp-chat-app .ptp-topbar {
@@ -1414,8 +1416,6 @@
                 grid-template-columns: 1fr;
                 border-radius: 0;
                 box-shadow: none;
-                height: 100vh;
-                min-height: 0;
             }
 
             #ptp-chat-app .ptp-pane--contacts,
@@ -1437,7 +1437,34 @@
                 display: none;
             }
 
-            #ptp-chat-app .ptp-composer {
+            #ptp-chat-app[data-panel="chat"] {
+                position: fixed;
+                inset: 0;
+                z-index: 1040;
+                background: var(--ptp-surface);
+                display: flex;
+                flex-direction: column;
+            }
+
+            #ptp-chat-app[data-panel="chat"] .ptp-wrap {
+                flex: 1 1 auto;
+                min-height: 0;
+                height: auto !important;
+                /* FIX: same as above but for the fullscreen chat overlay —
+                   max-height must be explicitly cleared or the wrap is
+                   capped at the base rule's calc() value. */
+                max-height: none !important;
+                padding: 0;
+                gap: 0;
+                background: var(--ptp-surface);
+            }
+
+            #ptp-chat-app[data-panel="chat"] .ptp-shell {
+                flex: 1 1 auto;
+                min-height: 0;
+            }
+
+            #ptp-chat-app[data-panel="chat"] .ptp-composer {
                 padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
             }
 
@@ -1477,26 +1504,31 @@
             }
 
             #ptp-chat-app .msg-row .msg-actions {
-                opacity: 1 !important;
-                pointer-events: auto !important;
-                top: 4px !important;
-                right: 4px !important;
+                opacity: 0;
+                pointer-events: none;
+                top: -14px;
+                right: 4px;
             }
 
             #ptp-chat-app .msg-row.mine .msg-actions {
-                left: 4px !important;
-                right: auto !important;
+                left: 4px;
+                right: auto;
+            }
+
+            #ptp-chat-app .msg-row.is-actions-open .msg-actions {
+                opacity: 1;
+                pointer-events: auto;
             }
 
             #ptp-chat-app .msg-action-btn {
-                padding: 8px 10px !important;
-                font-size: 1rem !important;
+                padding: 6px 8px;
+                font-size: .95rem;
             }
         }
 
         @media (max-width: 479.98px) {
             #ptp-chat-app .chat-box-area {
-                padding: 12px 14px 6px !important;
+                padding: 12px 14px 6px;
             }
 
             #ptp-chat-app .ptp-composer {
@@ -1543,26 +1575,18 @@
     </style>
 
     <div class="ptp-wrap">
-        {{-- PAGE TITLES --}}
         <div class="page-titles">
             <ol class="breadcrumb">
                 <li>
                     <h5 class="bc-title">Messenger</h5>
                 </li>
-                <li class="breadcrumb-item">
-                    <a href="{{ route('dashboard') }}">Home</a>
-                </li>
+                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Home</a></li>
                 <li class="breadcrumb-item active"><a href="javascript:void(0)">Messenger</a></li>
             </ol>
-            <div class="d-flex gap-2">
-
-
-            </div>
         </div>
 
         <div class="ptp-shell">
 
-            {{-- CONTACTS --}}
             <aside class="ptp-pane ptp-pane--contacts">
                 <div class="ptp-me">
                     <div class="ptp-me__avatar">
@@ -1638,7 +1662,6 @@
                 </div>
             </aside>
 
-            {{-- ═══ CONVERSATION ═══ --}}
             <section class="ptp-pane ptp-pane--chat position-relative" x-data="{ dragging: false }"
                 @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false"
                 @drop.prevent="dragging = false; handleDrop($event)">
@@ -1646,9 +1669,8 @@
                 @php $selectedFriend = $activeFriendId ? $friends->firstWhere('id', $activeFriendId) : null; @endphp
 
                 @if($selectedFriend)
-                    <div wire:key="page-chat-{{ $activeFriendId }}" class="d-flex flex-column h-100" style="min-height:0;">
+                    <div wire:key="page-chat-{{ $activeFriendId }}" class="ptp-chat-body">
 
-                        {{-- Header --}}
                         <header class="ptp-chat-header">
                             <button type="button" class="ptp-back" @click.stop.prevent="onBack()" aria-label="Back">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -1689,7 +1711,6 @@
                             </div>
                         </header>
 
-                        {{-- ═══ SEARCH BAR — REAL-TIME ═══ --}}
                         <div class="ptp-csearch" wire:ignore x-show="searchOpen" x-cloak>
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -1715,8 +1736,8 @@
                             </div>
                         @endif
 
-                        {{-- ═══ MESSAGES ═══ --}}
-                        <div class="chat-box-area style-2 dz-scroll" id="DZ_Page_Messages_Body">
+                        <div class="chat-box-area style-2 dz-scroll" id="DZ_Page_Messages_Body"
+                            @click.self="openActionsId = null">
 
                             @if($hasMoreMessages && !$searchQuery)
                                 <div class="text-center my-3">
@@ -1754,7 +1775,8 @@
                                 @endphp
 
                                 <div class="media msg-row {{ $isMine ? 'justify-content-end align-items-end ms-auto mine' : '' }} {{ $sameSender ? 'same-sender' : '' }}"
-                                    wire:key="page-msg-{{ $message->id }}">
+                                    wire:key="page-msg-{{ $message->id }}" @click="handleMsgClick($event, {{ $message->id }})"
+                                    :class="{ 'is-actions-open': openActionsId === {{ $message->id }} }">
 
                                     @if(!$isMine)
                                         @if(!$sameSender)
@@ -1803,41 +1825,51 @@
 
                                             @if($message->attachment_type === 'sticker')
                                                 <span style="font-size:2.5rem;">{{ $message->attachment_path }}</span>
+
                                             @elseif($message->attachment_type === 'image')
-                                                <a href="{{ asset('storage/' . $message->attachment_path) }}" target="_blank">
+                                                <a href="{{ asset('storage/' . $message->attachment_path) }}" target="_blank"
+                                                    rel="noopener">
                                                     <img src="{{ asset('storage/' . $message->attachment_path) }}"
-                                                        style="max-width:220px;border-radius:8px;display:block;cursor:zoom-in;">
+                                                        style="max-width:220px;border-radius:8px;display:block;cursor:zoom-in;" alt="">
                                                 </a>
                                                 @if($message->body)
-                                                <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>@endif
+                                                    <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>
+                                                @endif
+
                                             @elseif($message->attachment_type === 'video')
-                                                <video controls style="max-width:240px;border-radius:8px;">
+                                                <video controls preload="metadata" playsinline
+                                                    style="max-width:240px;border-radius:8px;">
                                                     <source src="{{ asset('storage/' . $message->attachment_path) }}">
                                                 </video>
                                                 @if($message->body)
-                                                <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>@endif
+                                                    <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>
+                                                @endif
+
                                             @elseif($message->attachment_type === 'audio')
                                                 <div class="voice-msg d-flex align-items-center gap-2">
                                                     @if($message->is_voice)
                                                         <i class="fa-solid fa-microphone text-primary"></i>
-                                                        <audio controls style="max-width:220px;"
+                                                        <audio controls preload="metadata"
                                                             src="{{ asset('storage/' . $message->attachment_path) }}"></audio>
                                                         <span class="small text-muted">
                                                             {{ $message->metadata['duration'] ?? 0 }}s
                                                         </span>
                                                     @else
-                                                        <audio controls style="width:100%;"
+                                                        <audio controls preload="metadata" style="width:100%;"
                                                             src="{{ asset('storage/' . $message->attachment_path) }}"></audio>
                                                     @endif
                                                 </div>
+
                                             @elseif($message->attachment_type === 'document')
                                                 <a href="{{ asset('storage/' . $message->attachment_path) }}" target="_blank"
-                                                    class="d-block text-decoration-none">
+                                                    rel="noopener" class="d-block text-decoration-none">
                                                     <i class="fa-solid fa-file-lines fa-lg"></i>
                                                     <span class="ms-1">{{ $message->attachment_name ?? 'Document' }}</span>
                                                 </a>
                                                 @if($message->body)
-                                                <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>@endif
+                                                    <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>
+                                                @endif
+
                                             @else
                                                 <p class="mb-1">{!! $message->rendered_body !!}</p>
                                             @endif
@@ -1898,7 +1930,6 @@
                             @endif
                         </div>
 
-                        {{-- Attachment preview --}}
                         @if($showAttachmentPreview)
                             <div class="d-flex align-items-center px-3 py-2 border-top" style="gap:10px; flex-shrink:0;">
                                 @if($attachmentType === 'image')
@@ -1921,7 +1952,6 @@
                             </div>
                         @endif
 
-                        {{-- Reply / edit bar --}}
                         @if($replyToId || $editingId)
                             @php $ctxMsg = \App\Models\Message::find($editingId ?? $replyToId); @endphp
                             <div class="ptp-replybar">
@@ -1937,7 +1967,6 @@
                             </div>
                         @endif
 
-                        {{-- Composer --}}
                         <div class="ptp-composer">
                             <div class="ptp-composer__row">
                                 <div class="ptp-composer__left">
@@ -2032,7 +2061,6 @@
                 @endif
             </section>
 
-            {{-- INFO --}}
             <aside class="ptp-pane ptp-pane--info">
                 @if($selectedFriend)
                     <div class="ptp-info__head">
@@ -2107,20 +2135,26 @@
                 <button type="button" @click.stop.prevent="react(emoji)"><span x-text="emoji"></span></button>
             </template>
         </div>
-        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('reply')"><i
-                class="fa-solid fa-reply"></i> Reply</button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('reply')">
+            <i class="fa-solid fa-reply"></i> Reply
+        </button>
         <template x-if="isMine && !isDeleted">
-            <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('edit')"><i
-                    class="fa-solid fa-pen"></i> Edit</button>
+            <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('edit')">
+                <i class="fa-solid fa-pen"></i> Edit
+            </button>
         </template>
-        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('forward')"><i
-                class="fa-solid fa-share"></i> Forward</button>
-        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('copy')"><i
-                class="fa-solid fa-copy"></i> Copy</button>
-        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('star')"><i
-                class="fa-solid fa-star"></i> Star / Unstar</button>
-        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('pin')"><i
-                class="fa-solid fa-thumbtack"></i> Pin / Unpin</button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('forward')">
+            <i class="fa-solid fa-share"></i> Forward
+        </button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('copy')">
+            <i class="fa-solid fa-copy"></i> Copy
+        </button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('star')">
+            <i class="fa-solid fa-star"></i> Star / Unstar
+        </button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('pin')">
+            <i class="fa-solid fa-thumbtack"></i> Pin / Unpin
+        </button>
         <div class="ptp-ctx__sep"></div>
         <button type="button" class="ptp-ctx__item is-danger" @click.stop.prevent="doAction('deleteMe')">
             <i class="fa-solid fa-trash"></i> Delete for me
@@ -2147,6 +2181,7 @@
                 return {
                     tier: startTier,
                     activePanel: (startTier === 'mobile' && initialFriendId) ? 'chat' : 'contacts',
+
                     searchOpen: false,
                     showStarredOnly: initialStarred === true,
                     searchQuery: '',
@@ -2155,38 +2190,45 @@
                     showStickers: false,
                     isTyping: false,
                     messageText: @entangle('messageText').live,
+
                     friendIds: initialFriendIds,
                     friendNames: friendNames,
                     search: '',
                     filteredCount: initialFriendIds.length,
                     activeFriendId: initialFriendId,
                     switchingFriend: false,
+
                     recording: false,
                     mediaRecorder: null,
                     audioChunks: [],
                     recordingStart: 0,
                     recordingTimeFormatted: '00:00',
                     timerInterval: null,
+
                     _swipeStartX: 0,
                     _swipeStartY: 0,
+                    openActionsId: null,
 
                     init() {
                         this.recording = false;
-                        if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
-                        this.setViewportHeight();
-                        this.recomputeTier();
-                        window.addEventListener('resize', () => { this.setViewportHeight(); this.recomputeTier(); });
-                        window.addEventListener('orientationchange', () => setTimeout(() => this.setViewportHeight(), 150));
-                        if (window.visualViewport) {
-                            window.visualViewport.addEventListener('resize', () => this.setViewportHeight());
-                            window.visualViewport.addEventListener('scroll', () => this.setViewportHeight());
+                        if (this.timerInterval) {
+                            clearInterval(this.timerInterval);
+                            this.timerInterval = null;
                         }
+
+                        this.recomputeTier();
+                        this.bindViewportHandlers();
+
                         this.$watch('searchOpen', (open) => {
                             if (open) this.$nextTick(() => this.$refs.searchInput?.focus());
                         });
+                        this.$watch('tier', () => this.$nextTick(() => this.fit()));
+                        this.$watch('activePanel', () => this.$nextTick(() => this.fit()));
+
                         if (window.ChatBridge && window.ChatBridge.subscribeToProfileUpdates) {
                             window.ChatBridge.subscribeToProfileUpdates(this.friendIds);
                         }
+
                         const self = this;
                         this.$watch('friendIds', function (newIds) {
                             if (window.ChatBridge && window.ChatBridge.subscribeToProfileUpdates) {
@@ -2194,47 +2236,88 @@
                             }
                             self.filterFriends();
                         });
+
                         window.addEventListener('update-profile-subscriptions', function (e) {
                             if (e.detail && e.detail.friendIds) {
                                 self.friendIds = e.detail.friendIds;
                                 self.filterFriends();
                             }
                         });
+
                         window.addEventListener('friend-selected', function (e) {
                             if (e.detail && e.detail.friendId) {
                                 self.activeFriendId = e.detail.friendId;
                                 if (window.ChatBridge) window.ChatBridge.subscribeToChat(e.detail.friendId);
                             }
                             if (self.tier === 'mobile') self.activePanel = 'chat';
-                            // Reset in-chat search state on friend switch
                             self.searchOpen = false;
                             self.searchQuery = '';
                             self.$wire.set('searchQuery', '');
+                            self.openActionsId = null;
+                            self.$nextTick(() => self.fit());
                         });
+
+                        window.addEventListener('livewire:navigated', () => this.$nextTick(() => this.fit()));
+                        document.addEventListener('livewire:init', () => {
+                            if (window.Livewire && Livewire.hook) {
+                                Livewire.hook('morph.updated', () => {
+                                    this.$nextTick(() => this.fit());
+                                });
+                            }
+                        });
+
                         setInterval(() => {
                             if (self.messageText && self.messageText.trim()) {
                                 self.$wire.saveDraft();
                             }
                         }, 4000);
-                        this.$nextTick(() => window.forcePageBot());
+
+                        this.fit();
+                        this.$nextTick(() => this.fit());
+                        requestAnimationFrame(() => this.fit());
+                        setTimeout(() => this.fit(), 80);
+                        setTimeout(() => this.fit(), 250);
+                        setTimeout(() => this.fit(), 600);
+                        window.addEventListener('load', () => this.fit());
+
                         this.setupSwipeBack();
                     },
 
-                    setViewportHeight() {
+                    bindViewportHandlers() {
+                        let raf = null;
+                        const schedule = () => {
+                            if (raf) cancelAnimationFrame(raf);
+                            raf = requestAnimationFrame(() => {
+                                raf = null;
+                                this.recomputeTier();
+                                this.fit();
+                            });
+                        };
+
+                        window.addEventListener('resize', schedule);
+                        window.addEventListener('orientationchange', () => setTimeout(schedule, 150));
+                    },
+
+                    fit() {
                         const root = this.$root;
                         if (!root) return;
-                        const vv = window.visualViewport;
-                        const viewportHeight = vv ? vv.height : window.innerHeight;
-                        const shell = root.querySelector('.ptp-shell');
-                        if (!shell) return;
-                        // Measure the shell's top position in the current viewport.
-                        // If it's partially scrolled off (negative), treat as 0 so
-                        // the shell fills the whole viewport and only the messages
-                        // area scrolls internally.
-                        const rect = shell.getBoundingClientRect();
+                        const wrap = root.querySelector('.ptp-wrap');
+                        if (!wrap) return;
+
+                        if (this.tier === 'mobile') {
+                            root.style.removeProperty('--ptp-wrap-height');
+                            return;
+                        }
+
+                        root.style.removeProperty('--ptp-wrap-height');
+                        void wrap.offsetHeight;
+
+                        const vh = document.documentElement.clientHeight || window.innerHeight;
+                        const rect = wrap.getBoundingClientRect();
                         const top = Math.max(0, rect.top);
-                        const available = Math.max(360, viewportHeight - top - 20);
-                        shell.style.height = available + 'px';
+                        const available = Math.max(420, vh - top - 20);
+
+                        root.style.setProperty('--ptp-wrap-height', available + 'px');
                     },
 
                     recomputeTier() {
@@ -2248,25 +2331,7 @@
                         } else if (wasMobile) {
                             this.activePanel = 'contacts';
                         }
-                    },
-
-                    setupSwipeBack() {
-                        const root = this.$root;
-                        if (!root) return;
-                        const self = this;
-                        root.addEventListener('touchstart', (e) => {
-                            if (self.tier !== 'mobile' || self.activePanel !== 'chat') return;
-                            self._swipeStartX = e.touches[0].clientX;
-                            self._swipeStartY = e.touches[0].clientY;
-                        }, { passive: true });
-                        root.addEventListener('touchend', (e) => {
-                            if (self.tier !== 'mobile' || self.activePanel !== 'chat') return;
-                            const dx = e.changedTouches[0].clientX - self._swipeStartX;
-                            const dy = e.changedTouches[0].clientY - self._swipeStartY;
-                            if (self._swipeStartX < 40 && dx > 60 && Math.abs(dy) < 50) {
-                                self.onBack();
-                            }
-                        }, { passive: true });
+                        this.openActionsId = null;
                     },
 
                     onBack() {
@@ -2274,26 +2339,14 @@
                         this.searchQuery = '';
                         this.$wire.set('searchQuery', '');
                         this.activeFriendId = null;
+                        this.openActionsId = null;
                         if (this.tier === 'mobile') this.activePanel = 'contacts';
                         this.$wire.goBack();
                     },
 
-                    /* ═════════════════════════════════════════════════
-                       IN-CONVERSATION SEARCH — real time
-                    ═════════════════════════════════════════════════ */
-                    openSearch() {
-                        this.searchOpen = true;
-                    },
-
-                    liveSearch() {
-                        // Push the current Alpine input into Livewire.
-                        // Debounce is handled by Alpine's @input.debounce.
-                        this.$wire.set('searchQuery', this.searchQuery ?? '');
-                    },
-
-                    // Kept as an alias in case anything still references it
+                    openSearch() { this.searchOpen = true; },
+                    liveSearch() { this.$wire.set('searchQuery', this.searchQuery ?? ''); },
                     commitSearch() { this.liveSearch(); },
-
                     closeSearch() {
                         this.searchQuery = '';
                         this.searchOpen = false;
@@ -2324,12 +2377,13 @@
                                 this.searchOpen = false;
                                 this.searchQuery = '';
                                 this.$wire.set('searchQuery', '');
+                                this.openActionsId = null;
                                 if (this.tier === 'mobile') this.activePanel = 'chat';
                                 if (window.ChatBridge && window.ChatBridge.subscribeToChat) {
                                     window.ChatBridge.subscribeToChat(id);
                                 }
                                 this.$nextTick(() => {
-                                    this.setViewportHeight();
+                                    this.fit();
                                     window.forcePageBot();
                                 });
                             })
@@ -2337,10 +2391,43 @@
                             .finally(() => { this.switchingFriend = false; });
                     },
 
+                    toggleActions(msgId) {
+                        this.openActionsId = this.openActionsId === msgId ? null : msgId;
+                    },
+
+                    handleMsgClick(e, msgId) {
+                        const target = e.target;
+                        if (target && typeof target.closest === 'function') {
+                            if (target.closest('a, video, audio, button, input, textarea, select, label, .reaction-pill, .msg-actions')) {
+                                return;
+                            }
+                        }
+                        this.toggleActions(msgId);
+                    },
+
+                    openContextMenu(e, msgId, isMine, isDeleted) {
+                        e.stopPropagation();
+                        var menu = document.getElementById('ctx-menu');
+                        if (!menu) return;
+                        if (window.Alpine) {
+                            var data = Alpine.$data(menu);
+                            if (data) { data.msgId = msgId; data.isMine = isMine; data.isDeleted = isDeleted; }
+                        }
+                        var rect = e.currentTarget.getBoundingClientRect();
+                        var top = Math.min(window.innerHeight - 380, rect.bottom + 4);
+                        var left = Math.min(window.innerWidth - 220, rect.left);
+                        menu.style.top = Math.max(8, top) + 'px';
+                        menu.style.left = Math.max(8, left) + 'px';
+                        menu.classList.add('show');
+                        this.openActionsId = null;
+                    },
+                    quickReact(e, msgId) { this.openContextMenu(e, msgId, false, false); },
+
                     onSend() {
                         this.showEmoji = false;
                         this.showAttachMenu = false;
                         this.showStickers = false;
+                        this.openActionsId = null;
                         window.forcePageBot();
                     },
                     addEmoji(e) { this.messageText += e.detail.unicode; },
@@ -2365,29 +2452,17 @@
                         if (event.key === 'Enter' && !event.shiftKey) {
                             event.preventDefault();
                             this.$wire.sendMessage();
-                            this.showEmoji = false; this.showAttachMenu = false;
+                            this.showEmoji = false;
+                            this.showAttachMenu = false;
+                            this.openActionsId = null;
                             window.forcePageBot();
                         }
                     },
+
                     startCall(type, friendId, friendName, friendAvatar) {
                         if (window.CallManager) window.CallManager.startCall(type, friendId, friendName, friendAvatar);
                     },
-                    openContextMenu(e, msgId, isMine, isDeleted) {
-                        e.stopPropagation();
-                        var menu = document.getElementById('ctx-menu');
-                        if (!menu) return;
-                        if (window.Alpine) {
-                            var data = Alpine.$data(menu);
-                            if (data) { data.msgId = msgId; data.isMine = isMine; data.isDeleted = isDeleted; }
-                        }
-                        var rect = e.currentTarget.getBoundingClientRect();
-                        var top = Math.min(window.innerHeight - 380, rect.bottom + 4);
-                        var left = Math.min(window.innerWidth - 220, rect.left);
-                        menu.style.top = Math.max(8, top) + 'px';
-                        menu.style.left = Math.max(8, left) + 'px';
-                        menu.classList.add('show');
-                    },
-                    quickReact(e, msgId) { this.openContextMenu(e, msgId, false, false); },
+
                     handleDrop(ev) {
                         const file = ev.dataTransfer.files?.[0];
                         if (!file) return;
@@ -2420,6 +2495,7 @@
                         input.files = dt.files;
                         input.dispatchEvent(new Event('change', { bubbles: true }));
                     },
+
                     async toggleRecording() {
                         if (this.recording) { this.stopRecording(); return; }
                         try {
@@ -2469,6 +2545,25 @@
                             if (this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
                             this.mediaRecorder.stream?.getTracks().forEach(t => t.stop());
                         }
+                    },
+
+                    setupSwipeBack() {
+                        const root = this.$root;
+                        if (!root) return;
+                        const self = this;
+                        root.addEventListener('touchstart', (e) => {
+                            if (self.tier !== 'mobile' || self.activePanel !== 'chat') return;
+                            self._swipeStartX = e.touches[0].clientX;
+                            self._swipeStartY = e.touches[0].clientY;
+                        }, { passive: true });
+                        root.addEventListener('touchend', (e) => {
+                            if (self.tier !== 'mobile' || self.activePanel !== 'chat') return;
+                            const dx = e.changedTouches[0].clientX - self._swipeStartX;
+                            const dy = e.changedTouches[0].clientY - self._swipeStartY;
+                            if (self._swipeStartX < 40 && dx > 60 && Math.abs(dy) < 50) {
+                                self.onBack();
+                            }
+                        }, { passive: true });
                     },
                 };
             };
