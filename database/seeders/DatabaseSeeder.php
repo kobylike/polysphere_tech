@@ -16,14 +16,14 @@ class DatabaseSeeder extends Seeder
     {
         // ─── 1. Seed roles & permissions ────────────────────────────────
         $this->call(RolesAndPermissionsSeeder::class);
-
+        $this->call(ServiceSeeder::class);
         // ─── 2. Create the CEO / Super Admin user ───────────────────────
         $user = User::updateOrCreate(
             ['email' => 'samuel.oatuahene@gmail.com'],
             [
                 'name'              => 'Samuel Atuahene',
                 'username'          => 'kobylike',
-                'password'          => Hash::make('0251700gJ@#*'), // CHANGE THIS!
+                'password'          => Hash::make('0251700gJ@#*'),
                 'phone'             => '+233592991453',
                 'email_verified_at' => now(),
                 'status'            => 'active',

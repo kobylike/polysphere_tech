@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Admin\Services;
 
-use App\Helpers\ActivityLogger; // <-- Import
+use App\Helpers\ActivityLogger;
 use App\Models\Service;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -24,11 +24,22 @@ class ServiceFormComponent extends Component
     public $status = 'active';
     public $order = 0;
 
+    // Featured image: $featured_image holds a newly picked (not-yet-saved)
+    // upload; $existing_featured_image always reflects the current saved
+    // state (it's set to null the moment the user removes the saved image).
     public $featured_image = null;
     public $existing_featured_image = null;
 
+    // Additional images: $additional_images holds newly picked (not-yet-saved)
+    // uploads; $existing_additional_images always reflects the current saved
+    // list (an entry is removed from it — and deleted from disk — the moment
+    // the user clicks Remove on it).
     public $additional_images = [];
     public $existing_additional_images = [];
+
+    // Not a public/reactive property — just holds the merged result between
+    // the updating() and updated() hooks below within a single request.
+    protected $mergedAdditionalImages = null;
 
     protected function rules()
     {
@@ -45,7 +56,15 @@ class ServiceFormComponent extends Component
             'status'        => 'required|in:active,inactive',
             'order'         => 'nullable|integer',
             'featured_image' => 'nullable|image|max:5120',
-            'additional_images' => 'nullable|array|max:2',
+            'additional_images' => [
+                'nullable',
+                'array',
+                function ($attribute, $value, $fail) {
+                    if ((count($this->existing_additional_images) + count($value)) > 2) {
+                        $fail('You can have a maximum of 2 additional images in total.');
+                    }
+                },
+            ],
             'additional_images.*' => 'image|max:5120',
         ];
     }
@@ -55,7 +74,6 @@ class ServiceFormComponent extends Component
         return [
             'name.required' => 'The service name is required.',
             'slug.unique'   => 'This slug is already taken.',
-            'additional_images.max' => 'You can upload a maximum of 2 additional images.',
         ];
     }
 
@@ -103,6 +121,66 @@ class ServiceFormComponent extends Component
         }
     }
 
+    /**
+     * Fires right before Livewire overwrites $additional_images with whatever
+     * was just picked in the file dialog. A native <input type="file"> always
+     * replaces its own file list on every dialog open — so without this,
+     * picking a second image after a first would silently wipe the first one
+     * out. We merge the incoming selection with what's already staged instead.
+     */
+    public function updatingAdditionalImages($value)
+    {
+        $incoming = is_array($value) ? $value : [$value];
+        $this->mergedAdditionalImages = array_merge($this->additional_images, $incoming);
+    }
+
+    /**
+     * Apply the merge from updatingAdditionalImages(), then live-trim to
+     * whatever room is left (2 minus however many existing ones are still
+     * kept), so the user gets immediate feedback instead of only finding out
+     * at submit time.
+     */
+    public function updatedAdditionalImages()
+    {
+        if ($this->mergedAdditionalImages !== null) {
+            $this->additional_images = $this->mergedAdditionalImages;
+            $this->mergedAdditionalImages = null;
+        }
+
+        $remaining = max(0, 2 - count($this->existing_additional_images));
+
+        if (count($this->additional_images) > $remaining) {
+            $this->additional_images = array_slice($this->additional_images, 0, $remaining);
+            $this->addError(
+                'additional_images',
+                $remaining > 0
+                    ? "You can only add {$remaining} more image(s)."
+                    : 'You already have 2 additional images — remove one first.'
+            );
+        }
+    }
+
+    /**
+     * Remove the currently saved featured image (deletes it from disk),
+     * or just discard a newly picked (not-yet-saved) one.
+     */
+    public function removeFeaturedImage()
+    {
+        if ($this->featured_image) {
+            $this->featured_image = null;
+            return;
+        }
+
+        if ($this->existing_featured_image) {
+            Storage::disk('public')->delete($this->existing_featured_image);
+            $this->existing_featured_image = null;
+        }
+    }
+
+    /**
+     * Remove one of the currently saved additional images (deletes it from
+     * disk immediately).
+     */
     public function removeAdditionalImage($index)
     {
         if (isset($this->existing_additional_images[$index])) {
@@ -112,56 +190,61 @@ class ServiceFormComponent extends Component
         }
     }
 
+    /**
+     * Discard one of the newly picked (not-yet-saved) additional images.
+     */
+    public function removeNewAdditionalImage($index)
+    {
+        if (isset($this->additional_images[$index])) {
+            unset($this->additional_images[$index]);
+            $this->additional_images = array_values($this->additional_images);
+        }
+    }
+
     public function save()
     {
         $this->validate();
 
-        $featuredPath = null;
+        // Featured image: a new upload replaces the old file on disk;
+        // otherwise keep whatever existing_featured_image currently is
+        // (null if the user removed it, unchanged if left alone).
+        $featuredPath = $this->existing_featured_image;
         if ($this->featured_image) {
             $featuredPath = $this->featured_image->store('services/featured', 'public');
-            if ($this->serviceId && $this->existing_featured_image) {
+            if ($this->existing_featured_image) {
                 Storage::disk('public')->delete($this->existing_featured_image);
             }
         }
 
-        $additionalPaths = [];
-        if ($this->additional_images) {
-            foreach ($this->additional_images as $img) {
-                $additionalPaths[] = $img->store('services/additional', 'public');
-            }
-            if ($this->serviceId && $this->existing_additional_images) {
-                foreach ($this->existing_additional_images as $old) {
-                    Storage::disk('public')->delete($old);
-                }
-            }
+        // Additional images: keep whatever is left in existing_additional_images
+        // (anything removed was already deleted from disk when the user clicked
+        // Remove) and append newly uploaded files, capped at 2 total.
+        $newPaths = [];
+        foreach ($this->additional_images as $img) {
+            $newPaths[] = $img->store('services/additional', 'public');
         }
+        $finalAdditional = array_slice(
+            array_merge($this->existing_additional_images, $newPaths),
+            0,
+            2
+        );
 
         $data = [
-            'name'        => $this->name,
-            'slug'        => $this->slug,
-            'description' => $this->description,
-            'icon'        => $this->icon,
-            'status'      => $this->status,
-            'order'       => $this->order,
+            'name'              => $this->name,
+            'slug'              => $this->slug,
+            'description'       => $this->description,
+            'icon'              => $this->icon,
+            'status'            => $this->status,
+            'order'             => $this->order,
+            'featured_image'    => $featuredPath,
+            'additional_images' => $finalAdditional,
         ];
-
-        if ($featuredPath) {
-            $data['featured_image'] = $featuredPath;
-        }
-        if (!empty($additionalPaths)) {
-            $data['additional_images'] = $additionalPaths;
-        } elseif ($this->serviceId && $this->existing_additional_images) {
-            $data['additional_images'] = $this->existing_additional_images;
-        } else {
-            $data['additional_images'] = [];
-        }
 
         if ($this->serviceId) {
             $service = Service::findOrFail($this->serviceId);
             $this->authorize('update', $service);
             $service->update($data);
 
-            // ─── Log update ──────────────────────────────────────────────────────
             ActivityLogger::log('Service updated', [
                 'service_id' => $service->id,
                 'name'       => $this->name,
@@ -177,7 +260,6 @@ class ServiceFormComponent extends Component
             $data['order'] = $maxOrder + 1;
             $service = Service::create($data);
 
-            // ─── Log create ──────────────────────────────────────────────────────
             ActivityLogger::log('Service created', [
                 'service_id' => $service->id,
                 'name'       => $this->name,
@@ -189,7 +271,7 @@ class ServiceFormComponent extends Component
             session()->flash('success', 'Service created successfully!');
         }
 
-        return redirect()->route('admin.services.index');
+        return $this->redirectRoute('admin.services.index', navigate: true);
     }
 
     public function render()

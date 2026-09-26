@@ -146,8 +146,17 @@
                                                                 accept=".png,.jpg,.jpeg,.gif,.webp">
                                                             <label for="featuredImageUpload"
                                                                 class="btn btn-light ms-0">Choose Image</label>
-                                                            @if($featured_image) <span
-                                                            class="ms-2 text-success">Uploaded</span> @endif
+
+                                                            @if($featured_image)
+                                                                <span class="ms-2 text-success">Uploaded</span>
+                                                                <button type="button"
+                                                                    class="btn btn-sm btn-danger ms-2"
+                                                                    wire:click="removeFeaturedImage">Remove</button>
+                                                            @elseif($existing_featured_image)
+                                                                <button type="button"
+                                                                    class="btn btn-sm btn-danger ms-2"
+                                                                    wire:click="removeFeaturedImage">Remove</button>
+                                                            @endif
                                                         </div>
                                                         @error('featured_image') <span
                                                         class="text-danger">{{ $message }}</span> @enderror
@@ -157,7 +166,7 @@
                                         </div>
                                     </div>
 
-                                    <!-- Additional Images (up to 2) -->
+                                    <!-- Additional Images (max 2) -->
                                     <div class="filter cm-content-box box-primary">
                                         <div class="content-title">
                                             <div class="cpa">Additional Images (max 2)</div>
@@ -167,26 +176,72 @@
                                         </div>
                                         <div class="cm-content-body publish-content form excerpt">
                                             <div class="card-body">
-                                                @for($i = 0; $i < 2; $i++)
-                                                    <div class="mb-3">
-                                                        <label class="form-label">Image {{ $i + 1 }}</label>
-                                                        <input type="file" class="form-control"
-                                                            wire:model="additional_images.{{ $i }}"
-                                                            accept=".png,.jpg,.jpeg,.gif,.webp">
-                                                        @error('additional_images.' . $i) <span
-                                                        class="text-danger">{{ $message }}</span> @enderror
-                                                        @if(isset($existing_additional_images[$i]))
-                                                            <div class="mt-1">
-                                                                <span class="text-success">Current:
-                                                                    {{ basename($existing_additional_images[$i]) }}</span>
-                                                                <button type="button" class="btn btn-sm btn-danger ms-2"
-                                                                    wire:click="removeAdditionalImage({{ $i }})">Remove</button>
+                                                @php
+                                                    $totalCount = count($existing_additional_images) + count($additional_images);
+                                                    $remainingSlots = max(0, 2 - $totalCount);
+                                                @endphp
+
+                                                @if($totalCount > 0)
+                                                    <div class="d-flex flex-wrap gap-3 mb-3">
+                                                        <!-- Already saved on this service -->
+                                                        @foreach($existing_additional_images as $index => $img)
+                                                            <div class="position-relative"
+                                                                style="width:80px; height:80px;">
+                                                                <img src="{{ asset('storage/' . $img) }}"
+                                                                    style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:1px solid #dee2e6;">
+                                                                <button type="button"
+                                                                    wire:click="removeAdditionalImage({{ $index }})"
+                                                                    title="Remove image"
+                                                                    class="btn btn-danger d-flex align-items-center justify-content-center position-absolute"
+                                                                    style="top:-8px; right:-8px; width:24px; height:24px; padding:0; border-radius:50%; line-height:1; font-size:14px;">
+                                                                    &times;
+                                                                </button>
                                                             </div>
-                                                        @endif
+                                                        @endforeach
+
+                                                        <!-- Newly picked, not yet saved -->
+                                                        @foreach($additional_images as $index => $img)
+                                                            <div class="position-relative"
+                                                                style="width:80px; height:80px;">
+                                                                <img src="{{ $img->temporaryUrl() }}"
+                                                                    style="width:80px; height:80px; object-fit:cover; border-radius:8px; border:2px solid #0d6efd;">
+                                                                <button type="button"
+                                                                    wire:click="removeNewAdditionalImage({{ $index }})"
+                                                                    title="Remove image"
+                                                                    class="btn btn-danger d-flex align-items-center justify-content-center position-absolute"
+                                                                    style="top:-8px; right:-8px; width:24px; height:24px; padding:0; border-radius:50%; line-height:1; font-size:14px;">
+                                                                    &times;
+                                                                </button>
+                                                                <span class="badge bg-primary position-absolute"
+                                                                    style="bottom:2px; left:2px; font-size:9px;">New</span>
+                                                            </div>
+                                                        @endforeach
                                                     </div>
-                                                @endfor
-                                                @error('additional_images') <span class="text-danger">{{ $message }}</span>
-                                                @enderror
+                                                @endif
+
+                                                @if($remainingSlots > 0)
+                                                    <input type="file" class="form-control"
+                                                        wire:model="additional_images" multiple
+                                                        accept=".png,.jpg,.jpeg,.gif,.webp"
+                                                        wire:key="additional-images-input-{{ $totalCount }}"
+                                                        onchange="
+                                                            if (this.files.length > {{ $remainingSlots }}) {
+                                                                event.stopImmediatePropagation();
+                                                                alert('You can only add {{ $remainingSlots }} more image(s). Please select {{ $remainingSlots }} file{{ $remainingSlots === 1 ? '' : 's' }} at a time.');
+                                                                this.value = '';
+                                                            }
+                                                        ">
+                                                    <div class="form-text">You can add {{ $remainingSlots }} more
+                                                        image(s).</div>
+                                                @else
+                                                    <div class="form-text text-muted">Maximum of 2 additional images
+                                                        reached — remove one to add another.</div>
+                                                @endif
+
+                                                @error('additional_images') <span
+                                                class="text-danger">{{ $message }}</span> @enderror
+                                                @error('additional_images.*') <span
+                                                class="text-danger">{{ $message }}</span> @enderror
                                             </div>
                                         </div>
                                     </div>
