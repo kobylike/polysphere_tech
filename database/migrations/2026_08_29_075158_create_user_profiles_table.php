@@ -6,30 +6,30 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('user_profiles', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->string('employee_id')->nullable()->unique();
-            $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
+
+            // FK added later in departments migration (departments doesn't exist yet)
+            $table->unsignedBigInteger('department_id')->nullable();
+
             $table->date('hire_date')->nullable();
-            $table->string('employment_type')->default('full-time'); // full-time, part-time, contract, intern
+            $table->string('employment_type')->default('full-time');
             $table->boolean('is_employee')->default(false);
             $table->string('emergency_contact_name')->nullable();
             $table->string('emergency_contact_phone')->nullable();
             $table->date('date_of_birth')->nullable();
-            $table->string('country_code', 10)->nullable(); // ISO 3166-1 alpha-2
+            $table->string('country_code', 10)->nullable();
             $table->string('city', 100)->nullable();
-            // Core profile fields
+
             $table->text('about_me')->nullable();
             $table->json('skills')->nullable();
             $table->json('education')->nullable();
             $table->json('social_links')->nullable();
-            // Team display fields (admin managed)
+
             $table->string('position')->nullable();
             $table->string('gender', 20)->nullable();
             $table->boolean('is_featured_team')->default(false);
@@ -38,16 +38,12 @@ return new class extends Migration
 
             $table->timestamps();
 
-            // Index for faster queries
             $table->index('user_id');
             $table->index('is_featured_team');
             $table->index('department_id');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('user_profiles');

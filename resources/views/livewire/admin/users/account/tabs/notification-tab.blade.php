@@ -1,7 +1,6 @@
 <div class="position-relative">
 
-
-    {{-- ─── STATS ROW ─────────────────────────────────────────────────────────── --}}
+    {{-- ─── STATS ROW ─────────────────────────────────────────────────────── --}}
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
             <div class="stats-card stats-card-primary">
@@ -45,7 +44,7 @@
         </div>
     </div>
 
-    {{-- ─── FILTERS ─────────────────────────────────────────────────────────--}}
+    {{-- ─── FILTERS + BULK ACTIONS ──────────────────────────────────────── --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-3 p-md-4">
             <div class="row g-2 g-md-3 align-items-end">
@@ -100,42 +99,107 @@
                     </button>
                 </div>
             </div>
-            @if($stats['unread'] > 0)
-                <div class="mt-3">
+
+            {{-- Global action buttons --}}
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                @if($stats['unread'] > 0)
                     <button class="btn btn-primary btn-sm" wire:click="markAllAsRead">
                         <i class="fas fa-check-double me-1"></i> Mark all as read
                     </button>
-                </div>
-            @endif
+                @endif
+
+                @if($stats['read'] > 0)
+                    <button class="btn btn-outline-danger btn-sm" wire:click="confirmClearRead"
+                        title="Delete all read notifications">
+                        <i class="fas fa-broom me-1"></i> Clear read ({{ $stats['read'] }})
+                    </button>
+                @endif
+
+                @if($stats['total'] > 0)
+                    <button class="btn btn-outline-danger btn-sm ms-auto" wire:click="confirmClearAll"
+                        title="Delete every notification">
+                        <i class="fas fa-trash-alt me-1"></i> Clear all
+                    </button>
+                @endif
+            </div>
         </div>
     </div>
 
-    {{-- ─── TABLE ─────────────────────────────────────────────────────────--}}
+    {{-- ─── BULK ACTION BAR (shown when items are selected) ─────────────── --}}
+    @if($this->selectedCount > 0)
+        <div class="alert alert-primary d-flex flex-wrap align-items-center gap-2 mb-3 py-2 px-3 bulk-bar"
+            role="alert">
+            <i class="fas fa-check-circle"></i>
+            <strong>{{ $this->selectedCount }}</strong> selected
+
+            <div class="ms-auto d-flex flex-wrap gap-2">
+                <button class="btn btn-sm btn-success" wire:click="bulkMarkAsRead">
+                    <i class="fas fa-check me-1"></i> Mark read
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" wire:click="bulkMarkAsUnread">
+                    <i class="fas fa-envelope me-1"></i> Mark unread
+                </button>
+                <button class="btn btn-sm btn-danger" wire:click="confirmBulkDelete">
+                    <i class="fas fa-trash me-1"></i> Delete
+                </button>
+                <button class="btn btn-sm btn-link text-decoration-none" wire:click="clearSelection">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    @endif
+
+    {{-- ─── TABLE ───────────────────────────────────────────────────────── --}}
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-transparent border-0">
-            <h6 class="card-title fw-bold"><i class="fas fa-bell text-primary me-2"></i> Notifications</h6>
+        <div class="card-header bg-transparent border-0 d-flex align-items-center">
+            <h6 class="card-title fw-bold mb-0">
+                <i class="fas fa-bell text-primary me-2"></i> Notifications
+            </h6>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table class="table table-hover mb-0 align-middle">
                     <thead class="table-light">
                         <tr>
+                            {{-- Select-all checkbox --}}
+                            <th style="width: 44px;">
+                                <div class="form-check m-0">
+                                    <input class="form-check-input" type="checkbox"
+                                        id="selectAllNotifications"
+                                        @checked($this->isAllOnPageSelected)
+                                        wire:click="toggleSelectAllOnPage">
+                                </div>
+                            </th>
                             <th style="min-width: 140px;">Date</th>
                             <th style="min-width: 100px;">Type</th>
                             <th>Title / Body</th>
                             <th class="text-center" style="width: 100px;">Status</th>
-                            <th class="text-center" style="width: 120px;">Actions</th>
+                            <th class="text-center" style="width: 140px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($notifications as $notification)
-                            <tr class="{{ $notification->isUnread() ? 'fw-semibold bg-light' : '' }}"
+                            @php $isSelected = in_array((string) $notification->id, $selectedIds); @endphp
+                            <tr class="{{ $notification->isUnread() ? 'fw-semibold bg-light' : '' }} {{ $isSelected ? 'table-active' : '' }}"
                                 style="cursor: pointer;"
                                 onclick="window.Livewire.dispatch('open-notification-detail', { id: {{ $notification->id }} })">
+
+                                {{-- Checkbox --}}
+                                <td onclick="event.stopPropagation()">
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input" type="checkbox"
+                                            value="{{ $notification->id }}"
+                                            wire:model.live="selectedIds">
+                                    </div>
+                                </td>
+
+                                {{-- Date --}}
                                 <td>
                                     <div class="fw-semibold">{{ $notification->created_at->format('M d, Y') }}</div>
                                     <small class="text-muted">{{ $notification->created_at->format('g:i A') }}</small>
                                 </td>
+
+                                {{-- Type --}}
                                 <td>
                                     <span
                                         class="badge bg-{{ $notification->type === 'warning' ? 'warning' : ($notification->type === 'danger' ? 'danger' : ($notification->type === 'success' ? 'success' : 'info')) }} light border-0">
@@ -143,15 +207,20 @@
                                         {{ ucfirst($notification->type) }}
                                     </span>
                                 </td>
+
+                                {{-- Title / Body --}}
                                 <td>
                                     <div class="fw-semibold">{{ $notification->title ?? 'Notification' }}</div>
                                     <div class="text-muted small">{{ $notification->body }}</div>
                                     @if($notification->link)
-                                        <a href="{{ $notification->link }}" class="small text-primary" wire:navigate>
+                                        <a href="{{ $notification->link }}" class="small text-primary"
+                                            wire:navigate onclick="event.stopPropagation()">
                                             <i class="fas fa-arrow-right me-1"></i> View
                                         </a>
                                     @endif
                                 </td>
+
+                                {{-- Status --}}
                                 <td class="text-center">
                                     @if($notification->isUnread())
                                         <span class="badge bg-warning text-white">Unread</span>
@@ -159,24 +228,37 @@
                                         <span class="badge bg-success">Read</span>
                                     @endif
                                 </td>
-                                <td class="text-center">
-                                    @if($notification->isUnread())
-                                        <button class="btn btn-sm btn-outline-primary"
-                                            wire:click.stop="markAsRead({{ $notification->id }})" title="Mark as read">
-                                            <i class="fas fa-check"></i>
+
+                                {{-- Actions --}}
+                                <td class="text-center" onclick="event.stopPropagation()">
+                                    <div class="d-inline-flex gap-1">
+                                        @if($notification->isUnread())
+                                            <button class="btn btn-sm btn-outline-primary"
+                                                wire:click="markAsRead({{ $notification->id }})"
+                                                title="Mark as read">
+                                                <i class="fas fa-check"></i>
+                                            </button>
+                                        @endif
+
+                                        <button class="btn btn-sm btn-outline-secondary"
+                                            wire:click="openDetailModal({{ $notification->id }})"
+                                            title="View details">
+                                            <i class="fas fa-eye"></i>
                                         </button>
-                                    @endif
-                                    <button class="btn btn-sm btn-outline-secondary"
-                                        wire:click.stop="openDetailModal({{ $notification->id }})" title="View details">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
+
+                                        <button class="btn btn-sm btn-outline-danger"
+                                            wire:click="confirmDeleteSingle({{ $notification->id }})"
+                                            title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="6" class="text-center py-5">
                                     <i class="fas fa-bell-slash text-muted fs-2 d-block mb-2"></i>
-                                    <p class="text-muted">No notifications found.</p>
+                                    <p class="text-muted mb-0">No notifications found.</p>
                                 </td>
                             </tr>
                         @endforelse
@@ -184,6 +266,7 @@
                 </table>
             </div>
         </div>
+
         @if($notifications->hasPages())
             <div class="card-footer bg-transparent border-0">
                 <div class="row align-items-center">
@@ -199,10 +282,10 @@
         @endif
     </div>
 
-    {{-- ─── DETAIL MODAL ───────────────────────────────────────────────────--}}
+    {{-- ─── DETAIL MODAL ─────────────────────────────────────────────────── --}}
     @if($showDetailModal && $selectedNotification)
-        <div class="modal fade show d-block" id="notificationDetailModal" tabindex="-1" style="background: rgba(0,0,0,0.5);"
-            wire:ignore.self>
+        <div class="modal fade show d-block" id="notificationDetailModal" tabindex="-1"
+            style="background: rgba(0,0,0,0.5);" wire:ignore.self>
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content border-0 shadow-lg">
                     <div class="modal-header"
@@ -249,14 +332,19 @@
                             @if($selectedNotification->link)
                                 <div class="col-12">
                                     <div class="fw-bold text-muted small">Link</div>
-                                    <a href="{{ $selectedNotification->link }}" class="mt-1 d-inline-block" wire:navigate>
+                                    <a href="{{ $selectedNotification->link }}" class="mt-1 d-inline-block"
+                                        wire:navigate>
                                         <i class="fas fa-arrow-right me-1"></i> {{ $selectedNotification->link }}
                                     </a>
                                 </div>
                             @endif
                         </div>
                     </div>
-                    <div class="modal-footer">
+                    <div class="modal-footer d-flex flex-wrap gap-2">
+                        <button class="btn btn-outline-danger me-auto"
+                            wire:click="confirmDeleteSingle({{ $selectedNotification->id }})">
+                            <i class="fas fa-trash me-1"></i> Delete
+                        </button>
                         <button class="btn btn-secondary" wire:click="closeDetailModal">Close</button>
                         <button class="btn btn-{{ $selectedNotification->isUnread() ? 'success' : 'warning' }}"
                             wire:click="toggleReadStatus">
@@ -268,6 +356,92 @@
                                 <i class="fas fa-arrow-right me-1"></i> Go to link
                             </a>
                         @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- ─── DELETE CONFIRM MODAL ─────────────────────────────────────────── --}}
+    @if($showDeleteModal)
+        <div class="modal fade show d-block" tabindex="-1" style="background: rgba(0,0,0,0.6);" wire:ignore.self>
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header border-0 pb-0">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center justify-content-center rounded-circle"
+                                style="width: 48px; height: 48px; background: linear-gradient(135deg, #ef4444, #dc2626);">
+                                <i class="fas fa-trash-alt text-white fs-5"></i>
+                            </div>
+                            <h5 class="modal-title mb-0">
+                                @switch($deleteMode)
+                                    @case('single')
+                                        Delete notification?
+                                        @break
+                                    @case('bulk')
+                                        Delete {{ $deleteCount }} notification(s)?
+                                        @break
+                                    @case('read')
+                                        Clear {{ $deleteCount }} read notification(s)?
+                                        @break
+                                    @case('all')
+                                        Clear ALL {{ $deleteCount }} notifications?
+                                        @break
+                                @endswitch
+                            </h5>
+                        </div>
+                        <button type="button" class="btn-close" wire:click="closeDeleteModal"></button>
+                    </div>
+
+                    <div class="modal-body pt-2">
+                        @switch($deleteMode)
+                            @case('single')
+                                <p class="text-muted mb-0">
+                                    This notification will be permanently removed. This cannot be undone.
+                                </p>
+                                @break
+
+                            @case('bulk')
+                                <p class="text-muted mb-0">
+                                    The <strong>{{ $deleteCount }}</strong> selected notification(s) will be
+                                    permanently removed. This cannot be undone.
+                                </p>
+                                @break
+
+                            @case('read')
+                                <p class="text-muted mb-0">
+                                    All <strong>{{ $deleteCount }}</strong> notification(s) you've already read will
+                                    be permanently removed. Unread notifications will be kept.
+                                </p>
+                                @break
+
+                            @case('all')
+                                <div class="alert alert-danger mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>This will delete everything.</strong> All
+                                    <strong>{{ $deleteCount }}</strong> notifications — read and unread — will be
+                                    permanently removed. This cannot be undone.
+                                </div>
+                                @break
+                        @endswitch
+                    </div>
+
+                    <div class="modal-footer border-0 pt-0">
+                        <button class="btn btn-secondary" wire:click="closeDeleteModal">Cancel</button>
+                        <button class="btn btn-danger" wire:click="performDelete" wire:loading.attr="disabled">
+                            <span wire:loading.remove>
+                                <i class="fas fa-trash me-1"></i>
+                                @switch($deleteMode)
+                                    @case('single') Delete @break
+                                    @case('bulk') Delete {{ $deleteCount }} @break
+                                    @case('read') Clear read @break
+                                    @case('all') Clear all @break
+                                @endswitch
+                            </span>
+                            <span wire:loading>
+                                <i class="fas fa-spinner fa-spin me-1"></i> Deleting…
+                            </span>
+                        </button>
                     </div>
                 </div>
             </div>
@@ -287,6 +461,17 @@
 
     .bg-gradient-danger {
         background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .bulk-bar {
+        border-radius: 0.75rem;
+        border: 1px solid rgba(99, 102, 241, 0.2);
+        background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+        color: #312e81;
+    }
+
+    .bulk-bar .btn-link {
+        color: #4338ca;
     }
 
     .stats-card {

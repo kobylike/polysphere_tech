@@ -1,826 +1,2155 @@
-<div x-data="pageChatState(@js($friendIds), @js($friends->pluck('name', 'id')->toArray()))" x-init="init()"
-    wire:ignore.self>
+<div id="ptp-chat-app" x-data="pageChatState(
+        @js($friendIds),
+        @js($friends->pluck('name', 'id')->toArray()),
+        @js($showStarredOnly),
+        {{ $activeFriendId ?? 'null' }}
+     )" x-init="init()" wire:ignore.self :data-panel="activePanel" :data-tier="tier" x-cloak>
 
-    {{-- ═══ Styles ═══ --}}
     <style>
-        /* ----- Friend list ----- */
-        .people-list .chat-p {
+        [x-cloak] {
+            display: none !important;
+        }
+
+        #ptp-chat-app {
+            --ptp-bg: #eef2f7;
+            --ptp-surface: #ffffff;
+            --ptp-surface-alt: #f8fafc;
+            --ptp-border: #e2e8f0;
+            --ptp-border-soft: #eef2f7;
+            --ptp-text: #0f172a;
+            --ptp-text-mid: #475569;
+            --ptp-text-muted: #94a3b8;
+            --ptp-accent: #6366f1;
+            --ptp-accent-2: #8b5cf6;
+            --ptp-accent-soft: #eef2ff;
+            --ptp-danger: #ef4444;
+            --ptp-success: #10b981;
+            --ptp-warning: #f59e0b;
+
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
+            color: var(--ptp-text);
+            display: block;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #ptp-chat-app *,
+        #ptp-chat-app *::before,
+        #ptp-chat-app *::after {
+            box-sizing: border-box;
+        }
+
+        /* ══ SHELL ════════════════════════════════════════════════════════ */
+        #ptp-chat-app .ptp-wrap {
+            background: var(--ptp-bg);
+            padding: 16px;
+            min-height: calc(100vh - 60px);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #ptp-chat-app .ptp-topbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 8px;
-            cursor: pointer !important;
-            transition: background .15s;
-            padding: 8px 12px;
-            border-radius: 4px;
+            gap: 12px;
+            padding: 4px;
         }
 
-        .people-list .chat-p:hover {
-            background: rgba(0, 0, 0, 0.04);
-        }
-
-        .people-list .chat-p .d-flex {
-            min-width: 0;
-            flex: 1 1 auto;
-            pointer-events: none;
-            /* allow parent click */
-        }
-
-        .people-list .chat-p .ms-2 {
-            min-width: 0;
-            flex: 1 1 auto;
-        }
-
-        .people-list .chat-p .ms-2 h6 {
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 100%;
-            margin-bottom: 2px;
-        }
-
-        .dz-last-msg {
+        #ptp-chat-app .ptp-topbar h1 {
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
             margin: 0;
-            font-size: .8rem;
-            color: #8a8a8a;
-            max-width: 220px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            color: var(--ptp-text);
         }
 
-        .dz-last-msg.dz-unread {
-            color: #262626;
+        #ptp-chat-app .ptp-topbar p {
+            font-size: 13px;
+            color: var(--ptp-text-muted);
+            margin: 2px 0 0;
+        }
+
+        #ptp-chat-app .ptp-topbar .ptp-breadcrumb {
+            font-size: 12.5px;
+            color: var(--ptp-text-muted);
+        }
+
+        #ptp-chat-app .ptp-topbar .ptp-breadcrumb a {
+            color: var(--ptp-accent);
+            text-decoration: none;
+        }
+
+        #ptp-chat-app .ptp-shell {
+            background: var(--ptp-surface);
+            border-radius: 16px;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px -12px rgba(15, 23, 42, .08);
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: 320px minmax(0, 1fr) 320px;
+            height: calc(100vh - 160px);
+            min-height: 560px;
+            width: 100%;
+        }
+
+        #ptp-chat-app .ptp-pane {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            min-width: 0;
+            overflow: hidden;
+            background: var(--ptp-surface);
+        }
+
+        #ptp-chat-app .ptp-pane--contacts {
+            border-right: 1px solid var(--ptp-border-soft);
+        }
+
+        #ptp-chat-app .ptp-pane--chat {
+            border-right: 1px solid var(--ptp-border-soft);
+        }
+
+        #ptp-chat-app .ptp-pane--info {
+            overflow-y: auto;
+            background: var(--ptp-surface-alt);
+        }
+
+        /* ═══════════════════════════════════════════════════════════════
+           CHAT PANE — STICKY HEADER + COMPOSER, SCROLLING MESSAGES
+           Only the messages area scrolls. Header, search bar, pinned
+           bar, attachment preview, reply bar, and composer stay
+           locked to the top / bottom of the pane. Works on EVERY
+           breakpoint (desktop / tablet / mobile).
+        ═══════════════════════════════════════════════════════════════ */
+        #ptp-chat-app .ptp-pane--chat {
+            height: 100% !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
+            overflow: hidden !important;
+            flex-direction: column !important;
+        }
+
+        #ptp-chat-app .ptp-pane--chat>.d-flex.flex-column.h-100 {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+            height: 100% !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
+            overflow: hidden !important;
+        }
+
+        /* Every direct child of the chat wrapper holds its natural size… */
+        #ptp-chat-app .ptp-pane--chat>.d-flex.flex-column.h-100>* {
+            flex-shrink: 0 !important;
+            flex-grow: 0 !important;
+            flex-basis: auto !important;
+        }
+
+        /* …except the messages area, which grows and scrolls internally. */
+        #ptp-chat-app .ptp-pane--chat>.d-flex.flex-column.h-100>.chat-box-area {
+            flex: 1 1 auto !important;
+            flex-grow: 1 !important;
+            flex-shrink: 1 !important;
+            flex-basis: 0 !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+
+        /* ══ LEFT PANE — contacts ═════════════════════════════════════════ */
+        #ptp-chat-app .ptp-me {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 20px;
+            border-bottom: 1px solid var(--ptp-border-soft);
+        }
+
+        #ptp-chat-app .ptp-me__avatar {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-me__avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+        }
+
+        #ptp-chat-app .ptp-me__dot {
+            position: absolute;
+            right: -1px;
+            bottom: -1px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--ptp-success);
+            border: 2px solid var(--ptp-surface);
+        }
+
+        #ptp-chat-app .ptp-me__meta {
+            min-width: 0;
+            flex: 1;
+        }
+
+        #ptp-chat-app .ptp-me__name {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--ptp-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #ptp-chat-app .ptp-me__sub {
+            font-size: 12px;
+            color: var(--ptp-text-muted);
+            margin: 2px 0 0;
+        }
+
+        #ptp-chat-app .ptp-me__badge {
+            background: var(--ptp-accent-soft);
+            color: var(--ptp-accent);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+
+        #ptp-chat-app .ptp-search {
+            padding: 14px 16px 10px;
+        }
+
+        #ptp-chat-app .ptp-search__box {
+            position: relative;
+            display: flex;
+            align-items: center;
+            background: var(--ptp-surface-alt);
+            border: 1px solid var(--ptp-border-soft);
+            border-radius: 12px;
+            padding: 0 12px;
+            transition: border-color .15s, background .15s, box-shadow .15s;
+        }
+
+        #ptp-chat-app .ptp-search__box:focus-within {
+            border-color: var(--ptp-accent);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, .12);
+        }
+
+        #ptp-chat-app .ptp-search__box svg {
+            color: var(--ptp-text-muted);
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-search__input {
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            padding: 10px 8px;
+            font-size: 13px;
+            color: var(--ptp-text);
+            font-family: inherit;
+        }
+
+        #ptp-chat-app .ptp-search__input::placeholder {
+            color: var(--ptp-text-muted);
+        }
+
+        #ptp-chat-app .ptp-people {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding: 6px 8px 16px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--ptp-border) transparent;
+        }
+
+        #ptp-chat-app .ptp-people::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #ptp-chat-app .ptp-people::-webkit-scrollbar-thumb {
+            background: var(--ptp-border);
+            border-radius: 4px;
+            border: 2px solid var(--ptp-surface);
+        }
+
+        #ptp-chat-app .ptp-person {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+        }
+
+        #ptp-chat-app .ptp-person:hover {
+            background: var(--ptp-surface-alt);
+        }
+
+        #ptp-chat-app .ptp-person:active {
+            transform: scale(.99);
+        }
+
+        #ptp-chat-app .ptp-person.is-active {
+            background: var(--ptp-accent-soft);
+        }
+
+        #ptp-chat-app .ptp-person.is-active .ptp-person__name {
+            color: var(--ptp-accent);
+        }
+
+        #ptp-chat-app .ptp-person__avatar {
+            position: relative;
+            width: 46px;
+            height: 46px;
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-person__avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            display: block;
+            border: 2px solid transparent;
+            transition: border-color .15s;
+        }
+
+        #ptp-chat-app .ptp-person.is-active .ptp-person__avatar img {
+            border-color: var(--ptp-accent);
+        }
+
+        #ptp-chat-app .ptp-person__dot {
+            position: absolute;
+            right: -1px;
+            bottom: -1px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--ptp-text-muted);
+            border: 2px solid var(--ptp-surface);
+        }
+
+        #ptp-chat-app .ptp-person__dot.is-online {
+            background: var(--ptp-success);
+        }
+
+        #ptp-chat-app .ptp-person.is-active .ptp-person__dot {
+            border-color: var(--ptp-accent-soft);
+        }
+
+        #ptp-chat-app .ptp-person__meta {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        #ptp-chat-app .ptp-person__name {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--ptp-text);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #ptp-chat-app .ptp-person__preview {
+            font-size: 12px;
+            color: var(--ptp-text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #ptp-chat-app .ptp-person__preview.is-unread {
+            color: var(--ptp-text-mid);
             font-weight: 600;
         }
 
-        .dz-unread-pill {
+        #ptp-chat-app .ptp-person__side {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
             flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-person__time {
+            font-size: 10.5px;
+            color: var(--ptp-text-muted);
+            text-transform: uppercase;
+            letter-spacing: .02em;
+        }
+
+        #ptp-chat-app .ptp-person__pill {
             min-width: 20px;
             height: 20px;
             padding: 0 6px;
             border-radius: 999px;
-            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            background: var(--ptp-accent);
             color: #fff;
             font-size: 11px;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 6px rgba(76, 175, 80, .4);
-            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 2px 6px rgba(99, 102, 241, .35);
         }
 
-        .chat-p.style-1.dz-active {
-            background: rgba(13, 153, 255, 0.08);
-        }
-
-        /* ----- Call / header buttons ----- */
-        .chat-p .chat-admin .icon-box,
-        .chat-p .chat-admin button.icon-box {
-            border: none;
-            padding: 0;
-            margin: 0 4px;
-            outline: none;
-            box-sizing: border-box;
-            line-height: 0;
-            flex-shrink: 0;
-            appearance: none;
-            -webkit-appearance: none;
-            cursor: pointer;
-        }
-
-        .chat-p .chat-admin {
-            display: flex;
-            align-items: center;
-            margin-top: 10px;
-        }
-
-        .chat-p .chat-admin .dz-chat-history-back {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            width: 36px;
-            height: 36px;
-            margin: 0 6px 0 0;
-            cursor: pointer;
-        }
-
-        .chat-p .chat-admin .chat-toggle {
-            display: inline-flex !important;
-        }
-
-        /* ----- Chat body ----- */
-        .chat-box-area {
-            height: 60vh;
-            min-height: 360px;
-            overflow-y: auto;
-        }
-
-        /* ----- Input bar ----- */
-        .message-send.style-2 {
-            position: relative;
-            padding: 12px 16px;
-            background: #fff;
-            border-top: 1px solid #e9ecef;
+        /* ══ MIDDLE — header ══════════════════════════════════════════════ */
+        #ptp-chat-app .ptp-chat-header {
             display: flex;
             align-items: center;
             gap: 12px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--ptp-border-soft);
+            background: var(--ptp-surface);
+            flex-shrink: 0;
         }
 
-        .message-send.style-2 .type-massage {
-            flex: 1;
-        }
-
-        .message-send.style-2 .type-massage .input-group {
-            background: #f1f3f5;
-            border-radius: 30px;
-            padding: 2px 4px 2px 16px;
-            align-items: center;
-        }
-
-        .message-send.style-2 .type-massage .input-group textarea {
-            border: none;
-            background: transparent;
-            resize: none;
-            padding: 8px 0;
-            font-size: 0.9rem;
-            flex: 1;
-            outline: none;
-            box-shadow: none;
-        }
-
-        .message-send.style-2 .type-massage .input-group .input-group-append {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding-right: 4px;
-        }
-
-        .message-send.style-2 .type-massage .input-group .input-group-append .btn-send {
-            border-radius: 50px;
-            padding: 8px 20px;
+        #ptp-chat-app .ptp-back {
             display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: #0d99ff;
-            color: #fff;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             border: none;
-            transition: background .2s;
-            cursor: pointer;
-        }
-
-        .message-send.style-2 .type-massage .input-group .input-group-append .btn-send:hover {
-            background: #0a7acc;
-        }
-
-        .message-send.style-2 .left-actions .btn {
-            border: 1px solid #dee2e6;
-            background: transparent;
-            border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            padding: 0;
-            display: inline-flex;
+            background: var(--ptp-surface-alt);
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            color: #6c757d;
-            transition: all .2s;
             cursor: pointer;
+            color: var(--ptp-text-mid);
+            flex-shrink: 0;
+            transition: background .15s, color .15s;
         }
 
-        .message-send.style-2 .left-actions .btn:hover {
-            background: #e9ecef;
-            border-color: #adb5bd;
-            color: #333;
+        #ptp-chat-app .ptp-back:hover {
+            background: var(--ptp-border-soft);
+            color: var(--ptp-text);
         }
 
-        /* ----- Popups (emoji / attach / sticker) ----- */
-        .emoji-picker-container,
-        .attach-menu,
-        .sticker-grid {
-            position: absolute;
-            bottom: 70px;
-            left: 0;
-            z-index: 999;
-            background: #fff;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
-            display: none;
+        #ptp-chat-app .ptp-chat-header__avatar {
+            position: relative;
+            width: 42px;
+            height: 42px;
+            flex-shrink: 0;
         }
 
-        .emoji-picker-container.show,
-        .attach-menu.show,
-        .sticker-grid.show {
+        #ptp-chat-app .ptp-chat-header__avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
             display: block;
         }
 
-        .emoji-picker-container {
-            padding: 4px;
-            width: 340px;
+        #ptp-chat-app .ptp-chat-header__dot {
+            position: absolute;
+            right: -1px;
+            bottom: -1px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--ptp-text-muted);
+            border: 2px solid var(--ptp-surface);
         }
 
-        .attach-menu {
-            padding: 12px;
-            display: none;
-            flex-wrap: wrap;
-            gap: 8px;
-            width: 220px;
+        #ptp-chat-app .ptp-chat-header__dot.is-online {
+            background: var(--ptp-success);
         }
 
-        .attach-menu.show {
-            display: flex;
+        #ptp-chat-app .ptp-chat-header__meta {
+            flex: 1;
+            min-width: 0;
         }
 
-        .attach-menu .btn {
-            border-radius: 8px;
-            width: auto;
-            padding: 6px 12px;
-            font-size: 0.75rem;
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            cursor: pointer;
-        }
-
-        .attach-menu .btn:hover {
-            background: #e9ecef;
-        }
-
-        .sticker-grid {
-            padding: 12px;
-            display: none;
-            flex-wrap: wrap;
-            gap: 4px;
-            width: 220px;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .sticker-grid.show {
-            display: flex;
-        }
-
-        .sticker-grid .btn {
-            border-radius: 8px;
-            width: auto;
-            padding: 4px 8px;
-            font-size: 1.5rem;
-            background: transparent;
-            border: none;
-            cursor: pointer;
-        }
-
-        .sticker-grid .btn:hover {
-            background: #f1f3f5;
-        }
-
-        /* ----- Media / Files ----- */
-        .chat-meadia .image-list {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-        }
-
-        .chat-meadia .image-list img {
-            width: 100%;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: transform .2s;
-        }
-
-        .chat-meadia .image-list img:hover {
-            transform: scale(1.03);
-        }
-
-        .chat-meadia .file-list .filie-l-icon {
-            padding: 10px;
-            text-align: center;
-            border-radius: 8px;
-            background: #f8f9fc;
-            margin-bottom: 10px;
-            transition: background .2s;
-            cursor: pointer;
-        }
-
-        .chat-meadia .file-list .filie-l-icon:hover {
-            background: #eef1f5;
-        }
-
-        .chat-meadia .file-list .filie-l-icon img {
-            width: 40px;
-            height: 40px;
-            object-fit: contain;
-            margin-bottom: 6px;
-        }
-
-        .chat-meadia .file-list .filie-l-icon h5 {
-            font-size: 0.8rem;
-            font-weight: 600;
-            margin-bottom: 2px;
+        #ptp-chat-app .ptp-chat-header__name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--ptp-text);
+            margin: 0;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .chat-meadia .file-list .filie-l-icon span {
-            font-size: 0.65rem;
-            color: #999;
+        #ptp-chat-app .ptp-chat-header__sub {
+            font-size: 12px;
+            color: var(--ptp-text-muted);
+            margin: 2px 0 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        /* ----- General tweaks ----- */
-        .input-group-text {
-            background: transparent;
-            border: none;
+        #ptp-chat-app .ptp-chat-header__sub.is-online {
+            color: var(--ptp-success);
+            font-weight: 500;
         }
 
-        .input-group-text a {
+        #ptp-chat-app .ptp-chat-header__sub.is-typing {
+            color: var(--ptp-accent);
+            font-weight: 500;
+        }
+
+        #ptp-chat-app .ptp-chat-header__actions {
             display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-iconbtn {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            color: var(--ptp-text-mid);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        #ptp-chat-app .ptp-iconbtn:hover {
+            background: var(--ptp-surface-alt);
+            color: var(--ptp-text);
+        }
+
+        #ptp-chat-app .ptp-iconbtn.is-starred {
+            color: var(--ptp-warning);
+        }
+
+        #ptp-chat-app .ptp-iconbtn--accent {
+            background: var(--ptp-accent);
+            color: #fff;
+        }
+
+        #ptp-chat-app .ptp-iconbtn--accent:hover {
+            background: var(--ptp-accent-2);
+            color: #fff;
+        }
+
+        #ptp-chat-app .ptp-iconbtn--success {
+            background: var(--ptp-success);
+            color: #fff;
+        }
+
+        #ptp-chat-app .ptp-iconbtn--success:hover {
+            background: #059669;
+            color: #fff;
+        }
+
+        #ptp-chat-app .ptp-csearch {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 20px;
+            background: var(--ptp-surface-alt);
+            border-bottom: 1px solid var(--ptp-border-soft);
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-csearch svg {
+            color: var(--ptp-text-muted);
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-csearch input {
+            flex: 1;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 13px;
+            font-family: inherit;
+            color: var(--ptp-text);
+            min-width: 0;
+        }
+
+        #ptp-chat-app .ptp-csearch button {
+            border: none;
+            background: transparent;
+            color: var(--ptp-text-muted);
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
         }
 
-        .people-list .chat-p .d-flex.active .avatar {
-            border: 2px solid var(--primary);
+        #ptp-chat-app .ptp-csearch button:hover {
+            background: var(--ptp-border-soft);
+            color: var(--ptp-text);
         }
 
-        .people-list .chat-p .d-flex.active .ms-2 h6 {
-            color: var(--primary);
+        /* ══ MESSAGES ════════════════════════════════════════════════════ */
+        #ptp-chat-app .chat-box-area {
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            height: auto !important;
+            max-height: none !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch !important;
+            overscroll-behavior: contain !important;
+            position: relative !important;
+            padding: 16px 22px 8px !important;
+            background: var(--ptp-surface) !important;
         }
 
-        .online_icon {
+        #ptp-chat-app .msg-row {
+            position: relative !important;
+        }
+
+        #ptp-chat-app .msg-row .msg-actions {
+            position: absolute !important;
+            top: -12px !important;
+            right: 8px !important;
+            display: flex !important;
+            gap: 4px !important;
+            padding: 4px 6px !important;
+            background: #fff !important;
+            border-radius: 20px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, .12) !important;
+            opacity: 0 !important;
+            transition: opacity .15s !important;
+            pointer-events: none !important;
+            z-index: 5 !important;
+        }
+
+        #ptp-chat-app .msg-row:hover .msg-actions {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        #ptp-chat-app .msg-row.mine .msg-actions {
+            right: auto !important;
+            left: 8px !important;
+        }
+
+        #ptp-chat-app .msg-action-btn {
+            position: static !important;
+            border: none !important;
+            background: transparent !important;
+            padding: 4px 6px !important;
+            border-radius: 50% !important;
+            font-size: .9rem !important;
+            color: #666 !important;
+            cursor: pointer !important;
+        }
+
+        #ptp-chat-app .msg-action-btn:hover {
+            background: #f1f3f5 !important;
+            color: #111 !important;
+        }
+
+        #ptp-chat-app .reaction-pills {
+            display: flex !important;
+            gap: 4px !important;
+            flex-wrap: wrap !important;
+            margin-top: -6px !important;
+            position: relative !important;
+            z-index: 2 !important;
+        }
+
+        #ptp-chat-app .reaction-pill {
+            position: static !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+            padding: 1px 8px !important;
+            font-size: .75rem !important;
+            background: #fff !important;
+            border: 1px solid #e9ecef !important;
+            border-radius: 20px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .06) !important;
+            cursor: pointer !important;
+        }
+
+        #ptp-chat-app .reaction-pill.mine {
+            background: #e7f3ff !important;
+            border-color: #bfe0ff !important;
+        }
+
+        #ptp-chat-app .quote-bubble {
+            background: rgba(0, 0, 0, .05) !important;
+            border-left: 3px solid #0d99ff !important;
+            padding: 6px 10px !important;
+            margin-bottom: 6px !important;
+            border-radius: 6px !important;
+            font-size: .8rem !important;
+        }
+
+        #ptp-chat-app .msg-row.mine .quote-bubble {
+            border-left-color: #fff !important;
+            background: rgba(255, 255, 255, .15) !important;
+        }
+
+        #ptp-chat-app .msg-row.same-sender .avatar-spacer {
+            width: 34px !important;
+        }
+
+        #ptp-chat-app .chat-link {
+            color: #0d99ff !important;
+            text-decoration: underline !important;
+            word-break: break-all !important;
+        }
+
+        #ptp-chat-app .message-sent .chat-link {
+            color: #fff !important;
+            text-decoration: underline !important;
+        }
+
+        #ptp-chat-app .pinned-bar {
+            background: #fffbe6 !important;
+            border-bottom: 1px solid #ffe89a !important;
+            padding: 6px 12px !important;
+            font-size: .8rem !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Empty states */
+        #ptp-chat-app .ptp-empty {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+            color: var(--ptp-text-muted);
+            gap: 12px;
+        }
+
+        #ptp-chat-app .ptp-empty__icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: var(--ptp-accent-soft);
+            color: var(--ptp-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+
+        #ptp-chat-app .ptp-empty h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--ptp-text);
+            margin: 0;
+        }
+
+        #ptp-chat-app .ptp-empty p {
+            font-size: 13px;
+            margin: 0;
+            max-width: 260px;
+            line-height: 1.5;
+        }
+
+        /* Search-in-chat empty state */
+        #ptp-chat-app .ptp-search-empty {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--ptp-text-muted);
+        }
+
+        #ptp-chat-app .ptp-search-empty__icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--ptp-surface-alt);
+            color: var(--ptp-text-muted);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        #ptp-chat-app .ptp-search-empty h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--ptp-text);
+            margin: 0 0 4px;
+        }
+
+        #ptp-chat-app .ptp-search-empty p {
+            font-size: 12.5px;
+            margin: 0;
+        }
+
+        #ptp-chat-app .ptp-search-empty .ptp-search-empty__q {
+            color: var(--ptp-accent);
+            font-weight: 600;
+        }
+
+        /* Reply bar */
+        #ptp-chat-app .ptp-replybar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 20px;
+            background: var(--ptp-surface-alt);
+            border-top: 1px solid var(--ptp-border-soft);
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-replybar__bar {
+            width: 3px;
+            align-self: stretch;
+            min-height: 34px;
+            background: var(--ptp-accent);
+            border-radius: 2px;
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-replybar__meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #ptp-chat-app .ptp-replybar__title {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: var(--ptp-accent);
+            text-transform: uppercase;
+            letter-spacing: .02em;
+        }
+
+        #ptp-chat-app .ptp-replybar__body {
+            font-size: 13px;
+            color: var(--ptp-text-mid);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ══ COMPOSER ═════════════════════════════════════════════════════ */
+        #ptp-chat-app .ptp-composer {
+            position: relative;
+            padding: 12px 20px 16px;
+            background: var(--ptp-surface);
+            border-top: 1px solid var(--ptp-border-soft);
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-composer__row {
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+        }
+
+        #ptp-chat-app .ptp-composer__left {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-composer__btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: none;
+            background: transparent;
+            color: var(--ptp-text-mid);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background .15s, color .15s;
+            flex-shrink: 0;
+        }
+
+        #ptp-chat-app .ptp-composer__btn:hover {
+            background: var(--ptp-surface-alt);
+            color: var(--ptp-text);
+        }
+
+        #ptp-chat-app .ptp-composer__btn.is-recording {
+            background: #fee2e2;
+            color: var(--ptp-danger);
+        }
+
+        #ptp-chat-app .ptp-composer__field {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            background: var(--ptp-surface-alt);
+            border: 1px solid var(--ptp-border-soft);
+            border-radius: 22px;
+            padding: 4px 4px 4px 16px;
+            transition: border-color .15s, background .15s, box-shadow .15s;
+        }
+
+        #ptp-chat-app .ptp-composer__field:focus-within {
+            border-color: var(--ptp-accent);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, .1);
+        }
+
+        #ptp-chat-app .ptp-composer__field textarea {
+            flex: 1;
+            min-width: 0;
+            border: none;
+            outline: none;
+            resize: none;
+            background: transparent;
+            padding: 9px 0;
+            font-family: inherit;
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: var(--ptp-text);
+            max-height: 120px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+        }
+
+        #ptp-chat-app .ptp-composer__field textarea::placeholder {
+            color: var(--ptp-text-muted);
+        }
+
+        #ptp-chat-app .ptp-composer__send {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, var(--ptp-accent) 0%, var(--ptp-accent-2) 100%);
+            color: #fff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform .1s, box-shadow .15s;
+            flex-shrink: 0;
+            box-shadow: 0 4px 12px -4px rgba(99, 102, 241, .45);
+            font-size: 13px;
+        }
+
+        #ptp-chat-app .ptp-composer__send:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px -4px rgba(99, 102, 241, .55);
+        }
+
+        #ptp-chat-app .ptp-composer__send:active {
+            transform: scale(.94);
+        }
+
+        #ptp-chat-app .ptp-recording {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+            padding: 8px 16px;
+            background: #fee2e2;
+            border-radius: 22px;
+        }
+
+        #ptp-chat-app .ptp-recording__dot {
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            display: inline-block;
-            border: 1px solid #fff;
-            position: absolute;
-            bottom: 2px;
-            right: 2px;
+            background: var(--ptp-danger);
+            animation: ptp-pulse 1s ease-in-out infinite;
         }
 
-        .online_icon.offline {
-            background: #d0d0d0;
+        #ptp-chat-app .ptp-recording__time {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: #991b1b;
+            font-variant-numeric: tabular-nums;
         }
 
-        .online_icon:not(.offline) {
-            background: #3AC977;
-        }
-
-        /* Ensure all buttons have pointer cursor */
-        button,
-        a,
-        .btn,
-        [role="button"] {
+        #ptp-chat-app .ptp-recording__cancel {
+            margin-left: auto;
+            padding: 6px 14px;
+            border-radius: 999px;
+            border: none;
+            background: #fff;
+            color: #991b1b;
+            font-size: 12px;
+            font-weight: 600;
             cursor: pointer;
+        }
+
+        @keyframes ptp-pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: .35;
+                transform: scale(.8);
+            }
+        }
+
+        /* Popovers */
+        #ptp-chat-app .ptp-pop {
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 20px;
+            z-index: 40;
+            background: var(--ptp-surface);
+            border: 1px solid var(--ptp-border);
+            border-radius: 16px;
+            box-shadow: 0 12px 40px -8px rgba(15, 23, 42, .18), 0 4px 12px rgba(15, 23, 42, .06);
+            animation: ptp-pop .18s ease;
+        }
+
+        @keyframes ptp-pop {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+
+            to {
+                opacity: 1;
+                transform: none;
+            }
+        }
+
+        #ptp-chat-app .ptp-pop--emoji {
+            padding: 4px;
+        }
+
+        #ptp-chat-app .ptp-pop--attach {
+            padding: 8px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4px;
+            width: 240px;
+        }
+
+        #ptp-chat-app .ptp-pop--sticker {
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 2px;
+            width: 280px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        #ptp-chat-app .ptp-pop__item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--ptp-text-mid);
+            transition: background .12s, color .12s;
+            text-align: left;
+        }
+
+        #ptp-chat-app .ptp-pop__item:hover {
+            background: var(--ptp-surface-alt);
+            color: var(--ptp-text);
+        }
+
+        #ptp-chat-app .ptp-pop__item i {
+            color: var(--ptp-accent);
+            width: 16px;
+            text-align: center;
+        }
+
+        #ptp-chat-app .ptp-pop__sticker {
+            border: none;
+            background: transparent;
+            font-size: 24px;
+            padding: 6px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background .12s, transform .1s;
+            line-height: 1;
+        }
+
+        #ptp-chat-app .ptp-pop__sticker:hover {
+            background: var(--ptp-surface-alt);
+            transform: scale(1.15);
+        }
+
+        /* ══ INFO PANE ════════════════════════════════════════════════════ */
+        #ptp-chat-app .ptp-info__head {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 32px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--ptp-border-soft);
+        }
+
+        #ptp-chat-app .ptp-info__avatar {
+            width: 88px;
+            height: 88px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 12px;
+            border: 3px solid var(--ptp-surface);
+            box-shadow: 0 8px 24px -8px rgba(15, 23, 42, .15);
+        }
+
+        #ptp-chat-app .ptp-info__name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--ptp-text);
+            margin: 0;
+        }
+
+        #ptp-chat-app .ptp-info__sub {
+            font-size: 12px;
+            color: var(--ptp-text-muted);
+            margin: 4px 0 0;
+        }
+
+        #ptp-chat-app .ptp-info__sub.is-online {
+            color: var(--ptp-success);
+        }
+
+        #ptp-chat-app .ptp-info__section {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--ptp-border-soft);
+        }
+
+        #ptp-chat-app .ptp-info__section:last-child {
+            border-bottom: none;
+        }
+
+        #ptp-chat-app .ptp-info__title {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            color: var(--ptp-text-muted);
+            margin: 0 0 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        #ptp-chat-app .ptp-info__title span {
+            color: var(--ptp-text-muted);
+            font-weight: 500;
+            font-size: 10.5px;
+        }
+
+        #ptp-chat-app .ptp-media-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+
+        #ptp-chat-app .ptp-media-grid a {
+            display: block;
+            aspect-ratio: 1;
+            border-radius: 8px;
+            overflow: hidden;
+            background: var(--ptp-surface-alt);
+            transition: transform .15s;
+        }
+
+        #ptp-chat-app .ptp-media-grid a:hover {
+            transform: scale(1.04);
+        }
+
+        #ptp-chat-app .ptp-media-grid img,
+        #ptp-chat-app .ptp-media-grid video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        #ptp-chat-app .ptp-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: var(--ptp-surface);
+            border: 1px solid var(--ptp-border-soft);
+            margin-bottom: 6px;
+            text-decoration: none;
+            color: var(--ptp-text);
+            transition: background .15s, border-color .15s;
+        }
+
+        #ptp-chat-app .ptp-file:hover {
+            background: #fff;
+            border-color: var(--ptp-accent);
+        }
+
+        #ptp-chat-app .ptp-file__icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: var(--ptp-accent-soft);
+            color: var(--ptp-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        #ptp-chat-app .ptp-file__meta {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #ptp-chat-app .ptp-file__name {
+            font-size: 12.5px;
+            font-weight: 600;
+            color: var(--ptp-text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin: 0;
+        }
+
+        #ptp-chat-app .ptp-file__date {
+            font-size: 11px;
+            color: var(--ptp-text-muted);
+            margin: 1px 0 0;
+        }
+
+        #ptp-chat-app .ptp-voice {
+            background: var(--ptp-surface);
+            border: 1px solid var(--ptp-border-soft);
+            border-radius: 10px;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+        }
+
+        #ptp-chat-app .ptp-voice audio {
+            width: 100%;
+            height: 32px;
+            outline: none;
+        }
+
+        #ptp-chat-app .ptp-voice__date {
+            font-size: 11px;
+            color: var(--ptp-text-muted);
+            margin-top: 4px;
+        }
+
+        #ptp-chat-app .ptp-info__empty {
+            font-size: 12px;
+            color: var(--ptp-text-muted);
+            margin: 0;
+            font-style: italic;
+        }
+
+        /* Context menu */
+        #ptp-chat-app .ptp-ctx {
+            position: fixed;
+            z-index: 9999;
+            min-width: 220px;
+            background: var(--ptp-surface);
+            border: 1px solid var(--ptp-border);
+            border-radius: 14px;
+            box-shadow: 0 20px 50px -12px rgba(15, 23, 42, .25), 0 8px 16px rgba(15, 23, 42, .06);
+            padding: 6px;
+            display: none;
+        }
+
+        #ptp-chat-app .ptp-ctx.show {
+            display: block;
+            animation: ptp-pop .15s ease;
+        }
+
+        #ptp-chat-app .ptp-ctx__row {
+            display: flex;
+            justify-content: space-around;
+            padding: 6px 4px;
+            border-bottom: 1px solid var(--ptp-border-soft);
+            margin-bottom: 4px;
+        }
+
+        #ptp-chat-app .ptp-ctx__row button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            font-size: 22px;
+            cursor: pointer;
+            transition: background .12s, transform .12s;
+            line-height: 1;
+        }
+
+        #ptp-chat-app .ptp-ctx__row button:hover {
+            background: var(--ptp-surface-alt);
+            transform: scale(1.15);
+        }
+
+        #ptp-chat-app .ptp-ctx__item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 9px 12px;
+            border: none;
+            background: transparent;
+            text-align: left;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            color: var(--ptp-text-mid);
+            cursor: pointer;
+            transition: background .12s, color .12s;
+        }
+
+        #ptp-chat-app .ptp-ctx__item i {
+            width: 16px;
+            text-align: center;
+            color: var(--ptp-text-muted);
+        }
+
+        #ptp-chat-app .ptp-ctx__item:hover {
+            background: var(--ptp-surface-alt);
+            color: var(--ptp-text);
+        }
+
+        #ptp-chat-app .ptp-ctx__item:hover i {
+            color: var(--ptp-accent);
+        }
+
+        #ptp-chat-app .ptp-ctx__item.is-danger {
+            color: var(--ptp-danger);
+        }
+
+        #ptp-chat-app .ptp-ctx__item.is-danger i {
+            color: var(--ptp-danger);
+        }
+
+        #ptp-chat-app .ptp-ctx__item.is-danger:hover {
+            background: #fee2e2;
+        }
+
+        #ptp-chat-app .ptp-ctx__sep {
+            height: 1px;
+            background: var(--ptp-border-soft);
+            margin: 4px 6px;
+        }
+
+        #ptp-chat-app .ptp-drop {
+            position: absolute;
+            inset: 12px;
+            border: 2px dashed var(--ptp-accent);
+            border-radius: 16px;
+            background: rgba(99, 102, 241, .06);
+            color: var(--ptp-accent);
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 30;
+            pointer-events: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #ptp-chat-app .ptp-drop.is-active {
+            display: flex;
+        }
+
+        /* ══ RESPONSIVE ══════════════════════════════════════════════════ */
+        @media (max-width: 1199.98px) {
+            #ptp-chat-app .ptp-shell {
+                grid-template-columns: 300px minmax(0, 1fr);
+            }
+
+            #ptp-chat-app .ptp-pane--info {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            #ptp-chat-app .ptp-wrap {
+                padding: 0;
+                min-height: 100vh;
+            }
+
+            #ptp-chat-app .ptp-topbar {
+                display: none;
+            }
+
+            #ptp-chat-app .ptp-shell {
+                grid-template-columns: 1fr;
+                border-radius: 0;
+                box-shadow: none;
+                height: 100vh;
+                min-height: 0;
+            }
+
+            #ptp-chat-app .ptp-pane--contacts,
+            #ptp-chat-app .ptp-pane--chat {
+                grid-column: 1;
+                grid-row: 1;
+                border-right: none;
+            }
+
+            #ptp-chat-app .ptp-pane--chat {
+                display: none;
+            }
+
+            #ptp-chat-app[data-panel="chat"] .ptp-pane--chat {
+                display: flex;
+            }
+
+            #ptp-chat-app[data-panel="chat"] .ptp-pane--contacts {
+                display: none;
+            }
+
+            #ptp-chat-app .ptp-composer {
+                padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            }
+
+            #ptp-chat-app .ptp-pop {
+                left: 12px;
+                right: 12px;
+                width: auto !important;
+            }
+
+            #ptp-chat-app .ptp-pop--sticker {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            #ptp-chat-app .ptp-ctx {
+                left: 8px !important;
+                right: 8px !important;
+                top: auto !important;
+                bottom: calc(8px + env(safe-area-inset-bottom, 0px)) !important;
+                min-width: 0;
+                max-height: 70vh;
+                overflow-y: auto;
+            }
+
+            #ptp-chat-app .ptp-person {
+                padding: 12px;
+            }
+
+            #ptp-chat-app .ptp-person__avatar {
+                width: 48px;
+                height: 48px;
+            }
+
+            #ptp-chat-app .ptp-search__input,
+            #ptp-chat-app .ptp-csearch input,
+            #ptp-chat-app .ptp-composer__field textarea {
+                font-size: 16px;
+            }
+
+            #ptp-chat-app .msg-row .msg-actions {
+                opacity: 1 !important;
+                pointer-events: auto !important;
+                top: 4px !important;
+                right: 4px !important;
+            }
+
+            #ptp-chat-app .msg-row.mine .msg-actions {
+                left: 4px !important;
+                right: auto !important;
+            }
+
+            #ptp-chat-app .msg-action-btn {
+                padding: 8px 10px !important;
+                font-size: 1rem !important;
+            }
+        }
+
+        @media (max-width: 479.98px) {
+            #ptp-chat-app .chat-box-area {
+                padding: 12px 14px 6px !important;
+            }
+
+            #ptp-chat-app .ptp-composer {
+                padding: 10px 12px 12px;
+            }
+
+            #ptp-chat-app .ptp-composer__btn {
+                width: 36px;
+                height: 36px;
+            }
+
+            #ptp-chat-app .ptp-composer__field {
+                padding-left: 14px;
+            }
+
+            #ptp-chat-app .ptp-composer__send {
+                width: 34px;
+                height: 34px;
+            }
+
+            #ptp-chat-app .ptp-chat-header {
+                padding: 12px 14px;
+            }
+
+            #ptp-chat-app .ptp-me {
+                padding: 14px 16px;
+            }
+
+            #ptp-chat-app .ptp-search {
+                padding: 12px 14px 8px;
+            }
+
+            #ptp-chat-app .ptp-people {
+                padding: 4px 6px 14px;
+            }
+        }
+
+        @supports (padding: env(safe-area-inset-bottom)) {
+            #ptp-chat-app {
+                padding-left: env(safe-area-inset-left, 0);
+                padding-right: env(safe-area-inset-right, 0);
+            }
         }
     </style>
 
-    <div class="container-fluid">
-        <div class="row gx-0">
-            <div class="col-xl-12">
-                <div class="card overflow-hidden">
-                    <div class="card-body p-0">
-                        <div class="row gx-0">
+    <div class="ptp-wrap">
+        {{-- PAGE TITLES --}}
+        <div class="page-titles">
+            <ol class="breadcrumb">
+                <li>
+                    <h5 class="bc-title">Messenger</h5>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ route('dashboard') }}">Home</a>
+                </li>
+                <li class="breadcrumb-item active"><a href="javascript:void(0)">Messenger</a></li>
+            </ol>
+            <div class="d-flex gap-2">
 
-                            {{-- ═══ CONTACTS (LEFT) ═══ --}}
-                            <div class="col-xl-3 col-lg-6 col-sm-5 chat-border mobile-chat chat-left-area">
-                                <div class="chat-p shaprate">
-                                    <div class="d-flex">
-                                        <img src="{{ auth()->user()->getAvatarUrlAttribute() }}"
-                                            class="avatar avatar-md rounded-circle" alt="">
-                                        <div class="ms-2">
-                                            <h6 class="mb-0">{{ auth()->user()->name }}</h6>
-                                            <span>{{ $totalReceivedMessages }} unread</span>
-                                        </div>
-                                    </div>
-                                    <div class="icon-box bg-primary-light">
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path fill-rule="evenodd" clip-rule="evenodd"
-                                                d="M17.3389 6.35305L16.8202 5.45298C16.3814 4.69138 15.4089 4.42864 14.6463 4.86564V4.86564C14.2832 5.07949 13.85 5.14017 13.4422 5.03428C13.0344 4.92839 12.6855 4.66464 12.4723 4.30118C12.3352 4.07016 12.2616 3.80704 12.2588 3.53841V3.53841C12.2711 3.10773 12.1087 2.69038 11.8083 2.38143C11.508 2.07249 11.0954 1.89826 10.6646 1.89844H9.61956C9.19745 1.89843 8.79274 2.06664 8.49498 2.36583C8.19722 2.66502 8.03096 3.07053 8.03299 3.49264V3.49264C8.02048 4.36415 7.31038 5.06405 6.43879 5.06396C6.17016 5.06117 5.90703 4.98749 5.67601 4.85038V4.85038C4.91336 4.41339 3.94091 4.67612 3.5021 5.43772L2.94527 6.35305C2.50699 7.1137 2.76615 8.08555 3.52498 8.52697V8.52697C4.01823 8.81174 4.32209 9.33803 4.32209 9.90759C4.32209 10.4771 4.01823 11.0034 3.52498 11.2882V11.2882C2.76711 11.7267 2.50767 12.6961 2.94527 13.4545V13.4545L3.47158 14.3622C3.67719 14.7332 4.02215 15.007 4.43014 15.1229C4.83813 15.2389 5.27551 15.1875 5.6455 14.9801V14.9801C6.00921 14.7678 6.44264 14.7097 6.84943 14.8185C7.25622 14.9274 7.60268 15.1942 7.81178 15.5598C7.94889 15.7908 8.02257 16.0539 8.02536 16.3225V16.3225C8.02536 17.203 8.73911 17.9167 9.61956 17.9167H10.6646C11.5421 17.9168 12.2546 17.2076 12.2588 16.3302V16.3302C12.2567 15.9067 12.424 15.5001 12.7234 15.2006C13.0229 14.9012 13.4295 14.7339 13.853 14.736C14.121 14.7431 14.383 14.8165 14.6157 14.9495V14.9495C15.3764 15.3878 16.3482 15.1287 16.7897 14.3698V14.3698L17.3389 13.4545C17.5514 13.0896 17.6098 12.655 17.501 12.247C17.3922 11.839 17.1252 11.4912 16.7592 11.2806V11.2806C16.3931 11.07 16.1261 10.7222 16.0173 10.3142C15.9085 9.90613 15.9669 9.47156 16.1794 9.10668C16.3177 8.86532 16.5178 8.66521 16.7592 8.52697V8.52697C17.5134 8.08579 17.772 7.11962 17.3389 6.36068V6.36068V6.35305Z"
-                                                stroke="var(--primary)" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                            <ellipse cx="10.1459" cy="9.90749" rx="2.1968" ry="2.1968"
-                                                stroke="var(--primary)" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                        </svg>
-                                    </div>
-                                </div>
 
-                                <div class="c-list">
-                                    <div class="input-group search-area">
-                                        <input type="text" x-model="search" @input="filterFriends()"
-                                            class="form-control" placeholder="Search">
-                                        <span class="input-group-text">
-                                            <a href="javascript:void(0)">
-                                                <svg width="18" height="19" viewBox="0 0 18 19" fill="none"
-                                                    xmlns="http://www.w3.org/2000/svg">
-                                                    <circle cx="8.82495" cy="9.32491" r="6.74142" stroke="#0D99FF"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                    <path d="M13.5137 14.3638L16.1568 16.9999" stroke="#0D99FF"
-                                                        stroke-linecap="round" stroke-linejoin="round" />
-                                                </svg>
-                                            </a>
-                                        </span>
-                                    </div>
-                                </div>
+            </div>
+        </div>
 
-                                <div class="people-list dz-scroll">
-                                    @foreach($friends as $friend)
-                                        <div class="chat-p style-1 {{ $activeFriendId === $friend->id ? 'dz-active' : '' }}"
-                                            wire:key="page-friend-{{ $friend->id }}"
-                                            x-show="isVisible({{ $friend->id }}, '{{ addslashes(strtolower($friend->name)) }}')"
-                                            @click="$wire.isLoading ? null : $wire.setActiveFriend({{ $friend->id }})"
-                                            :class="{ 'opacity-50': $wire.isLoading }">
-                                            <div class="d-flex {{ $activeFriendId === $friend->id ? 'active' : '' }}">
-                                                <div class="position-relative">
-                                                    <img src="{{ $friend->getAvatarUrlAttribute() }}"
-                                                        class="avatar avatar-md rounded-circle" alt="">
-                                                    <span class="online_icon {{ $friend->online ? '' : 'offline' }}"></span>
-                                                </div>
-                                                <div class="ms-2">
-                                                    <h6 class="mb-0">{{ $friend->name }}</h6>
-                                                    <span
-                                                        class="dz-last-msg {{ $friend->message_count > 0 ? 'dz-unread' : '' }}">
-                                                        @if($friend->last_message_type === 'image') 📷 Photo
-                                                        @elseif($friend->last_message_type === 'document') 📄 Document
-                                                        @elseif($friend->last_message_type === 'audio') 🎵 Audio
-                                                        @elseif($friend->last_message_type === 'video') 🎬 Video
-                                                        @elseif($friend->last_message_type === 'sticker') Sticker
-                                                        @elseif($friend->last_message_body)
-                                                            <strong>{{ $friend->last_message_is_mine ? 'You: ' : '' }}</strong>{{ Str::limit($friend->last_message_body, 30) }}
-                                                        @else
-                                                            {{ $friend->online ? 'Active now' : 'Last seen ' . $friend->lastSeenForHumans() }}
-                                                        @endif
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            @if($friend->message_count > 0)
-                                                <span
-                                                    class="dz-unread-pill">{{ $friend->message_count > 99 ? '99+' : $friend->message_count }}</span>
-                                            @else
-                                                <span>{{ $friend->last_message_time?->diffForHumans(null, true) }}</span>
-                                            @endif
-                                        </div>
-                                    @endforeach
+        <div class="ptp-shell">
 
-                                    @if($friends->isEmpty())
-                                        <p class="text-center text-muted p-4">No conversations yet</p>
-                                    @endif
-                                </div>
-                            </div>
+            {{-- CONTACTS --}}
+            <aside class="ptp-pane ptp-pane--contacts">
+                <div class="ptp-me">
+                    <div class="ptp-me__avatar">
+                        <img src="{{ auth()->user()->getAvatarUrlAttribute() }}" alt="">
+                        <span class="ptp-me__dot"></span>
+                    </div>
+                    <div class="ptp-me__meta">
+                        <h4 class="ptp-me__name">{{ auth()->user()->name }}</h4>
+                        <p class="ptp-me__sub">You're online</p>
+                    </div>
+                    @if($totalReceivedMessages > 0)
+                        <span class="ptp-me__badge">{{ $totalReceivedMessages }} new</span>
+                    @endif
+                </div>
 
-                            {{-- ═══ CONVERSATION (MIDDLE) ═══ --}}
-                            <div class="col-xl-5 col-lg-6 col-sm-7 chat-border">
-                                @php $selectedFriend = $activeFriendId ? $friends->firstWhere('id', $activeFriendId) : null; @endphp
-
-                                @if($selectedFriend)
-                                    <div wire:key="page-chat-{{ $activeFriendId }}">
-                                        {{-- Header --}}
-                                        <div class="chat-p shaprate">
-                                            <div class="d-flex">
-                                                <img src="{{ $selectedFriend->getAvatarUrlAttribute() }}"
-                                                    class="avatar avatar-md rounded-circle" alt="">
-                                                <div class="ms-2">
-                                                    <h6 class="mb-0">{{ $selectedFriend->name }}</h6>
-                                                    <span>
-                                                        @if($selectedFriend->online)
-                                                            @if($this->isFriendTyping())
-                                                                <span class="text-primary">Typing…</span>
-                                                            @else
-                                                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-                                                                    xmlns="http://www.w3.org/2000/svg">
-                                                                    <circle cx="7" cy="7" r="6" fill="#3AC977" stroke="white"
-                                                                        stroke-width="2" />
-                                                                </svg>
-                                                                online
-                                                            @endif
-                                                        @else
-                                                            Last seen {{ $selectedFriend->lastSeenForHumans() }}
-                                                        @endif
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div class="chat-admin">
-                                                {{-- Back to contacts --}}
-                                                <a href="javascript:void(0);" class="dz-chat-history-back chat-toggle"
-                                                    wire:click="goBack" title="Back" style="flex-shrink: 0;">
-                                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                                        xmlns:xlink="http://www.w3.org/1999/xlink" width="18px"
-                                                        height="18px" viewBox="0 0 24 24" version="1.1">
-                                                        <g stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                                                            <polygon points="0 0 24 0 24 24 0 24" />
-                                                            <rect fill="#000000" opacity="0.3"
-                                                                transform="translate(15.000000, 12.000000) scale(-1, 1) rotate(-90.000000) translate(-15.000000, -12.000000) "
-                                                                x="14" y="7" width="2" height="10" rx="1" />
-                                                            <path
-                                                                d="M3.7071045,15.7071045 C3.3165802,16.0976288 2.68341522,16.0976288 2.29289093,15.7071045 C1.90236664,15.3165802 1.90236664,14.6834152 2.29289093,14.2928909 L8.29289093,8.29289093 C8.67146987,7.914312 9.28105631,7.90106637 9.67572234,8.26284357 L15.6757223,13.7628436 C16.0828413,14.136036 16.1103443,14.7686034 15.7371519,15.1757223 C15.3639594,15.5828413 14.7313921,15.6103443 14.3242731,15.2371519 L9.03007346,10.3841355 L3.7071045,15.7071045 Z"
-                                                                fill="#000000" fill-rule="nonzero"
-                                                                transform="translate(9.000001, 11.999997) scale(-1, -1) rotate(90.000000) translate(-9.000001, -11.999997) " />
-                                                        </g>
-                                                    </svg>
-                                                </a>
-                                                {{-- Audio call --}}
-                                                <button type="button" class="icon-box bg-success mx-1 border-0"
-                                                    title="Audio call"
-                                                    @click="startCall('audio', {{ $selectedFriend->id }}, '{{ addslashes($selectedFriend->name) }}', '{{ $selectedFriend->getAvatarUrlAttribute() }}')">
-                                                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg">
-                                                        <path
-                                                            d="M18.3333 14.0999V16.5999C18.3343 16.832 18.2867 17.0617 18.1937 17.2744C18.1008 17.487 17.9644 17.6779 17.7934 17.8348C17.6224 17.9917 17.4205 18.1112 17.2006 18.1855C16.9808 18.2599 16.7478 18.2875 16.5167 18.2666C13.9523 17.988 11.4892 17.1117 9.32498 15.7083C7.31151 14.4288 5.60443 12.7217 4.32499 10.7083C2.91663 8.53426 2.04019 6.05908 1.76665 3.48325C1.74583 3.25281 1.77321 3.02055 1.84707 2.80127C1.92092 2.58199 2.03963 2.38049 2.19562 2.2096C2.35162 2.03871 2.54149 1.90218 2.75314 1.80869C2.9648 1.7152 3.1936 1.6668 3.42499 1.66658H5.92499C6.32941 1.6626 6.72148 1.80582 7.02812 2.06953C7.33476 2.33324 7.53505 2.69946 7.59165 3.09992C7.69717 3.89997 7.89286 4.68552 8.17499 5.44158C8.2871 5.73985 8.31137 6.06401 8.24491 6.37565C8.17844 6.68729 8.02404 6.97334 7.79998 7.19992L6.74165 8.25825C7.92795 10.3445 9.65536 12.072 11.7417 13.2583L12.8 12.1999C13.0266 11.9759 13.3126 11.8215 13.6243 11.755C13.9359 11.6885 14.26 11.7128 14.5583 11.8249C15.3144 12.107 16.0999 12.3027 16.9 12.4083C17.3048 12.4654 17.6745 12.6693 17.9388 12.9812C18.203 13.2931 18.3435 13.6912 18.3333 14.0999Z"
-                                                            stroke="white" stroke-width="2" stroke-linecap="round"
-                                                            stroke-linejoin="round" />
-                                                    </svg>
-                                                </button>
-                                                {{-- Video call --}}
-                                                <button type="button" class="icon-box bg-primary mx-1 border-0"
-                                                    title="Video call"
-                                                    @click="startCall('video', {{ $selectedFriend->id }}, '{{ addslashes($selectedFriend->name) }}', '{{ $selectedFriend->getAvatarUrlAttribute() }}')">
-                                                    <svg width="20" height="14" viewBox="0 0 20 14" fill="none"
-                                                        xmlns="http://www.w3.org/2000/svg">
-                                                        <path
-                                                            d="M19.561 1.172C19.4256 1.08045 19.2699 1.02347 19.1074 1.00604C18.945 0.988603 18.7807 1.01125 18.629 1.072L14.954 2.542C14.8449 1.83596 14.4875 1.19201 13.946 0.726018C13.4045 0.260026 12.7144 0.00258053 12 0H3C2.20435 0 1.44129 0.316071 0.87868 0.87868C0.316071 1.44129 0 2.20435 0 3V11C0 11.7956 0.316071 12.5587 0.87868 13.1213C1.44129 13.6839 2.20435 14 3 14H12C12.7143 13.9975 13.4042 13.7402 13.9457 13.2744C14.4872 12.8086 14.8447 12.1649 14.954 11.459L18.629 12.929C18.7807 12.9896 18.945 13.0121 19.1075 12.9946C19.27 12.977 19.4257 12.9199 19.561 12.8282C19.6962 12.7365 19.807 12.6131 19.8835 12.4687C19.9601 12.3244 20.0001 12.1634 20 12V2C20 1.83663 19.96 1.67573 19.8835 1.53139C19.807 1.38705 19.6962 1.26365 19.561 1.172ZM12 12H3C2.73478 12 2.48043 11.8946 2.29289 11.7071C2.10536 11.5196 2 11.2652 2 11V3C2 2.73478 2.10536 2.48043 2.29289 2.29289C2.48043 2.10536 2.73478 2 3 2H12C12.2652 2 12.5196 2.10536 12.7071 2.29289C12.8946 2.48043 13 2.73478 13 3V11C13 11.2652 12.8946 11.5196 12.7071 11.7071C12.5196 11.8946 12.2652 12 12 12ZM18 10.523L15 9.323V4.677L18 3.477V10.523Z"
-                                                            fill="white" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                        {{-- Messages --}}
-                                        <div class="chat-box-area style-2 dz-scroll" id="DZ_Page_Messages_Body">
-                                            @php $newBadgeInserted = false; @endphp
-                                            @foreach($this->messages as $message)
-                                                @if(!$newBadgeInserted && $firstUnreadMessageId && $message->id == $firstUnreadMessageId)
-                                                    @php $newBadgeInserted = true; @endphp
-                                                    <span class="text-center d-block mb-4">New messages</span>
-                                                @endif
-
-                                                @php $isMine = $message->sender_id === auth()->id(); @endphp
-                                                <div class="media {{ $isMine ? 'justify-content-end align-items-end ms-auto' : '' }}"
-                                                    wire:key="page-msg-{{ $message->id }}">
-                                                    @if(!$isMine)
-                                                        <img src="{{ $selectedFriend->getAvatarUrlAttribute() }}"
-                                                            class="avatar rounded-circle" style="width:34px;height:34px;" alt="">
-                                                    @endif
-                                                    <div class="{{ $isMine ? 'message-sent' : 'message-received' }} w-auto">
-                                                        @if($message->attachment_type === 'sticker')
-                                                            <span style="font-size:2.5rem;">{{ $message->attachment_path }}</span>
-                                                        @elseif($message->attachment_type === 'image')
-                                                            <a href="{{ asset('storage/' . $message->attachment_path) }}"
-                                                                target="_blank"><img
-                                                                    src="{{ asset('storage/' . $message->attachment_path) }}"
-                                                                    style="max-width:220px;border-radius:8px;display:block;">
-                                                            </a>
-                                                            @if($message->body)
-                                                            <p class="mb-0">{{ $message->body }}</p>@endif
-                                                        @elseif($message->attachment_type === 'video')
-                                                            <video controls style="max-width:220px;border-radius:8px;">
-                                                                <source src="{{ asset('storage/' . $message->attachment_path) }}">
-                                                            </video>
-                                                            @if($message->body)
-                                                            <p class="mb-0">{{ $message->body }}</p>@endif
-                                                        @elseif($message->attachment_type === 'audio')
-                                                            <audio controls style="width:100%;">
-                                                                <source src="{{ asset('storage/' . $message->attachment_path) }}">
-                                                            </audio>
-                                                        @elseif($message->attachment_type === 'document')
-                                                            <a href="{{ asset('storage/' . $message->attachment_path) }}"
-                                                                target="_blank" class="d-block">
-                                                                <i class="fa-solid fa-file-pdf"></i>
-                                                                {{ $message->attachment_name ?? 'Document' }}
-                                                            </a>
-                                                        @else
-                                                            <p class="mb-1">{{ $message->body }}</p>
-                                                        @endif
-                                                        <span class="fs-12">
-                                                            {{ $message->created_at->format('h:i A') }}
-                                                            @if($isMine && $message->read)
-                                                                <i class="fa fa-check-circle text-primary"></i>
-                                                            @endif
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            @endforeach
-
-                                            @if($this->messages->isEmpty())
-                                                <p class="text-center text-muted mt-4">
-                                                    Say hi to {{ $selectedFriend->name }} 👋
-                                                </p>
-                                            @endif
-                                        </div>
-
-                                        {{-- Attachment preview --}}
-                                        @if($showAttachmentPreview)
-                                            <div class="d-flex align-items-center px-3 py-2 border-top" style="gap:10px;">
-                                                @if($attachmentType === 'image')
-                                                    <img src="{{ $attachmentPreview }}"
-                                                        style="width:44px;height:44px;object-fit:cover;border-radius:8px;">
-                                                @else
-                                                    <div
-                                                        style="width:44px;height:44px;background:#e9ecef;border-radius:8px;display:flex;align-items:center;justify-content:center;">
-                                                        <i class="fa-solid fa-file"></i>
-                                                    </div>
-                                                @endif
-                                                <div class="flex-grow-1">
-                                                    <div style="font-weight:600;font-size:.85rem;">{{ $attachmentName }}</div>
-                                                    <div style="font-size:.75rem;color:#888;">{{ $attachmentType }}</div>
-                                                </div>
-                                                <button wire:click="clearAttachment" @mousedown.prevent
-                                                    class="btn btn-sm btn-light"><i class="fa-solid fa-xmark"></i></button>
-                                            </div>
-                                        @endif
-
-                                        {{-- ═══ INPUT BAR ═══ --}}
-                                        <div class="message-send style-2">
-                                            <div class="left-actions d-flex align-items-center gap-1">
-                                                <button type="button" class="btn" @mousedown.prevent
-                                                    @click="showEmoji = !showEmoji" title="Emoji">
-                                                    <i class="fa-regular fa-face-smile"></i>
-                                                </button>
-                                                <button type="button" class="btn" @mousedown.prevent
-                                                    @click="showAttachMenu = !showAttachMenu" title="Attach">
-                                                    <i class="fa-solid fa-paperclip"></i>
-                                                </button>
-                                            </div>
-                                            <div class="type-massage style-1 flex-grow-1">
-                                                <div class="input-group">
-                                                    <textarea rows="1" class="form-control" placeholder="Type a message…"
-                                                        x-model="messageText" @keydown="handleKeydown($event)"
-                                                        @input="startTyping()"></textarea>
-                                                    <div class="input-group-append">
-                                                        {{--
-                                                        FIX: @mousedown.prevent stops the textarea from
-                                                        blurring (and firing the Livewire .live sync +
-                                                        DOM morph) before the click event completes.
-                                                        Without it, the button element can be replaced
-                                                        mid-click by the morph, so the click is silently
-                                                        lost and only Enter (handled purely client-side
-                                                        in keydown) ever worked.
-                                                        --}}
-                                                        <button type="button" class="btn btn-send" @mousedown.prevent
-                                                            wire:click="sendMessage" @click="onSend()">
-                                                            <i class="fa-solid fa-paper-plane"></i> Send
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="emoji-picker-container" :class="{ 'show': showEmoji }"
-                                                x-show="showEmoji" @click.away="showEmoji = false">
-                                                <emoji-picker @emoji-click="addEmoji($event)"></emoji-picker>
-                                            </div>
-                                            <div class="attach-menu" :class="{ 'show': showAttachMenu }"
-                                                x-show="showAttachMenu" @click.away="showAttachMenu = false">
-                                                <label class="btn"><i class="fa-solid fa-image"></i> Photo <input
-                                                        type="file" wire:model="attachment" accept="image/*"
-                                                        class="d-none"></label>
-                                                <label class="btn"><i class="fa-solid fa-video"></i> Video <input
-                                                        type="file" wire:model="attachment" accept="video/*"
-                                                        class="d-none"></label>
-                                                <label class="btn"><i class="fa-solid fa-music"></i> Audio <input
-                                                        type="file" wire:model="attachment" accept="audio/*"
-                                                        class="d-none"></label>
-                                                <label class="btn"><i class="fa-solid fa-file-lines"></i> Document <input
-                                                        type="file" wire:model="attachment"
-                                                        accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" class="d-none"></label>
-                                                <button class="btn" @mousedown.prevent
-                                                    @click="showStickers = !showStickers">
-                                                    <i class="fa-regular fa-face-smile"></i> Sticker
-                                                </button>
-                                            </div>
-                                            <div class="sticker-grid" :class="{ 'show': showStickers }"
-                                                x-show="showStickers" @click.away="showStickers = false">
-                                                @foreach(['😂', '😍', '🥰', '😎', '🤩', '😭', '🙏', '👏', '🔥', '💯', '❤️', '💔', '🎉', '🎊', '✨', '🌟', '😤', '😴', '🤔', '🥳', '🤯', '😱', '👀', '💪', '🙌', '😅', '🫶', '💀', '🤣', '🥹'] as $sticker)
-                                                    <button class="btn" @mousedown.prevent
-                                                        wire:click="sendSticker('{{ $sticker }}')"
-                                                        @click="showStickers = false">{{ $sticker }}</button>
-                                                @endforeach
-                                            </div>
-                                        </div>
-                                    </div>
-                                @else
-                                    <div
-                                        class="d-flex flex-column align-items-center justify-content-center h-100 text-muted p-5">
-                                        <i class="fa-solid fa-comments fa-3x mb-3"></i>
-                                        <p class="mb-0">Pick a conversation on the left to start chatting.</p>
-                                    </div>
-                                @endif
-                            </div>
-
-                            {{-- ═══ MEDIA & FILES (RIGHT) ═══ --}}
-                            <div class="col-xl-4">
-                                @if($selectedFriend)
-                                    <div class="chat-meadia" wire:key="page-media-{{ $activeFriendId }}">
-                                        <h4 class="fs-16">Media</h4>
-                                        <div class="image-list">
-                                            @forelse($this->mediaMessages as $mediaMessage)
-                                                <a href="{{ asset('storage/' . $mediaMessage->attachment_path) }}"
-                                                    target="_blank">
-                                                    @if($mediaMessage->attachment_type === 'video')
-                                                        <video style="width:100%;height:100%;object-fit:cover;">
-                                                            <source src="{{ asset('storage/' . $mediaMessage->attachment_path) }}">
-                                                        </video>
-                                                    @else
-                                                        <img src="{{ asset('storage/' . $mediaMessage->attachment_path) }}" alt="">
-                                                    @endif
-                                                </a>
-                                            @empty
-                                                <p class="text-muted small mb-0">No photos or videos shared yet.</p>
-                                            @endforelse
-                                        </div>
-                                    </div>
-
-                                    <div class="chat-meadia">
-                                        <h4 class="fs-16">Files</h4>
-                                        <div class="file-list row dz-scroll">
-                                            @forelse($this->fileMessages as $fileMessage)
-                                                <div class="text-center col-xl-4 col-6 filie-l-icon">
-                                                    <a href="{{ asset('storage/' . $fileMessage->attachment_path) }}"
-                                                        target="_blank">
-                                                        <i class="fa-solid fa-file-pdf fa-2x"></i>
-                                                        <h5 class="text-truncate">
-                                                            {{ $fileMessage->attachment_name ?? 'Document' }}
-                                                        </h5>
-                                                        <span>{{ $fileMessage->created_at->format('M j, Y') }}</span>
-                                                    </a>
-                                                </div>
-                                            @empty
-                                                <p class="text-muted small mb-0 px-2">No files shared yet.</p>
-                                            @endforelse
-                                        </div>
-                                    </div>
-                                @else
-                                    <div class="p-4 text-muted small">
-                                        Media and files shared in a conversation will show up here.
-                                    </div>
-                                @endif
-                            </div>
-
-                        </div>
+                <div class="ptp-search">
+                    <div class="ptp-search__box">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="7" />
+                            <path d="m20 20-3.5-3.5" />
+                        </svg>
+                        <input type="text" class="ptp-search__input" x-model="search" @input="filterFriends()"
+                            placeholder="Search conversations">
                     </div>
                 </div>
-            </div>
+
+                <div class="ptp-people">
+                    @foreach($friends as $friend)
+                        <div class="ptp-person {{ $activeFriendId === $friend->id ? 'is-active' : '' }}"
+                            wire:key="page-friend-{{ $friend->id }}"
+                            x-show="isVisible({{ $friend->id }}, '{{ addslashes(strtolower($friend->name)) }}')"
+                            role="button" tabindex="0" @click="selectFriend({{ $friend->id }})"
+                            @keydown.enter.prevent="selectFriend({{ $friend->id }})">
+                            <div class="ptp-person__avatar">
+                                <img src="{{ $friend->getAvatarUrlAttribute() }}" alt="">
+                                <span class="ptp-person__dot {{ $friend->online ? 'is-online' : '' }}"></span>
+                            </div>
+                            <div class="ptp-person__meta">
+                                <h5 class="ptp-person__name">{{ $friend->name }}</h5>
+                                <span class="ptp-person__preview {{ $friend->message_count > 0 ? 'is-unread' : '' }}">
+                                    @if($friend->last_message_type === 'image') 📷 Photo
+                                    @elseif($friend->last_message_type === 'document') 📄 Document
+                                    @elseif($friend->last_message_type === 'audio') 🎵 Audio
+                                    @elseif($friend->last_message_type === 'video') 🎬 Video
+                                    @elseif($friend->last_message_type === 'sticker') Sticker
+                                    @elseif($friend->last_message_body)
+                                        {{ $friend->last_message_is_mine ? 'You: ' : '' }}{{ Str::limit($friend->last_message_body, 34) }}
+                                    @else
+                                        {{ $friend->online ? 'Active now' : 'Last seen ' . $friend->lastSeenForHumans() }}
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="ptp-person__side">
+                                @if($friend->message_count > 0)
+                                    <span
+                                        class="ptp-person__pill">{{ $friend->message_count > 99 ? '99+' : $friend->message_count }}</span>
+                                @elseif($friend->last_message_time)
+                                    <span
+                                        class="ptp-person__time">{{ $friend->last_message_time->diffForHumans(null, true) }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    @endforeach
+
+                    @if($friends->isEmpty())
+                        <div class="ptp-empty" style="padding: 60px 20px;">
+                            <div class="ptp-empty__icon"><i class="fa-regular fa-comments"></i></div>
+                            <h3>No conversations yet</h3>
+                            <p>Your contacts will appear here once they start chatting with you.</p>
+                        </div>
+                    @endif
+                </div>
+            </aside>
+
+            {{-- ═══ CONVERSATION ═══ --}}
+            <section class="ptp-pane ptp-pane--chat position-relative" x-data="{ dragging: false }"
+                @dragover.prevent="dragging = true" @dragleave.prevent="dragging = false"
+                @drop.prevent="dragging = false; handleDrop($event)">
+
+                @php $selectedFriend = $activeFriendId ? $friends->firstWhere('id', $activeFriendId) : null; @endphp
+
+                @if($selectedFriend)
+                    <div wire:key="page-chat-{{ $activeFriendId }}" class="d-flex flex-column h-100" style="min-height:0;">
+
+                        {{-- Header --}}
+                        <header class="ptp-chat-header">
+                            <button type="button" class="ptp-back" @click.stop.prevent="onBack()" aria-label="Back">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="m15 18-6-6 6-6" />
+                                </svg>
+                            </button>
+                            <div class="ptp-chat-header__avatar">
+                                <img src="{{ $selectedFriend->getAvatarUrlAttribute() }}" alt="">
+                                <span class="ptp-chat-header__dot {{ $selectedFriend->online ? 'is-online' : '' }}"></span>
+                            </div>
+                            <div class="ptp-chat-header__meta">
+                                <h3 class="ptp-chat-header__name">{{ $selectedFriend->name }}</h3>
+                                <p
+                                    class="ptp-chat-header__sub {{ $selectedFriend->online ? 'is-online' : '' }} {{ $this->isFriendTyping() ? 'is-typing' : '' }}">
+                                    @if($this->isFriendTyping()) Typing…
+                                    @elseif($selectedFriend->online) Active now
+                                    @else Last seen {{ $selectedFriend->lastSeenForHumans() }}
+                                    @endif
+                                </p>
+                            </div>
+                            <div class="ptp-chat-header__actions" wire:ignore @click.stop>
+                                <button type="button" class="ptp-iconbtn" @click.stop.prevent="openSearch()" title="Search">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </button>
+                                <button type="button" class="ptp-iconbtn {{ $showStarredOnly ? 'is-starred' : '' }}"
+                                    @click.stop.prevent="toggleStarred()" title="Starred">
+                                    <i class="fa-solid fa-star"></i>
+                                </button>
+                                <button type="button" class="ptp-iconbtn ptp-iconbtn--success" title="Audio call"
+                                    @click.stop.prevent="startCall('audio', {{ $selectedFriend->id }}, '{{ addslashes($selectedFriend->name) }}', '{{ $selectedFriend->getAvatarUrlAttribute() }}')">
+                                    <i class="fa-solid fa-phone"></i>
+                                </button>
+                                <button type="button" class="ptp-iconbtn ptp-iconbtn--accent" title="Video call"
+                                    @click.stop.prevent="startCall('video', {{ $selectedFriend->id }}, '{{ addslashes($selectedFriend->name) }}', '{{ $selectedFriend->getAvatarUrlAttribute() }}')">
+                                    <i class="fa-solid fa-video"></i>
+                                </button>
+                            </div>
+                        </header>
+
+                        {{-- ═══ SEARCH BAR — REAL-TIME ═══ --}}
+                        <div class="ptp-csearch" wire:ignore x-show="searchOpen" x-cloak>
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="7" />
+                                <path d="m20 20-3.5-3.5" />
+                            </svg>
+                            <input type="text" x-ref="searchInput" x-model="searchQuery"
+                                @input.debounce.300ms="liveSearch()" @keydown.enter.prevent.stop="liveSearch()"
+                                @keydown.escape.prevent.stop="closeSearch()" @click.stop @mousedown.stop
+                                placeholder="Search in conversation…" autocomplete="off">
+                            <button type="button" @click.stop.prevent="closeSearch()" title="Clear & close">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        @if($this->pinnedMessages->isNotEmpty())
+                            <div class="pinned-bar">
+                                <i class="fa-solid fa-thumbtack text-warning"></i>
+                                <strong>Pinned:</strong>
+                                <span class="text-truncate" style="max-width:340px;">
+                                    {{ $this->pinnedMessages->first()->preview }}
+                                </span>
+                            </div>
+                        @endif
+
+                        {{-- ═══ MESSAGES ═══ --}}
+                        <div class="chat-box-area style-2 dz-scroll" id="DZ_Page_Messages_Body">
+
+                            @if($hasMoreMessages && !$searchQuery)
+                                <div class="text-center my-3">
+                                    <button type="button" class="btn btn-sm btn-light" wire:click.stop.prevent="loadMore"
+                                        wire:loading.attr="disabled">
+                                        <span wire:loading.remove wire:target="loadMore">Load earlier messages</span>
+                                        <span wire:loading wire:target="loadMore">Loading…</span>
+                                    </button>
+                                </div>
+                            @endif
+
+                            @php
+                                $newBadgeInserted = false;
+                                $prevSenderId = null;
+                                $prevCreated = null;
+                            @endphp
+
+                            @foreach($this->messages as $message)
+                                @if(!$newBadgeInserted && $firstUnreadMessageId && $message->id == $firstUnreadMessageId && !$searchQuery)
+                                    @php $newBadgeInserted = true; @endphp
+                                    <div class="text-center my-3">
+                                        <span class="badge bg-primary-subtle text-primary">New messages</span>
+                                    </div>
+                                @endif
+
+                                @php
+                                    $isMine = $message->sender_id === auth()->id();
+                                    $sameSender = $prevSenderId === $message->sender_id
+                                        && $prevCreated
+                                        && $message->created_at->diffInSeconds($prevCreated) < 180;
+                                    $prevSenderId = $message->sender_id;
+                                    $prevCreated = $message->created_at;
+                                    $reactions = $message->reactionSummary(auth()->id());
+                                    $isStarred = $message->isStarredBy(auth()->id());
+                                @endphp
+
+                                <div class="media msg-row {{ $isMine ? 'justify-content-end align-items-end ms-auto mine' : '' }} {{ $sameSender ? 'same-sender' : '' }}"
+                                    wire:key="page-msg-{{ $message->id }}">
+
+                                    @if(!$isMine)
+                                        @if(!$sameSender)
+                                            <img src="{{ $selectedFriend->getAvatarUrlAttribute() }}" class="avatar rounded-circle"
+                                                style="width:34px;height:34px;" alt="">
+                                        @else
+                                            <div class="avatar-spacer"></div>
+                                        @endif
+                                    @endif
+
+                                    <div class="{{ $isMine ? 'message-sent' : 'message-received' }} w-auto">
+
+                                        <div class="msg-actions" @click.stop>
+                                            <button type="button" class="msg-action-btn"
+                                                @click.stop="quickReact($event, {{ $message->id }})" title="React">😊</button>
+                                            <button type="button" class="msg-action-btn"
+                                                wire:click.stop.prevent="setReply({{ $message->id }})" title="Reply">
+                                                <i class="fa-solid fa-reply"></i>
+                                            </button>
+                                            <button type="button" class="msg-action-btn"
+                                                @click.stop="openContextMenu($event, {{ $message->id }}, {{ $isMine ? 'true' : 'false' }}, {{ $message->deleted_for_everyone ? 'true' : 'false' }})"
+                                                title="More">
+                                                <i class="fa-solid fa-ellipsis"></i>
+                                            </button>
+                                        </div>
+
+                                        @if($message->deleted_for_everyone)
+                                            <p class="mb-1 fst-italic opacity-50">
+                                                <i class="fa-solid fa-ban"></i> This message was deleted
+                                            </p>
+                                        @else
+                                            @if($message->replyTo)
+                                                <div class="quote-bubble">
+                                                    <strong>{{ $message->replyTo->sender_id === auth()->id() ? 'You' : $selectedFriend->name }}</strong><br>
+                                                    <span class="text-truncate d-inline-block" style="max-width:220px;">
+                                                        {{ $message->replyTo->preview }}
+                                                    </span>
+                                                </div>
+                                            @endif
+
+                                            @if($message->is_forwarded)
+                                                <div class="small opacity-75 mb-1">
+                                                    <i class="fa-solid fa-share"></i> Forwarded
+                                                </div>
+                                            @endif
+
+                                            @if($message->attachment_type === 'sticker')
+                                                <span style="font-size:2.5rem;">{{ $message->attachment_path }}</span>
+                                            @elseif($message->attachment_type === 'image')
+                                                <a href="{{ asset('storage/' . $message->attachment_path) }}" target="_blank">
+                                                    <img src="{{ asset('storage/' . $message->attachment_path) }}"
+                                                        style="max-width:220px;border-radius:8px;display:block;cursor:zoom-in;">
+                                                </a>
+                                                @if($message->body)
+                                                <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>@endif
+                                            @elseif($message->attachment_type === 'video')
+                                                <video controls style="max-width:240px;border-radius:8px;">
+                                                    <source src="{{ asset('storage/' . $message->attachment_path) }}">
+                                                </video>
+                                                @if($message->body)
+                                                <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>@endif
+                                            @elseif($message->attachment_type === 'audio')
+                                                <div class="voice-msg d-flex align-items-center gap-2">
+                                                    @if($message->is_voice)
+                                                        <i class="fa-solid fa-microphone text-primary"></i>
+                                                        <audio controls style="max-width:220px;"
+                                                            src="{{ asset('storage/' . $message->attachment_path) }}"></audio>
+                                                        <span class="small text-muted">
+                                                            {{ $message->metadata['duration'] ?? 0 }}s
+                                                        </span>
+                                                    @else
+                                                        <audio controls style="width:100%;"
+                                                            src="{{ asset('storage/' . $message->attachment_path) }}"></audio>
+                                                    @endif
+                                                </div>
+                                            @elseif($message->attachment_type === 'document')
+                                                <a href="{{ asset('storage/' . $message->attachment_path) }}" target="_blank"
+                                                    class="d-block text-decoration-none">
+                                                    <i class="fa-solid fa-file-lines fa-lg"></i>
+                                                    <span class="ms-1">{{ $message->attachment_name ?? 'Document' }}</span>
+                                                </a>
+                                                @if($message->body)
+                                                <p class="mb-0 mt-1">{!! $message->rendered_body !!}</p>@endif
+                                            @else
+                                                <p class="mb-1">{!! $message->rendered_body !!}</p>
+                                            @endif
+
+                                            <span class="fs-12 d-flex align-items-center justify-content-end gap-1">
+                                                @if($message->is_pinned)<i class="fa-solid fa-thumbtack text-warning"></i>@endif
+                                                @if($isStarred)<i class="fa-solid fa-star text-warning"></i>@endif
+                                                @if($message->edited_at)<span class="opacity-75">edited</span>@endif
+                                                {{ $message->created_at->format('h:i A') }}
+                                                @if($isMine)
+                                                    @if($message->read)
+                                                        <i class="fa-solid fa-check-double tick read"></i>
+                                                    @elseif($message->delivered_at)
+                                                        <i class="fa-solid fa-check-double tick"></i>
+                                                    @else
+                                                        <i class="fa-solid fa-check tick"></i>
+                                                    @endif
+                                                @endif
+                                            </span>
+                                        @endif
+
+                                        @if(!empty($reactions))
+                                            <div class="reaction-pills mt-1">
+                                                @foreach($reactions as $r)
+                                                    <button type="button" class="reaction-pill {{ $r['mine'] ? 'mine' : '' }}"
+                                                        wire:click.stop.prevent="toggleReaction({{ $message->id }}, '{{ $r['emoji'] }}')">
+                                                        {{ $r['emoji'] }} <span>{{ $r['count'] }}</span>
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+
+                            @if($this->messages->isEmpty())
+                                @if($searchQuery)
+                                    <div class="ptp-search-empty">
+                                        <div class="ptp-search-empty__icon">
+                                            <i class="fa-solid fa-magnifying-glass"></i>
+                                        </div>
+                                        <h4>No matches found</h4>
+                                        <p>Nothing matches <span class="ptp-search-empty__q">"{{ $searchQuery }}"</span></p>
+                                    </div>
+                                @elseif($showStarredOnly)
+                                    <div class="ptp-search-empty">
+                                        <div class="ptp-search-empty__icon">
+                                            <i class="fa-solid fa-star"></i>
+                                        </div>
+                                        <h4>No starred messages</h4>
+                                        <p>Star messages to find them here later.</p>
+                                    </div>
+                                @else
+                                    <p class="text-center text-muted mt-4">
+                                        Say hi to {{ $selectedFriend->name }} 👋
+                                    </p>
+                                @endif
+                            @endif
+                        </div>
+
+                        {{-- Attachment preview --}}
+                        @if($showAttachmentPreview)
+                            <div class="d-flex align-items-center px-3 py-2 border-top" style="gap:10px; flex-shrink:0;">
+                                @if($attachmentType === 'image')
+                                    <img src="{{ $attachmentPreview }}"
+                                        style="width:44px;height:44px;object-fit:cover;border-radius:8px;">
+                                @else
+                                    <div
+                                        style="width:44px;height:44px;background:#e9ecef;border-radius:8px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="fa-solid fa-file"></i>
+                                    </div>
+                                @endif
+                                <div class="flex-grow-1">
+                                    <div style="font-weight:600;font-size:.85rem;">{{ $attachmentName }}</div>
+                                    <div style="font-size:.75rem;color:#888;">{{ $attachmentType }}</div>
+                                </div>
+                                <button type="button" wire:click.stop.prevent="clearAttachment" @mousedown.prevent
+                                    class="btn btn-sm btn-light">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        @endif
+
+                        {{-- Reply / edit bar --}}
+                        @if($replyToId || $editingId)
+                            @php $ctxMsg = \App\Models\Message::find($editingId ?? $replyToId); @endphp
+                            <div class="ptp-replybar">
+                                <div class="ptp-replybar__bar"></div>
+                                <div class="ptp-replybar__meta">
+                                    <div class="ptp-replybar__title">{{ $editingId ? 'Editing' : 'Replying to' }}</div>
+                                    <div class="ptp-replybar__body">{{ $ctxMsg?->preview }}</div>
+                                </div>
+                                <button type="button" class="ptp-iconbtn"
+                                    wire:click.stop.prevent="{{ $editingId ? 'cancelEdit' : 'cancelReply' }}">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
+                        @endif
+
+                        {{-- Composer --}}
+                        <div class="ptp-composer">
+                            <div class="ptp-composer__row">
+                                <div class="ptp-composer__left">
+                                    <button type="button" class="ptp-composer__btn" @mousedown.prevent
+                                        @click.stop.prevent="showEmoji = !showEmoji" title="Emoji">
+                                        <i class="fa-regular fa-face-smile"></i>
+                                    </button>
+                                    <button type="button" class="ptp-composer__btn" @mousedown.prevent
+                                        @click.stop.prevent="showAttachMenu = !showAttachMenu" title="Attach">
+                                        <i class="fa-solid fa-paperclip"></i>
+                                    </button>
+                                    <button type="button" class="ptp-composer__btn" :class="{ 'is-recording': recording }"
+                                        @mousedown.prevent @click.stop.prevent="toggleRecording()" title="Voice">
+                                        <i class="fa-solid" :class="recording ? 'fa-stop' : 'fa-microphone'"></i>
+                                    </button>
+                                </div>
+
+                                <template x-if="!recording">
+                                    <div class="ptp-composer__field">
+                                        <textarea rows="1" x-model="messageText" placeholder="Type a message…"
+                                            @keydown="handleKeydown($event)" @input="startTyping()"
+                                            @paste="handlePaste($event)" x-ref="input"></textarea>
+                                        <button type="button" class="ptp-composer__send" @mousedown.prevent
+                                            wire:click.stop.prevent="sendMessage" @click="onSend()">
+                                            <i class="fa-solid fa-paper-plane"></i>
+                                        </button>
+                                    </div>
+                                </template>
+
+                                <template x-if="recording">
+                                    <div class="ptp-recording">
+                                        <span class="ptp-recording__dot"></span>
+                                        <span class="ptp-recording__time" x-text="recordingTimeFormatted">00:00</span>
+                                        <button type="button" class="ptp-recording__cancel"
+                                            @click.stop.prevent="cancelRecording()">
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <div class="ptp-pop ptp-pop--emoji" x-show="showEmoji" x-cloak @click.away="showEmoji = false">
+                                <emoji-picker @emoji-click="addEmoji($event)"></emoji-picker>
+                            </div>
+
+                            <div class="ptp-pop ptp-pop--attach" x-show="showAttachMenu" x-cloak
+                                @click.away="showAttachMenu = false">
+                                <label class="ptp-pop__item">
+                                    <i class="fa-solid fa-image"></i> Photo
+                                    <input type="file" wire:model="attachment" accept="image/*" class="d-none" hidden>
+                                </label>
+                                <label class="ptp-pop__item">
+                                    <i class="fa-solid fa-video"></i> Video
+                                    <input type="file" wire:model="attachment" accept="video/*" class="d-none" hidden>
+                                </label>
+                                <label class="ptp-pop__item">
+                                    <i class="fa-solid fa-music"></i> Audio
+                                    <input type="file" wire:model="attachment" accept="audio/*" class="d-none" hidden>
+                                </label>
+                                <label class="ptp-pop__item">
+                                    <i class="fa-solid fa-file-lines"></i> Document
+                                    <input type="file" wire:model="attachment" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                        class="d-none" hidden>
+                                </label>
+                                <button type="button" class="ptp-pop__item" @mousedown.prevent
+                                    @click.stop.prevent="showStickers = !showStickers" style="grid-column: span 2;">
+                                    <i class="fa-regular fa-face-smile"></i> Stickers
+                                </button>
+                            </div>
+
+                            <div class="ptp-pop ptp-pop--sticker" x-show="showStickers" x-cloak
+                                @click.away="showStickers = false">
+                                @foreach(['😂', '😍', '🥰', '😎', '🤩', '😭', '🙏', '👏', '🔥', '💯', '❤️', '💔', '🎉', '🎊', '✨', '🌟', '😤', '😴', '🤔', '🥳', '🤯', '😱', '👀', '💪'] as $sticker)
+                                    <button type="button" class="ptp-pop__sticker" @mousedown.prevent
+                                        wire:click.stop.prevent="sendSticker('{{ $sticker }}')"
+                                        @click="showStickers = false">{{ $sticker }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ptp-drop" :class="{ 'is-active': dragging }">
+                        <i class="fa-solid fa-cloud-arrow-up" style="font-size:36px;"></i>
+                        <div>Drop file to send</div>
+                    </div>
+                @else
+                    <div class="ptp-empty">
+                        <div class="ptp-empty__icon"><i class="fa-regular fa-comments"></i></div>
+                        <h3>Your messages</h3>
+                        <p>Select a conversation from the list to start chatting.</p>
+                    </div>
+                @endif
+            </section>
+
+            {{-- INFO --}}
+            <aside class="ptp-pane ptp-pane--info">
+                @if($selectedFriend)
+                    <div class="ptp-info__head">
+                        <img src="{{ $selectedFriend->getAvatarUrlAttribute() }}" class="ptp-info__avatar" alt="">
+                        <h3 class="ptp-info__name">{{ $selectedFriend->name }}</h3>
+                        <p class="ptp-info__sub {{ $selectedFriend->online ? 'is-online' : '' }}">
+                            {{ $selectedFriend->online ? 'Active now' : 'Last seen ' . $selectedFriend->lastSeenForHumans() }}
+                        </p>
+                    </div>
+
+                    <div class="ptp-info__section">
+                        <h4 class="ptp-info__title">Media <span>{{ $this->mediaMessages->count() }}</span></h4>
+                        @if($this->mediaMessages->isNotEmpty())
+                            <div class="ptp-media-grid">
+                                @foreach($this->mediaMessages->take(9) as $m)
+                                    <a href="{{ asset('storage/' . $m->attachment_path) }}" target="_blank">
+                                        @if($m->attachment_type === 'video')
+                                            <video>
+                                                <source src="{{ asset('storage/' . $m->attachment_path) }}">
+                                            </video>
+                                        @else
+                                            <img src="{{ asset('storage/' . $m->attachment_path) }}" alt="">
+                                        @endif
+                                    </a>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="ptp-info__empty">No photos or videos yet.</p>
+                        @endif
+                    </div>
+
+                    <div class="ptp-info__section">
+                        <h4 class="ptp-info__title">Files <span>{{ $this->fileMessages->count() }}</span></h4>
+                        @forelse($this->fileMessages as $f)
+                            <a href="{{ asset('storage/' . $f->attachment_path) }}" target="_blank" class="ptp-file">
+                                <div class="ptp-file__icon"><i class="fa-solid fa-file-lines"></i></div>
+                                <div class="ptp-file__meta">
+                                    <p class="ptp-file__name">{{ $f->attachment_name ?? 'Document' }}</p>
+                                    <p class="ptp-file__date">{{ $f->created_at->format('M j, Y') }}</p>
+                                </div>
+                            </a>
+                        @empty
+                            <p class="ptp-info__empty">No files shared yet.</p>
+                        @endforelse
+                    </div>
+
+                    <div class="ptp-info__section">
+                        <h4 class="ptp-info__title">Voice Notes <span>{{ $this->voiceMessages->count() }}</span></h4>
+                        @forelse($this->voiceMessages as $v)
+                            <div class="ptp-voice">
+                                <audio controls preload="metadata" src="{{ asset('storage/' . $v->attachment_path) }}"></audio>
+                                <div class="ptp-voice__date">{{ $v->created_at->diffForHumans() }}</div>
+                            </div>
+                        @empty
+                            <p class="ptp-info__empty">No voice notes yet.</p>
+                        @endforelse
+                    </div>
+                @else
+                    <div class="ptp-empty" style="padding: 60px 20px;">
+                        <div class="ptp-empty__icon"><i class="fa-regular fa-folder-open"></i></div>
+                        <h3>Shared content</h3>
+                        <p>Media, files and voice notes from a conversation will show up here.</p>
+                    </div>
+                @endif
+            </aside>
         </div>
     </div>
 
-    {{-- Call overlays --}}
+    <div class="ptp-ctx" id="ctx-menu" x-data="ctxMenuState()" @click.away="close()">
+        <div class="ptp-ctx__row">
+            <template x-for="emoji in ['👍','❤️','😂','😮','😢','🙏']" :key="emoji">
+                <button type="button" @click.stop.prevent="react(emoji)"><span x-text="emoji"></span></button>
+            </template>
+        </div>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('reply')"><i
+                class="fa-solid fa-reply"></i> Reply</button>
+        <template x-if="isMine && !isDeleted">
+            <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('edit')"><i
+                    class="fa-solid fa-pen"></i> Edit</button>
+        </template>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('forward')"><i
+                class="fa-solid fa-share"></i> Forward</button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('copy')"><i
+                class="fa-solid fa-copy"></i> Copy</button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('star')"><i
+                class="fa-solid fa-star"></i> Star / Unstar</button>
+        <button type="button" class="ptp-ctx__item" @click.stop.prevent="doAction('pin')"><i
+                class="fa-solid fa-thumbtack"></i> Pin / Unpin</button>
+        <div class="ptp-ctx__sep"></div>
+        <button type="button" class="ptp-ctx__item is-danger" @click.stop.prevent="doAction('deleteMe')">
+            <i class="fa-solid fa-trash"></i> Delete for me
+        </button>
+        <template x-if="isMine && !isDeleted">
+            <button type="button" class="ptp-ctx__item is-danger" @click.stop.prevent="doAction('deleteAll')">
+                <i class="fa-solid fa-trash-can"></i> Delete for everyone
+            </button>
+        </template>
+    </div>
+
     @livewire('admin.messenger.call-overlays')
 
-    {{-- ═══ REALTIME SCRIPTS ═══ --}}
     @push('scripts')
         <script>
-            // ── Alpine store and state ──
-            document.addEventListener('alpine:init', () => {
-                if (!Alpine.store('chat')) {
-                    Alpine.store('chat', { open: true });
-                }
-                window.pageChatState = pageChatState;
-            });
+            window.pageChatState = function pageChatState(initialFriendIds, friendNames, initialStarred, initialFriendId) {
+                const startTier = (() => {
+                    const w = window.innerWidth;
+                    if (w < 768) return 'mobile';
+                    if (w < 1200) return 'tablet';
+                    return 'desktop';
+                })();
 
-            // ── Livewire morph hooks ──
-            document.addEventListener('livewire:init', () => {
-                Livewire.hook('morph.updated', ({ el }) => {
-                    if (el && el.querySelectorAll && window.bootstrap?.Dropdown) {
-                        el.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (toggle) {
-                            bootstrap.Dropdown.getOrCreateInstance(toggle);
-                        });
-                    }
-                });
-            });
-
-            // ── Badge updater ──
-            window.addEventListener('unread-count-updated', function (e) {
-                const badge = document.getElementById('dz-msg-unread-badge');
-                if (!badge) return;
-                const count = e.detail?.count ?? 0;
-                if (count > 0) {
-                    badge.textContent = count > 99 ? '99+' : count;
-                    badge.style.display = '';
-                } else {
-                    badge.style.display = 'none';
-                }
-            });
-
-            // ═══════════════════════════════════════════════════════
-            // NOTE: All Echo subscription logic now lives ONCE in the
-            // shared `window.ChatBridge` object defined in the layout
-            // (layouts/users.blade.php). This is the file that was
-            // previously BROKEN — it used `getMessengerComponent()`,
-            // which grabbed the first Livewire component with a
-            // `friends` property, which was virtually always the
-            // navbar widget instead of this full-page component. So
-            // real-time messages updated the navbar popup but never
-            // this page, forcing a manual reload. That's fixed now:
-            // ChatBridge dispatches a GLOBAL `message-received` event,
-            // and THIS component (ChatMessengerMain) listens for it
-            // directly via #[On('message-received')] in its PHP class.
-            // ═══════════════════════════════════════════════════════
-
-            // ── Alpine component ──
-            function pageChatState(initialFriendIds, friendNames) {
                 return {
+                    tier: startTier,
+                    activePanel: (startTier === 'mobile' && initialFriendId) ? 'chat' : 'contacts',
+                    searchOpen: false,
+                    showStarredOnly: initialStarred === true,
+                    searchQuery: '',
                     showEmoji: false,
                     showAttachMenu: false,
                     showStickers: false,
@@ -830,30 +2159,150 @@
                     friendNames: friendNames,
                     search: '',
                     filteredCount: initialFriendIds.length,
+                    activeFriendId: initialFriendId,
+                    switchingFriend: false,
+                    recording: false,
+                    mediaRecorder: null,
+                    audioChunks: [],
+                    recordingStart: 0,
+                    recordingTimeFormatted: '00:00',
+                    timerInterval: null,
+                    _swipeStartX: 0,
+                    _swipeStartY: 0,
 
                     init() {
-                        window.ChatBridge.subscribeToProfileUpdates(this.friendIds);
-
+                        this.recording = false;
+                        if (this.timerInterval) { clearInterval(this.timerInterval); this.timerInterval = null; }
+                        this.setViewportHeight();
+                        this.recomputeTier();
+                        window.addEventListener('resize', () => { this.setViewportHeight(); this.recomputeTier(); });
+                        window.addEventListener('orientationchange', () => setTimeout(() => this.setViewportHeight(), 150));
+                        if (window.visualViewport) {
+                            window.visualViewport.addEventListener('resize', () => this.setViewportHeight());
+                            window.visualViewport.addEventListener('scroll', () => this.setViewportHeight());
+                        }
+                        this.$watch('searchOpen', (open) => {
+                            if (open) this.$nextTick(() => this.$refs.searchInput?.focus());
+                        });
+                        if (window.ChatBridge && window.ChatBridge.subscribeToProfileUpdates) {
+                            window.ChatBridge.subscribeToProfileUpdates(this.friendIds);
+                        }
                         const self = this;
                         this.$watch('friendIds', function (newIds) {
-                            window.ChatBridge.subscribeToProfileUpdates(newIds);
+                            if (window.ChatBridge && window.ChatBridge.subscribeToProfileUpdates) {
+                                window.ChatBridge.subscribeToProfileUpdates(newIds);
+                            }
                             self.filterFriends();
                         });
-
                         window.addEventListener('update-profile-subscriptions', function (e) {
                             if (e.detail && e.detail.friendIds) {
                                 self.friendIds = e.detail.friendIds;
                                 self.filterFriends();
                             }
                         });
-
                         window.addEventListener('friend-selected', function (e) {
                             if (e.detail && e.detail.friendId) {
-                                window.ChatBridge.subscribeToChat(e.detail.friendId);
+                                self.activeFriendId = e.detail.friendId;
+                                if (window.ChatBridge) window.ChatBridge.subscribeToChat(e.detail.friendId);
                             }
+                            if (self.tier === 'mobile') self.activePanel = 'chat';
+                            // Reset in-chat search state on friend switch
+                            self.searchOpen = false;
+                            self.searchQuery = '';
+                            self.$wire.set('searchQuery', '');
                         });
-
+                        setInterval(() => {
+                            if (self.messageText && self.messageText.trim()) {
+                                self.$wire.saveDraft();
+                            }
+                        }, 4000);
                         this.$nextTick(() => window.forcePageBot());
+                        this.setupSwipeBack();
+                    },
+
+                    setViewportHeight() {
+                        const root = this.$root;
+                        if (!root) return;
+                        const vv = window.visualViewport;
+                        const viewportHeight = vv ? vv.height : window.innerHeight;
+                        const shell = root.querySelector('.ptp-shell');
+                        if (!shell) return;
+                        // Measure the shell's top position in the current viewport.
+                        // If it's partially scrolled off (negative), treat as 0 so
+                        // the shell fills the whole viewport and only the messages
+                        // area scrolls internally.
+                        const rect = shell.getBoundingClientRect();
+                        const top = Math.max(0, rect.top);
+                        const available = Math.max(360, viewportHeight - top - 20);
+                        shell.style.height = available + 'px';
+                    },
+
+                    recomputeTier() {
+                        const w = window.innerWidth;
+                        const next = w < 768 ? 'mobile' : (w < 1200 ? 'tablet' : 'desktop');
+                        if (next === this.tier) return;
+                        const wasMobile = this.tier === 'mobile';
+                        this.tier = next;
+                        if (next === 'mobile') {
+                            this.activePanel = this.activeFriendId ? 'chat' : 'contacts';
+                        } else if (wasMobile) {
+                            this.activePanel = 'contacts';
+                        }
+                    },
+
+                    setupSwipeBack() {
+                        const root = this.$root;
+                        if (!root) return;
+                        const self = this;
+                        root.addEventListener('touchstart', (e) => {
+                            if (self.tier !== 'mobile' || self.activePanel !== 'chat') return;
+                            self._swipeStartX = e.touches[0].clientX;
+                            self._swipeStartY = e.touches[0].clientY;
+                        }, { passive: true });
+                        root.addEventListener('touchend', (e) => {
+                            if (self.tier !== 'mobile' || self.activePanel !== 'chat') return;
+                            const dx = e.changedTouches[0].clientX - self._swipeStartX;
+                            const dy = e.changedTouches[0].clientY - self._swipeStartY;
+                            if (self._swipeStartX < 40 && dx > 60 && Math.abs(dy) < 50) {
+                                self.onBack();
+                            }
+                        }, { passive: true });
+                    },
+
+                    onBack() {
+                        this.searchOpen = false;
+                        this.searchQuery = '';
+                        this.$wire.set('searchQuery', '');
+                        this.activeFriendId = null;
+                        if (this.tier === 'mobile') this.activePanel = 'contacts';
+                        this.$wire.goBack();
+                    },
+
+                    /* ═════════════════════════════════════════════════
+                       IN-CONVERSATION SEARCH — real time
+                    ═════════════════════════════════════════════════ */
+                    openSearch() {
+                        this.searchOpen = true;
+                    },
+
+                    liveSearch() {
+                        // Push the current Alpine input into Livewire.
+                        // Debounce is handled by Alpine's @input.debounce.
+                        this.$wire.set('searchQuery', this.searchQuery ?? '');
+                    },
+
+                    // Kept as an alias in case anything still references it
+                    commitSearch() { this.liveSearch(); },
+
+                    closeSearch() {
+                        this.searchQuery = '';
+                        this.searchOpen = false;
+                        this.$wire.set('searchQuery', '');
+                    },
+
+                    toggleStarred() {
+                        this.showStarredOnly = !this.showStarredOnly;
+                        this.$wire.set('showStarredOnly', this.showStarredOnly);
                     },
 
                     isVisible(id, nameLower) {
@@ -866,15 +2315,35 @@
                         this.filteredCount = Object.values(this.friendNames)
                             .filter(n => n.toLowerCase().includes(s)).length;
                     },
+                    selectFriend(id) {
+                        if (this.switchingFriend) return;
+                        this.switchingFriend = true;
+                        Promise.resolve(this.$wire.setActiveFriend(id))
+                            .then(() => {
+                                this.activeFriendId = id;
+                                this.searchOpen = false;
+                                this.searchQuery = '';
+                                this.$wire.set('searchQuery', '');
+                                if (this.tier === 'mobile') this.activePanel = 'chat';
+                                if (window.ChatBridge && window.ChatBridge.subscribeToChat) {
+                                    window.ChatBridge.subscribeToChat(id);
+                                }
+                                this.$nextTick(() => {
+                                    this.setViewportHeight();
+                                    window.forcePageBot();
+                                });
+                            })
+                            .catch((e) => { console.error('[Chat] Failed to open conversation:', e); })
+                            .finally(() => { this.switchingFriend = false; });
+                    },
+
                     onSend() {
                         this.showEmoji = false;
                         this.showAttachMenu = false;
                         this.showStickers = false;
                         window.forcePageBot();
                     },
-                    addEmoji(e) {
-                        this.messageText += e.detail.unicode;
-                    },
+                    addEmoji(e) { this.messageText += e.detail.unicode; },
                     startTyping() {
                         if (!this.isTyping) {
                             this.isTyping = true;
@@ -885,39 +2354,192 @@
                         }
                     },
                     handleKeydown(event) {
+                        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+                            event.preventDefault(); this.openSearch(); return;
+                        }
+                        if (event.key === 'Escape') {
+                            if (this.searchOpen) { this.closeSearch(); return; }
+                            this.$wire.cancelReply(); this.$wire.cancelEdit(); return;
+                        }
                         this.startTyping();
                         if (event.key === 'Enter' && !event.shiftKey) {
                             event.preventDefault();
                             this.$wire.sendMessage();
-                            this.showEmoji = false;
-                            this.showAttachMenu = false;
+                            this.showEmoji = false; this.showAttachMenu = false;
                             window.forcePageBot();
                         }
                     },
                     startCall(type, friendId, friendName, friendAvatar) {
-                        window.CallManager.startCall(type, friendId, friendName, friendAvatar);
+                        if (window.CallManager) window.CallManager.startCall(type, friendId, friendName, friendAvatar);
+                    },
+                    openContextMenu(e, msgId, isMine, isDeleted) {
+                        e.stopPropagation();
+                        var menu = document.getElementById('ctx-menu');
+                        if (!menu) return;
+                        if (window.Alpine) {
+                            var data = Alpine.$data(menu);
+                            if (data) { data.msgId = msgId; data.isMine = isMine; data.isDeleted = isDeleted; }
+                        }
+                        var rect = e.currentTarget.getBoundingClientRect();
+                        var top = Math.min(window.innerHeight - 380, rect.bottom + 4);
+                        var left = Math.min(window.innerWidth - 220, rect.left);
+                        menu.style.top = Math.max(8, top) + 'px';
+                        menu.style.left = Math.max(8, left) + 'px';
+                        menu.classList.add('show');
+                    },
+                    quickReact(e, msgId) { this.openContextMenu(e, msgId, false, false); },
+                    handleDrop(ev) {
+                        const file = ev.dataTransfer.files?.[0];
+                        if (!file) return;
+                        this.uploadFile(file);
+                    },
+                    handlePaste(ev) {
+                        const items = ev.clipboardData?.items || [];
+                        for (const item of items) {
+                            if (item.type.startsWith('image/')) {
+                                const file = item.getAsFile();
+                                if (file) {
+                                    this.uploadFile(new File([file], `pasted_${Date.now()}.png`, { type: file.type }));
+                                    break;
+                                }
+                            }
+                        }
+                    },
+                    uploadFile(file) {
+                        const dt = new DataTransfer();
+                        dt.items.add(file);
+                        let input = document.querySelector('input[type=file][wire\\:model="attachment"]');
+                        if (!input) {
+                            input = document.createElement('input');
+                            input.type = 'file';
+                            input.setAttribute('wire:model', 'attachment');
+                            input.style.display = 'none';
+                            document.body.appendChild(input);
+                            if (window.Livewire && window.Livewire.rescan) window.Livewire.rescan();
+                        }
+                        input.files = dt.files;
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    },
+                    async toggleRecording() {
+                        if (this.recording) { this.stopRecording(); return; }
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            this.mediaRecorder = new MediaRecorder(stream);
+                            this.audioChunks = [];
+                            this.recordingStart = Date.now();
+                            this.recording = true;
+                            this.recordingTimeFormatted = '00:00';
+                            this.timerInterval = setInterval(() => {
+                                const s = Math.floor((Date.now() - this.recordingStart) / 1000);
+                                const m = String(Math.floor(s / 60)).padStart(2, '0');
+                                const ss = String(s % 60).padStart(2, '0');
+                                this.recordingTimeFormatted = `${m}:${ss}`;
+                            }, 500);
+                            this.mediaRecorder.ondataavailable = e => {
+                                if (e.data.size) this.audioChunks.push(e.data);
+                            };
+                            this.mediaRecorder.onstop = () => {
+                                const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                    const duration = Math.floor((Date.now() - this.recordingStart) / 1000);
+                                    this.$wire.sendVoiceNote(reader.result, duration);
+                                };
+                                reader.readAsDataURL(blob);
+                                stream.getTracks().forEach(t => t.stop());
+                            };
+                            this.mediaRecorder.start();
+                        } catch (e) {
+                            alert('Microphone permission required.');
+                            this.recording = false;
+                        }
+                    },
+                    stopRecording() {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
+                        this.recording = false;
+                        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+                    },
+                    cancelRecording() {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
+                        this.recording = false;
+                        if (this.mediaRecorder) {
+                            this.mediaRecorder.onstop = null;
+                            if (this.mediaRecorder.state !== 'inactive') this.mediaRecorder.stop();
+                            this.mediaRecorder.stream?.getTracks().forEach(t => t.stop());
+                        }
                     },
                 };
-            }
+            };
+
+            window.ctxMenuState = function ctxMenuState() {
+                return {
+                    msgId: null, isMine: false, isDeleted: false,
+                    react(emoji) {
+                        if (this.msgId) this.$wire.toggleReaction(this.msgId, emoji);
+                        this.close();
+                    },
+                    doAction(action) {
+                        const id = this.msgId;
+                        if (!id) return;
+                        switch (action) {
+                            case 'reply': this.$wire.setReply(id); break;
+                            case 'edit': this.$wire.setEdit(id); break;
+                            case 'forward': this.$wire.startForward(id); break;
+                            case 'copy': this.$wire.copyMessage(id); break;
+                            case 'star': this.$wire.toggleStar(id); break;
+                            case 'pin': this.$wire.togglePin(id); break;
+                            case 'deleteMe': this.$wire.deleteForMe(id); break;
+                            case 'deleteAll': this.$wire.deleteForEveryone(id); break;
+                        }
+                        this.close();
+                    },
+                    close() { document.getElementById('ctx-menu')?.classList.remove('show'); },
+                };
+            };
+
+            document.addEventListener('alpine:init', () => {
+                if (!Alpine.store('chat')) Alpine.store('chat', { open: true });
+            });
+
+            document.addEventListener('livewire:init', () => {
+                Livewire.hook('morph.updated', ({ el }) => {
+                    if (el && el.querySelectorAll && window.bootstrap?.Dropdown) {
+                        el.querySelectorAll('[data-bs-toggle="dropdown"]').forEach(function (toggle) {
+                            bootstrap.Dropdown.getOrCreateInstance(toggle);
+                        });
+                    }
+                });
+            });
+
+            window.addEventListener('unread-count-updated', function (e) {
+                const badge = document.getElementById('dz-msg-unread-badge');
+                if (!badge) return;
+                const count = e.detail?.count ?? 0;
+                if (count > 0) {
+                    badge.textContent = count > 99 ? '99+' : count;
+                    badge.style.display = '';
+                } else {
+                    badge.style.display = 'none';
+                }
+            });
 
             window.forcePageBot = function () {
                 var el = document.getElementById('DZ_Page_Messages_Body');
                 if (el) el.scrollTop = el.scrollHeight;
             };
 
-            window.addEventListener('scroll-to-bottom', function () {
-                window.forcePageBot();
-            });
+            window.addEventListener('scroll-to-bottom', function () { window.forcePageBot(); });
 
             window.addEventListener('clear-input', function () {
                 var el = document.querySelector('[x-model="messageText"]');
                 if (el) el.value = '';
             });
 
-
             document.addEventListener('livewire:initialized', function () {
                 var initialFriendId = @json($activeFriendId);
-                if (initialFriendId) {
+                if (initialFriendId && window.ChatBridge) {
                     window.ChatBridge.subscribeToChat(initialFriendId);
                 }
             });

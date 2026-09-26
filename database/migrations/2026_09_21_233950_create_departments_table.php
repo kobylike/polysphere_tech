@@ -13,24 +13,21 @@ return new class extends Migration
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
-            // ── Identity ────────────────────────────────────────────
+
             $table->string('code', 20)->nullable();
             $table->string('color', 20)->nullable();
             $table->string('icon', 60)->nullable();
 
-            // ── Hierarchy ───────────────────────────────────────────
             $table->foreignId('parent_id')->nullable()
                 ->constrained('departments')->nullOnDelete();
             $table->foreignId('head_id')->nullable()
                 ->constrained('users')->nullOnDelete();
             $table->unsignedInteger('display_order')->default(0);
 
-            // ── Contact ─────────────────────────────────────────────
             $table->string('email', 120)->nullable();
             $table->string('phone', 40)->nullable();
             $table->string('location', 120)->nullable();
 
-            // ── Operations ──────────────────────────────────────────
             $table->decimal('budget', 15, 2)->nullable();
             $table->unsignedInteger('headcount_target')->nullable();
             $table->date('founded_at')->nullable();
@@ -40,10 +37,22 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
+
+        // ── Now that departments exists, attach the FK on user_profiles ──
+        Schema::table('user_profiles', function (Blueprint $table) {
+            $table->foreign('department_id')
+                ->references('id')->on('departments')
+                ->nullOnDelete();
+        });
     }
 
     public function down(): void
     {
+        // Drop FK before dropping departments
+        Schema::table('user_profiles', function (Blueprint $table) {
+            $table->dropForeign(['department_id']);
+        });
+
         Schema::dropIfExists('departments');
     }
 };
