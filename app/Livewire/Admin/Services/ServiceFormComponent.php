@@ -253,7 +253,7 @@ class ServiceFormComponent extends Component
                 'order'      => $this->order,
             ], 'service');
 
-            session()->flash('success', 'Service updated successfully!');
+            $this->dispatch('notify', ['type' => 'success', 'title' => 'Updated', 'message' => 'Project updated successfully.']);
         } else {
             $this->authorize('create', Service::class);
             $maxOrder = Service::max('order') ?? 0;
@@ -268,7 +268,8 @@ class ServiceFormComponent extends Component
                 'order'      => $service->order,
             ], 'service');
 
-            session()->flash('success', 'Service created successfully!');
+            // session()->flash('success', 'Service created successfully!');
+            $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Service created successfully.']);
         }
 
         return $this->redirectRoute('admin.services.index', navigate: true);

@@ -146,7 +146,8 @@ class PostFormComponent extends Component
             'name'        => $category->name,
         ], 'category');
 
-        session()->flash('message', 'Category added successfully!');
+        // session()->flash('message', 'Category added successfully!');
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Category created successfully!']);
     }
 
     public function addTag()
@@ -167,7 +168,8 @@ class PostFormComponent extends Component
             'name'   => $tag->name,
         ], 'tag');
 
-        session()->flash('message', 'Tag added successfully!');
+        // session()->flash('message', 'Tag added successfully!');
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Tag added successfully!']);
     }
 
     public function save()
@@ -215,7 +217,8 @@ class PostFormComponent extends Component
                 'status'  => $post->status,
             ], 'post');
 
-            session()->flash('success', 'Post updated successfully!');
+            // session()->flash('success', 'Post updated successfully!');
+            $this->dispatch('notify', ['type' => 'success', 'title' => 'Updated', 'message' => 'Post updated successfully!']);
         } else {
             $this->authorize('create', Post::class);
             $post = Post::create($data);
@@ -228,8 +231,10 @@ class PostFormComponent extends Component
                 'status'  => $post->status,
             ], 'post');
 
-            session()->flash('success', 'Post created successfully!');
+            // session()->flash('success', 'Post created successfully!');
+            $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Post created successfully!']);
         }
+
 
         $this->redirectRoute('manage.posts', navigate: true);
     }

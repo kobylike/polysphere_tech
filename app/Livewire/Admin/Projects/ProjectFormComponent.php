@@ -504,7 +504,8 @@ class ProjectFormComponent extends Component
                 'client' => $this->client,
                 'company' => $this->company,
             ], 'project');
-            session()->flash('success', 'Project updated successfully!');
+            // session()->flash('success', 'Project updated successfully!');
+            $this->dispatch('notify', ['type' => 'success', 'title' => 'Updated', 'message' => 'Project updated successfully!']);
         } else {
             $project = Project::create($data);
             ActivityLogger::log('Project created', [
@@ -516,7 +517,8 @@ class ProjectFormComponent extends Component
                 'client' => $this->client,
                 'company' => $this->company,
             ], 'project');
-            session()->flash('success', 'Project created successfully!');
+            // session()->flash('success', 'Project created successfully!');
+            $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Project created successfully!']);
         }
 
 

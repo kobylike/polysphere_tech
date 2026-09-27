@@ -13,9 +13,15 @@
     <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
     <meta name="bingbot" content="noindex, nofollow">
 
-    <title>{{ $title ?? 'Admin · Polysphere Tech' }}</title>
+    {{--
+    $dashboardLabel is supplied by App\View\Composers\DashboardLabelComposer
+    (registered in AppServiceProvider) and resolves to "Admin Panel",
+    "Employee Dashboard", or plain "Dashboard" based on the logged-in
+    user's role + employee profile. See REGISTER_COMPOSER.md.
+    --}}
+    <title>{{ $title ?? ($dashboardLabel ?? 'Dashboard') . ' · Polysphere Tech' }}</title>
 
-    <meta name="description" content="Polysphere Tech admin panel.">
+    <meta name="description" content="Polysphere Tech {{ strtolower($dashboardLabel ?? 'dashboard') }}.">
     <meta name="author" content="Polysphere Tech">
 
     <!-- Canonical (defensive — in case noindex is ever removed) -->

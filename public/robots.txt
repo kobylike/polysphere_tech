@@ -1,2 +1,33 @@
 User-agent: *
-Disallow:
+Allow: /
+
+# Auth
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /two-factor-verification
+Disallow: /email/verify
+Disallow: /force-password-change
+
+# Authenticated app / dashboard area
+Disallow: /account
+Disallow: /dashboard
+Disallow: /chat-messenger
+Disallow: /chat-leads
+Disallow: /call
+
+# User & content management
+Disallow: /user-management
+Disallow: /hr
+Disallow: /blog-management
+Disallow: /category-management
+Disallow: /projects-management
+Disallow: /services-management
+Disallow: /vacancies-management
+Disallow: /applications
+Disallow: /departments-management
+Disallow: /notifications
+Disallow: /admin
+
+Sitemap: https://polyspheretech.com/sitemap.xml
