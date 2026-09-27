@@ -17,6 +17,14 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('company')->nullable();
 
+            // ─── Intent & qualification ──────────────────────────
+            $table->json('services_interested')->nullable();
+            $table->string('industry', 100)->nullable();
+            $table->string('budget_range', 150)->nullable();
+            $table->string('timeline', 100)->nullable();
+            $table->string('urgency', 20)->nullable();
+            $table->string('preferred_contact', 30)->nullable();
+
             // ─── Session / request metadata ──────────────────────
             $table->string('session_id', 100)->index();
             $table->string('ip_address', 45)->nullable();
@@ -54,6 +62,8 @@ return new class extends Migration
             $table->index(['is_spam', 'created_at']);
             $table->index(['is_starred', 'created_at']);
             $table->index('score');
+            $table->index('industry');
+            $table->index('urgency');
         });
     }
 

@@ -22,7 +22,6 @@
             <li class="breadcrumb-item active"><a href="javascript:void(0)">Chat Leads</a></li>
         </ol>
         <div class="d-flex gap-2 align-items-center">
-            {{-- Live indicator + pause toggle --}}
             <span
                 class="badge border-0 d-flex align-items-center gap-1 px-2 py-1 {{ $this->shouldPoll ? 'text-success' : 'text-secondary' }}"
                 style="font-size:11px; background: {{ $this->shouldPoll ? '#d1fae5' : '#f1f5f9' }};"
@@ -142,11 +141,11 @@
 
         {{-- FILTERS & BULK BAR --}}
         <div class="row align-items-center mb-3 g-2">
-            <div class="col-xl-9 col-lg-8">
+            <div class="col-xl-12">
                 <div class="d-flex flex-wrap gap-2">
                     <div class="search-box">
                         <input type="text" class="form-control form-control-sm"
-                            placeholder="Search email, name, phone, message, IP…"
+                            placeholder="Search email, name, service, industry, message…"
                             wire:model.live.debounce.300ms="search">
                         <i class="fa-solid fa-search"></i>
                     </div>
@@ -171,6 +170,41 @@
                         <option value="warm">🌤 Warm (40–69)</option>
                         <option value="cold">❄ Cold (&lt;40)</option>
                     </select>
+
+                    @if(!empty($knownServices))
+                        <select class="default-select style-1 form-control form-control-sm w-auto"
+                            wire:model.live="serviceFilter">
+                            <option value="">All Services</option>
+                            @foreach($knownServices as $svc)
+                                <option value="{{ $svc }}">{{ $svc }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+
+                    @if(!empty($knownIndustries))
+                        <select class="default-select style-1 form-control form-control-sm w-auto"
+                            wire:model.live="industryFilter">
+                            <option value="">All Industries</option>
+                            @foreach($knownIndustries as $ind)
+                                <option value="{{ $ind }}">{{ $ind }}</option>
+                            @endforeach
+                        </select>
+                    @endif
+
+                    <select class="default-select style-1 form-control form-control-sm w-auto"
+                        wire:model.live="urgencyFilter">
+                        <option value="">Any Urgency</option>
+                        <option value="high">🔴 High</option>
+                        <option value="medium">🟠 Medium</option>
+                    </select>
+
+                    <select class="default-select style-1 form-control form-control-sm w-auto"
+                        wire:model.live="budgetFilter">
+                        <option value="">Any Budget</option>
+                        <option value="has">Budget mentioned</option>
+                        <option value="none">No budget yet</option>
+                    </select>
+
                     <select class="default-select style-1 form-control form-control-sm w-auto"
                         wire:model.live="dateRange">
                         <option value="">All Time</option>
@@ -213,10 +247,9 @@
                         </div>
                     </div>
                 @endif
-            </div>
-            @if(count($selectedLeads) > 0)
-                <div class="col-xl-3 col-lg-4 text-end">
-                    <div class="d-flex flex-wrap gap-1 justify-content-end">
+
+                @if(count($selectedLeads) > 0)
+                    <div class="d-flex flex-wrap gap-1 mt-3">
                         <span class="badge bg-dark text-white p-2">{{ count($selectedLeads) }} selected</span>
                         <button class="btn btn-success btn-sm" wire:click="bulkMarkContacted" title="Mark contacted">
                             <i class="fa-solid fa-paper-plane"></i>
@@ -235,8 +268,8 @@
                             <i class="fa-solid fa-trash"></i>
                         </button>
                     </div>
-                </div>
-            @endif
+                @endif
+            </div>
         </div>
 
         {{-- TABLE --}}
@@ -275,6 +308,7 @@
                                             @endif
                                         </th>
                                         <th>Contact</th>
+                                        <th>Interest</th>
                                         <th class="text-center" wire:click="sort('score')"
                                             style="cursor:pointer; width:100px;">
                                             Score
@@ -371,6 +405,52 @@
                                                                 style="font-size:10px;"></i>{{ $lead->company }}</div>
                                                     @endif
                                                     @if(!$lead->phone && !$lead->company)
+                                                        <span class="text-muted small">—</span>
+                                                    @endif
+                                                </div>
+                                            </td>
+
+                                            {{-- INTEREST --}}
+                                            <td>
+                                                <div class="d-flex flex-column gap-1" style="max-width:200px;">
+                                                    @if(!empty($lead->services_interested))
+                                                        <div class="d-flex flex-wrap gap-1">
+                                                            @foreach(array_slice($lead->services_interested, 0, 2) as $svc)
+                                                                <span class="badge bg-primary text-white border-0"
+                                                                    style="font-size:10px;">{{ $svc }}</span>
+                                                            @endforeach
+                                                            @if(count($lead->services_interested) > 2)
+                                                                <span class="badge bg-secondary border-0"
+                                                                    style="font-size:10px;">+{{ count($lead->services_interested) - 2 }}</span>
+                                                            @endif
+                                                        </div>
+                                                    @endif
+
+                                                    @if($lead->industry)
+                                                        <div class="small text-muted" style="font-size:11px;">
+                                                            <i class="fa-solid fa-industry" style="opacity:.6;"></i>
+                                                            {{ $lead->industry }}
+                                                        </div>
+                                                    @endif
+
+                                                    @if($lead->budget_range)
+                                                        <div class="small" style="font-size:11px; color:#16a34a;">
+                                                            <i class="fa-solid fa-money-bill-wave" style="opacity:.7;"></i>
+                                                            {{ $lead->budget_range }}
+                                                        </div>
+                                                    @endif
+
+                                                    @if($lead->urgency_meta)
+                                                        <div>
+                                                            <span class="badge border-0"
+                                                                style="background: {{ $lead->urgency_meta['color'] }}22; color: {{ $lead->urgency_meta['color'] }}; font-size:10px;">
+                                                                <i class="fa-solid {{ $lead->urgency_meta['icon'] }} me-1"></i>
+                                                                {{ $lead->urgency_meta['label'] }} urgency
+                                                            </span>
+                                                        </div>
+                                                    @endif
+
+                                                    @if(empty($lead->services_interested) && empty($lead->industry) && empty($lead->budget_range) && empty($lead->urgency))
                                                         <span class="text-muted small">—</span>
                                                     @endif
                                                 </div>
@@ -480,11 +560,11 @@
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="9" class="text-center py-5">
+                                            <td colspan="10" class="text-center py-5">
                                                 <i class="fa-solid fa-inbox fs-2 d-block mb-2 text-muted"></i>
                                                 <h5>No leads found</h5>
-                                                <p class="text-muted">Leads will appear here as visitors share their details
-                                                    in the chat widget.</p>
+                                                <p class="text-muted">Leads will appear here as visitors share their
+                                                    details in the chat widget.</p>
                                             </td>
                                         </tr>
                                     @endforelse
@@ -615,6 +695,84 @@
                                     </table>
                                 </div>
 
+                                {{-- Intent & Qualification --}}
+                                @if($viewingLead->services_interested || $viewingLead->industry || $viewingLead->budget_range || $viewingLead->timeline || $viewingLead->urgency || $viewingLead->preferred_contact)
+                                    <div class="mb-3">
+                                        <div class="small text-uppercase fw-bold text-muted mb-2"
+                                            style="letter-spacing:.05em; font-size:11px;">Intent &amp; Qualification</div>
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tbody>
+                                                @if($viewingLead->services_interested)
+                                                    <tr>
+                                                        <td class="text-muted small" style="width:120px;">
+                                                            <i class="fa-solid fa-briefcase me-1"></i> Services
+                                                        </td>
+                                                        <td class="small">
+                                                            <div class="d-flex flex-wrap gap-1">
+                                                                @foreach($viewingLead->services_interested as $svc)
+                                                                    <span class="badge bg-primary text-white border-0"
+                                                                        style="font-size:11px;">{{ $svc }}</span>
+                                                                @endforeach
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                @endif
+
+                                                @if($viewingLead->industry)
+                                                    <tr>
+                                                        <td class="text-muted small"><i class="fa-solid fa-industry me-1"></i>
+                                                            Industry</td>
+                                                        <td class="small fw-semibold">{{ $viewingLead->industry }}</td>
+                                                    </tr>
+                                                @endif
+
+                                                @if($viewingLead->budget_range)
+                                                    <tr>
+                                                        <td class="text-muted small"><i
+                                                                class="fa-solid fa-money-bill-wave me-1"></i> Budget</td>
+                                                        <td class="small fw-semibold" style="color:#16a34a;">
+                                                            {{ $viewingLead->budget_range }}
+                                                        </td>
+                                                    </tr>
+                                                @endif
+
+                                                @if($viewingLead->timeline)
+                                                    <tr>
+                                                        <td class="text-muted small"><i class="fa-solid fa-calendar-days me-1"></i>
+                                                            Timeline</td>
+                                                        <td class="small fw-semibold">{{ $viewingLead->timeline }}</td>
+                                                    </tr>
+                                                @endif
+
+                                                @if($viewingLead->urgency_meta)
+                                                    <tr>
+                                                        <td class="text-muted small"><i class="fa-solid fa-bolt me-1"></i>
+                                                            Urgency</td>
+                                                        <td class="small">
+                                                            <span class="badge border-0"
+                                                                style="background: {{ $viewingLead->urgency_meta['color'] }}22; color: {{ $viewingLead->urgency_meta['color'] }};">
+                                                                <i
+                                                                    class="fa-solid {{ $viewingLead->urgency_meta['icon'] }} me-1"></i>
+                                                                {{ $viewingLead->urgency_meta['label'] }}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                @endif
+
+                                                @if($viewingLead->preferred_contact)
+                                                    <tr>
+                                                        <td class="text-muted small"><i class="fa-solid fa-headset me-1"></i>
+                                                            Prefers</td>
+                                                        <td class="small fw-semibold">
+                                                            {{ ucfirst($viewingLead->preferred_contact) }}
+                                                        </td>
+                                                    </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @endif
+
                                 {{-- Metadata --}}
                                 <div class="mb-3">
                                     <div class="small text-uppercase fw-bold text-muted mb-2"
@@ -634,7 +792,8 @@
                                             </tr>
                                             @if($viewingLead->page_url)
                                                 <tr>
-                                                    <td class="text-muted small"><i class="fa-solid fa-link me-1"></i> Page</td>
+                                                    <td class="text-muted small"><i class="fa-solid fa-link me-1"></i> Page
+                                                    </td>
                                                     <td class="small text-break">
                                                         <a href="{{ $viewingLead->page_url }}" target="_blank" rel="noopener"
                                                             class="text-decoration-none">
@@ -669,7 +828,8 @@
                                                     <td class="small">
                                                         {{ $viewingLead->contacted_at->diffForHumans() }}
                                                         @if($viewingLead->contactedBy)
-                                                            <span class="text-muted">by {{ $viewingLead->contactedBy->name }}</span>
+                                                            <span class="text-muted">by
+                                                                {{ $viewingLead->contactedBy->name }}</span>
                                                         @endif
                                                     </td>
                                                 </tr>
@@ -712,7 +872,6 @@
                                     <small class="text-muted">Full transcript</small>
                                 </div>
 
-                                {{-- Original triggering message --}}
                                 <div class="mb-4 p-3 rounded-3"
                                     style="background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 4px solid #f59e0b;">
                                     <div class="small text-uppercase fw-bold mb-1"
@@ -722,7 +881,6 @@
                                     <p class="mb-0 small" style="white-space: pre-wrap;">{{ $viewingLead->message }}</p>
                                 </div>
 
-                                {{-- Conversation thread --}}
                                 @if($viewingLead->conversation && count($viewingLead->conversation) > 0)
                                     <div class="lead-thread">
                                         @foreach($viewingLead->conversation as $turn)
@@ -743,7 +901,6 @@
                                     </div>
                                 @endif
 
-                                {{-- Notes section --}}
                                 <div class="mt-4 pt-4" style="border-top: 1px solid #e2e8f0;">
                                     <div class="d-flex align-items-center justify-content-between mb-2">
                                         <h6 class="mb-0">
@@ -994,8 +1151,6 @@
                     </div>
 
                     <div class="modal-body p-4">
-
-                        {{-- Recipient --}}
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted text-uppercase"
                                 style="letter-spacing:.05em; font-size:11px;">To</label>
@@ -1013,7 +1168,6 @@
                             </div>
                         </div>
 
-                        {{-- Subject --}}
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted text-uppercase"
                                 style="letter-spacing:.05em; font-size:11px;">Subject</label>
@@ -1022,7 +1176,6 @@
                             <div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Body --}}
                         <div class="mb-3">
                             <label class="form-label small fw-bold text-muted text-uppercase"
                                 style="letter-spacing:.05em; font-size:11px;">Message</label>
@@ -1032,17 +1185,17 @@
                             <div class="text-danger small mt-1">{{ $message }}</div>@enderror
                         </div>
 
-                        {{-- Quick context from the chat --}}
                         @if($replyLead->message)
                             <div class="p-3 rounded-3 mt-3" style="background:#F8FAFC; border:1px solid #E2E8F0;">
                                 <div class="small text-uppercase fw-bold text-muted mb-2"
                                     style="letter-spacing:.05em; font-size:11px;">
                                     <i class="fa-solid fa-quote-left me-1"></i> Original message
                                 </div>
-                                <div class="small" style="white-space:pre-wrap; color:#334155;">{{ $replyLead->message }}</div>
+                                <div class="small" style="white-space:pre-wrap; color:#334155;">
+                                    {{ $replyLead->message }}
+                                </div>
                             </div>
                         @endif
-
                     </div>
 
                     <div class="modal-footer justify-content-between">
@@ -1182,7 +1335,6 @@
         line-height: 1;
     }
 
-    /* Conversation thread in modal */
     .lead-thread {
         display: flex;
         flex-direction: column;
@@ -1236,7 +1388,6 @@
         min-width: 0;
     }
 
-    /* Live polling indicator */
     .live-dot {
         width: 8px;
         height: 8px;

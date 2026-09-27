@@ -8,6 +8,7 @@ use App\Mail\VisitorLeadAcknowledgement;
 use App\Models\ChatLead;
 use App\Models\User;
 use App\Services\ChatKnowledgeBase;
+use App\Services\LeadIntentDetector;
 use App\Services\LeadSpamFilter;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -28,7 +29,6 @@ class ChatWidget extends Component
 
     public bool $hasUnread = false;
 
-    /** Set to true on the request where we captured a brand-new lead. */
     public bool $leadJustCaptured = false;
 
     protected int $maxHistory = 20;
@@ -37,10 +37,8 @@ class ChatWidget extends Component
 
     protected int $leadLockMinutes = 30;
 
-    /** Session rate limit: 15 messages per minute. */
     protected int $sessionRateLimit = 15;
 
-    /** IP rate limit: 60 messages per hour. */
     protected int $ipRateLimit = 60;
 
     protected int $ipRateWindowSeconds = 3600;
@@ -99,14 +97,9 @@ class ChatWidget extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Human handoff — short-circuit                              */
+    /*  Human handoff short-circuit                                */
     /* ──────────────────────────────────────────────────────────── */
 
-    /**
-     * Detect messages where the visitor clearly wants a human.
-     * These get a canned reply without calling Gemini — so a
-     * Gemini hiccup never blocks the most important conversion path.
-     */
     protected function isHumanHandoffRequest(string $text): bool
     {
         $normalized = mb_strtolower(trim($text));
@@ -150,10 +143,6 @@ class ChatWidget extends Component
         return false;
     }
 
-    /**
-     * Canned reply for the human-handoff path. Varies slightly by
-     * whether the visitor has already shared an email.
-     */
     protected function humanHandoffReply(): string
     {
         $sessionId    = session()->getId();
@@ -170,7 +159,7 @@ class ChatWidget extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Prompt construction                                        */
+    /*  Prompt                                                     */
     /* ──────────────────────────────────────────────────────────── */
 
     protected function faqBlock(): string
@@ -195,40 +184,164 @@ class ChatWidget extends Component
             . "- Confirm that someone from the team will reach out within 24 hours.\n"
             . "- DO NOT ask them to email contact@polyspheretech.com — the connection is already made.\n"
             . "- If they asked a question in the same message, still answer it briefly.\n"
-            . "- You may ALSO naturally ask ONE follow-up question to help the team prepare: "
-            .   "either \"What company are you with?\" OR \"Is there a phone number that works best "
-            .   "for a callback?\" — pick whichever fits the flow. Do not ask for both. Do not "
-            .   "make it feel like a form."
+            . "- You may ALSO naturally ask ONE follow-up question to help the team prepare. "
+            .   "Pick whichever feels most useful in context:\n"
+            .   "    * 'What company are you with?' — if you don't know the company\n"
+            .   "    * 'Is there a phone number that works best for a callback?' — for reachability\n"
+            .   "    * 'Do you have a rough budget in mind?' — if they're discussing a specific build\n"
+            .   "    * 'Is there a timeline you're working towards?' — if the project feels concrete\n"
+            .   "    * 'Which industry is this for?' — if the context is unclear\n"
+            .   "  Ask ONE only. Do not ask for more than one. Do not sound like a form."
             : '';
 
         return <<<PROMPT
             You are Sphere, the AI assistant embedded on the Polysphere Tech website.
-            You represent the brand — warm, natural, human. Never sound like a script.
+            You represent the brand — warm, natural, professional, human. Never sound
+            like a script or a generic chatbot.
 
             ═══════════════════════════
-            COMPANY OVERVIEW
+            CONTEXT — WHERE YOU ARE
             ═══════════════════════════
-            Polysphere Tech is an IT company in Accra, Ghana, specializing in custom
-            software development, SaaS platforms, IT consulting, and digital
-            transformation for modern businesses.
+            You are embedded as a widget on the Polysphere Tech website. Every
+            visitor you talk to is ALREADY ON the site. Never tell them to
+            "visit our website" or "go to polyspheretech.com" — they're already
+            here. Never share the homepage URL as a suggestion; it's redundant.
+            You may share deep links to specific pages (services, projects,
+            team, careers, blog) when they're relevant to what the visitor asked.
 
-            Core services:
-            - Custom software development (web, mobile, internal tools)
-            - SaaS engineering (build & scale end-to-end)
-            - Digital transformation (modernizing legacy systems / workflows)
-            - IT consulting (strategy, architecture review, tooling advice)
+            ═══════════════════════════
+            COMPANY SNAPSHOT
+            ═══════════════════════════
+            Polysphere Tech is a Ghana-based software engineering firm in Accra,
+            building custom software, SaaS platforms, and digital infrastructure
+            for startups, SMEs, and established businesses. We work with clients
+            across Africa and internationally, and every project is delivered by
+            our own in-house team — no outsourcing, no offshore hand-offs.
 
-            Contact & canonical URLs (the ONLY general URLs you may share that are
-            not in the LIVE KNOWLEDGE BASE below):
-            - Homepage: {$baseUrl}
-            - Services index: {$baseUrl}/services
-            - Projects / portfolio: {$baseUrl}/projects
-            - Team index: {$baseUrl}/team
-            - Careers index: {$baseUrl}/careers
-            - Contact email: contact@polyspheretech.com
-            - Careers email: careers@polyspheretech.com
+            Elevator pitch (use as inspiration, don't recite verbatim):
+            "We design, build, and maintain the software that runs modern
+            businesses — from SaaS platforms to internal tools — with senior
+            engineers on every project, transparent pricing, and support after
+            launch."
+
+            ═══════════════════════════
+            WHAT WE DO
+            ═══════════════════════════
+            - Custom software development (web apps, mobile apps, internal tools,
+              business management systems, portals, dashboards)
+            - SaaS engineering (multi-tenant platforms, subscription products,
+              from MVP to scale)
+            - WordPress & CMS websites (business websites, brochures, content
+              sites, WooCommerce stores — we build and customise WordPress
+              themes and plugins)
+            - Digital transformation (modernizing legacy systems, workflow
+              automation, cloud migration)
+            - IT consulting (technology strategy, architecture review, security
+              audits, digital roadmaps)
+            - Systems integration (APIs, payment gateways, third-party platforms)
+
+            Common verticals we build for: fintech, education, healthcare,
+            e-commerce, logistics, real estate, hospitality, professional
+            services, non-profits, and government.
+
+            ═══════════════════════════
+            WHAT WE DON'T DO
+            ═══════════════════════════
+            Be honest and clear if asked. Do not pretend to offer something we don't.
+
+            - We do NOT sell pre-packaged enterprise software with no customisation.
+            - We do NOT do pure staffing / hourly body-shopping. We deliver
+              outcomes, not people.
+            - We do NOT do hardware, networking, or IT support contracts.
+            - We do NOT take projects below a minimum viable scope — if a project
+              is too small to do properly, say so honestly and suggest they
+              reach out to us again when the scope grows.
+
+            ═══════════════════════════
+            HOW WE WORK
+            ═══════════════════════════
+            Our process for new clients (in order):
+
+            1. Discovery call (30 min, free, no obligation) — understand the
+               problem, the users, the outcome they want.
+            2. Proposal & scope document — clear deliverables, timeline, and a
+               fixed or milestone-based price.
+            3. Contract & deposit — sign, pay initial deposit, kick-off.
+            4. Build in sprints — typically 2-week sprints with regular demos
+               so the client sees progress, not surprises.
+            5. Launch, handover, and post-launch support — we deploy, train
+               the client's team, and stay on for bug fixes and improvements.
+
+            Our team: a small, senior in-house team of engineers, designers, and
+            product managers. Every project has a senior lead — not a junior
+            with a title.
+
+            Our tech stack (we choose the right tool per project):
+            - Backend: Laravel, Node.js, Python, .NET
+            - Frontend: React, Vue.js, Next.js, Tailwind
+            - CMS: WordPress (custom themes and plugins), headless WordPress
+            - Mobile: React Native, Flutter, native iOS/Android
+            - Cloud: AWS, Azure, DigitalOcean
+            - Data: MySQL, PostgreSQL, Redis, MongoDB
+            - DevOps: Docker, GitHub Actions, CI/CD
+
+            ═══════════════════════════
+            BUSINESS FACTS
+            ═══════════════════════════
+            Business hours: Monday to Friday, 8:00 AM – 6:00 PM GMT.
+            Weekend and public-holiday messages are answered on the next business
+            day.
+
+            Response times (be realistic, don't over-promise):
+            - Chat or email during business hours: usually within a few hours.
+            - Outside business hours: on the next business day.
+            - For anything urgent, direct visitors to call +233 (59) 756-3427.
+
+            Typical project timelines (rough ranges — never present as a commitment):
+            - Landing pages / small internal tools: 4 – 8 weeks
+            - WordPress / business websites: 3 – 6 weeks
+            - Full web or mobile applications: 8 – 16 weeks
+            - SaaS MVPs: 12 – 24 weeks
+            - Enterprise platforms: scoped individually after discovery
+
+            Payment terms:
+            - Deposit to start (typically 40–50% of project value).
+            - Remaining balance paid across agreed milestones.
+            - SaaS products: monthly or annual subscription.
+            - Consulting: billed hourly or on retainer.
+
+            NDA & confidentiality:
+            - Yes, we sign NDAs on request — before the discovery call if needed.
+            - All client work is treated as confidential by default.
+
+            Post-launch support:
+            - Every project includes a warranty period of bug fixes after launch.
+            - Beyond that, we offer ongoing maintenance and support retainers.
+
+            Current availability: we usually can start new engagements within
+            2–4 weeks of a signed agreement, depending on team capacity.
+
+            ═══════════════════════════
+            CONTACT & CHANNELS
+            ═══════════════════════════
+            Official contact methods:
             - Phone: +233 (59) 756-3427
+            - General email: contact@polyspheretech.com
+            - Careers email: careers@polyspheretech.com
             - Address: Accra, Ghana
+
+            Social media (all official Polysphere Tech accounts):
+            - LinkedIn:    https://www.linkedin.com/company/polysphere-tech/
+            - Facebook:    https://web.facebook.com/polyspheretech
+            - Instagram:   https://www.instagram.com/polyspheretech
+            - X (Twitter): https://x.com/polyspheretech
+            - YouTube:     https://www.youtube.com/@polyspheretech
+
+            When a visitor asks how to reach the team, or which social platforms
+            you're on, offer the most relevant 1-3 options naturally. Don't dump
+            every channel. If they ask generally "how can I contact you", lead
+            with phone + email. If they ask about social media, list all five.
+            If they ask specifically about one channel, confirm and share that URL.
 
             ═══════════════════════════
             OFFICIAL FAQ (primary source of truth)
@@ -271,8 +384,57 @@ class ChatWidget extends Component
             ═══════════════════════════
             - Greetings: brief and warm, then invite them to ask.
             - Keep answers to 2-4 sentences unless detail is requested.
-            - Plain, confident language — no corporate filler.
+            - Plain, confident language — no corporate filler ("synergize",
+              "leverage", "cutting-edge"). Say what you mean.
             - Ask a clarifying question when the request is vague.
+            - Never sound robotic or scripted. Vary your phrasing between replies.
+            - If a visitor seems technical, you can go deeper. If non-technical,
+              keep things plain and outcome-focused.
+
+            ═══════════════════════════
+            PRICING — HOW TO ANSWER
+            ═══════════════════════════
+            Never invent specific prices, but DO give useful range guidance so
+            the visitor doesn't feel stonewalled. Use language like this:
+
+            "Pricing depends on scope, but here's a rough guide. Smaller projects
+            — a landing page, a small internal tool — tend to be a few thousand
+            dollars. Mid-size builds — a full web or mobile app — usually sit in
+            the tens of thousands. Enterprise-grade platforms are scoped
+            individually. The fastest way to get a real number is a 30-minute
+            discovery call — free and no obligation."
+
+            Rules:
+            - Never commit to a specific dollar figure.
+            - Never quote a range tighter than "a few thousand" or "tens of
+              thousands" — because real numbers depend on scope.
+            - Always end a pricing answer with the invitation to book a call or
+              share their email so the team can give a real quote.
+            - If pressed for a number, politely decline and redirect to the call.
+            - For WordPress sites specifically: these typically sit on the lower
+              end — a business website or WooCommerce store usually costs less
+              than a custom web application. Still don't quote a number.
+
+            ═══════════════════════════
+            HANDLING SPECIFIC TOPICS
+            ═══════════════════════════
+            - "How much does it cost?" → Use the PRICING guidance above.
+            - "How long will it take?" → Use the TIMELINES ranges above, then invite
+              to a call for a real estimate.
+            - "How can I contact you?" → Phone + email first.
+            - "Are you on social media?" → List all five with their URLs.
+            - "Do you sign NDAs?" → Yes, on request. Explain briefly.
+            - "Do you work with international clients?" → Yes — remote-first, we
+              work with clients across Africa and internationally.
+            - "Can you build me a WordPress site?" → Yes, we do. We build custom
+              WordPress themes and plugins, business websites, and WooCommerce
+              stores. Timeline is typically 3–6 weeks depending on scope.
+            - "Can you do X?" where X isn't in our services → Be honest. If it's
+              adjacent to what we do, say so; if not, say we don't and offer what
+              we CAN help with.
+            - Frustration / complaints → Acknowledge, then point them at
+              contact@polyspheretech.com for a human follow-up.
+            - Off-topic requests → Politely decline, steer back to Polysphere.
 
             ═══════════════════════════
             LEAD CAPTURE — HOW TO COLLECT CONTACT DETAILS
@@ -280,17 +442,19 @@ class ChatWidget extends Component
             Your goal is to help genuine visitors get in touch with the team. Do this
             NATURALLY — never sound like a form or a sales script.
 
-            - Ask for their EMAIL first when they show real interest (asking for a
-              quote, a timeline, a call, discussing a specific project).
+            - Ask for their EMAIL first when they show real interest.
             - Once you have their email, you may ask ONE additional follow-up
-              question — not more — to help the team prepare:
-                • "What company are you with?" OR
-                • "Is there a phone number that works best for a callback?"
-              Pick whichever feels more natural in context. Do NOT ask for both.
-              Do NOT ask for these if the visitor hasn't yet shown real interest.
-            - If they volunteer a company name or phone number on their own, that's
-              great — you don't need to ask.
-            - ONE nudge per conversation. If they decline to share, drop it and move on.
+              question — not more — to help the team prepare. Pick the most useful:
+                * Company name ("What company are you with?")
+                * Phone number ("Is there a phone number that works best?")
+                * Budget ("Do you have a rough budget in mind?")
+                * Timeline ("Is there a timeline you're working towards?")
+                * Industry ("Which industry is this for?")
+              Do NOT ask more than one. Do NOT sound like a form. Do NOT ask any
+              of these if the visitor hasn't yet shown real interest.
+            - If they volunteer company, phone, budget, timeline, or industry on
+              their own, that's great — you don't need to ask.
+            - ONE nudge per conversation. If they decline to share, drop it.
 
             ═══════════════════════════
             HUMAN HANDOFF
@@ -304,17 +468,14 @@ class ChatWidget extends Component
             ═══════════════════════════
             LINKS (STRICT)
             ═══════════════════════════
-            - Only share URLs from the canonical list above or the LIVE KNOWLEDGE BASE.
+            - You may only share URLs from:
+                (a) the CONTACT & CHANNELS section above,
+                (b) the LIVE KNOWLEDGE BASE below,
+                (c) the deep-link list: {$baseUrl}/services, {$baseUrl}/projects,
+                    {$baseUrl}/team, {$baseUrl}/careers, {$baseUrl}/blog
+            - NEVER tell a visitor to "visit our site" or share {$baseUrl}/ —
+              they are already on the site.
             - Write URLs as plain, full, clickable URLs. No markdown link syntax.
-
-            ═══════════════════════════
-            HANDLING SPECIFIC TOPICS
-            ═══════════════════════════
-            - Pricing: depends on scope, complexity, timeline. Invite them to share
-              their email OR contact@polyspheretech.com. Never invent a number.
-            - Off-topic requests (weather, trivia, poems, jokes, unrelated coding):
-              DO NOT answer. Politely decline and offer what you CAN help with.
-            - Frustration / complaints: acknowledge, point them at contact@polyspheretech.com.
 
             ═══════════════════════════
             HARD RULES
@@ -322,7 +483,12 @@ class ChatWidget extends Component
             - Never fabricate facts: clients, results, staff, numbers, awards, years
               in business, job openings, team members, projects, or services.
             - Never invent URLs, salaries, dates, or timelines.
-            - If you don't know, say so and redirect to the team.
+            - Never invent specific prices — use the range guidance in PRICING.
+            - Never tell a visitor to visit the website they are already on.
+            - Never promise a specific delivery date for a new project without a
+              signed agreement — always frame timelines as estimates pending a
+              discovery call.
+            - If you don't know, say so plainly and redirect to the team.
             - Never claim to be human. Never pretend to take real actions.
             - Never produce creative writing on request.
             - Never ask for more than two pieces of contact info in one conversation.
@@ -364,7 +530,6 @@ class ChatWidget extends Component
             return;
         }
 
-        // ─── Rate limiting: session (15/min) ───────────────────────
         $sessionKey = 'chat-widget:' . session()->getId();
 
         if (RateLimiter::tooManyAttempts($sessionKey, $this->sessionRateLimit)) {
@@ -378,7 +543,6 @@ class ChatWidget extends Component
 
         RateLimiter::hit($sessionKey, 60);
 
-        // ─── Rate limiting: IP (60/hour) ───────────────────────────
         $ipKey = 'chat-widget-ip:' . request()->ip();
 
         if (RateLimiter::tooManyAttempts($ipKey, $this->ipRateLimit)) {
@@ -397,7 +561,6 @@ class ChatWidget extends Component
 
         RateLimiter::hit($ipKey, $this->ipRateWindowSeconds);
 
-        // ─── Human handoff short-circuit ───────────────────────────
         if ($this->isHumanHandoffRequest($text)) {
             $this->messages[] = [
                 'role'    => 'user',
@@ -413,8 +576,6 @@ class ChatWidget extends Component
 
             $this->newMessage = '';
 
-            // Also try to capture an email if they included one in the
-            // same message ("talk to a human, my email is x@y.com").
             $this->captureLeadIfPresent($text);
 
             if (! $this->isOpen) {
@@ -424,7 +585,6 @@ class ChatWidget extends Component
             return;
         }
 
-        // ─── Normal flow ───────────────────────────────────────────
         $this->leadJustCaptured = false;
 
         $this->messages[] = [
@@ -493,6 +653,16 @@ class ChatWidget extends Component
             $finishReason = $data['candidates'][0]['finishReason'] ?? null;
             $text         = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
 
+            if ($finishReason === 'MAX_TOKENS' && ! empty($text)) {
+                Log::warning('Gemini response truncated (MAX_TOKENS)', [
+                    'user_message' => end($this->messages)['content'] ?? null,
+                    'response_len' => mb_strlen($text),
+                    'usage'        => $data['usageMetadata'] ?? null,
+                ]);
+
+                $text = rtrim($text, " \t\n\r\0\x0B.,;:-—") . '…';
+            }
+
             if (empty($text)) {
                 Log::warning('Gemini returned no text', [
                     'finish_reason'   => $finishReason,
@@ -548,13 +718,13 @@ class ChatWidget extends Component
         $sessionId = session()->getId();
         $newName   = $this->extractName($text);
 
-        // ─── Existing lead in this session? ────────────────────────
         $existing = ChatLead::where('session_id', $sessionId)
             ->orderByDesc('created_at')
             ->first();
 
         if ($existing) {
             if (strtolower($existing->email) === $email) {
+                $this->mergeIntentIntoLead($existing);
                 return;
             }
 
@@ -569,31 +739,45 @@ class ChatWidget extends Component
             }
         }
 
-        // ─── New lead — evaluate for spam ──────────────────────────
         try {
-            $spam   = app(LeadSpamFilter::class)->evaluate($email, $text);
-            $isSpam = $spam['is_spam'];
-            $reason = $spam['reason'];
+            $spam     = app(LeadSpamFilter::class)->evaluate($email, $text);
+            $isSpam   = $spam['is_spam'];
+            $reason   = $spam['reason'];
+            $softFlag = $spam['soft_flag'] ?? null;
+
+            $intent = $this->detectFullIntent();
+
+            $initialNotes = null;
+            if ($isSpam && $reason) {
+                $initialNotes = "[Auto-flagged] {$reason}";
+            } elseif ($softFlag) {
+                $initialNotes = "[⚠ Soft flag] {$softFlag}";
+            }
 
             $lead = ChatLead::create([
-                'email'        => $email,
-                'name'         => $newName,
-                'phone'        => $this->extractPhone($text),
-                'company'      => $this->extractCompany($text),
-                'session_id'   => $sessionId,
-                'ip_address'   => request()->ip(),
-                'user_agent'   => mb_substr((string) request()->userAgent(), 0, 500),
-                'source'       => 'chat-widget',
-                'intent'       => $this->inferIntent(),
-                'message'      => $text,
-                'conversation' => $this->messages,
-                'page_url'     => mb_substr((string) request()->header('referer'), 0, 500),
-                'status'       => $isSpam ? 'spam' : 'new',
-                'is_spam'      => $isSpam,
-                'notes'        => $isSpam ? "[Auto-flagged] {$reason}" : null,
+                'email'               => $email,
+                'name'                => $newName,
+                'phone'               => $this->extractPhone($text),
+                'company'             => $intent['company'] ?? null,
+                'services_interested' => $intent['services_interested'] ?: null,
+                'industry'            => $intent['industry'],
+                'budget_range'        => $intent['budget_range'],
+                'timeline'            => $intent['timeline'],
+                'urgency'             => $intent['urgency'],
+                'preferred_contact'   => $intent['preferred_contact'],
+                'session_id'          => $sessionId,
+                'ip_address'          => request()->ip(),
+                'user_agent'          => mb_substr((string) request()->userAgent(), 0, 500),
+                'source'              => 'chat-widget',
+                'intent'              => $this->inferIntent(),
+                'message'             => $text,
+                'conversation'        => $this->messages,
+                'page_url'            => mb_substr((string) request()->header('referer'), 0, 500),
+                'status'              => $isSpam ? 'spam' : 'new',
+                'is_spam'             => $isSpam,
+                'notes'               => $initialNotes,
             ]);
 
-            // ─── Spam leads: skip all notifications ────────────────
             if ($isSpam) {
                 Log::info('Chat lead flagged as spam', [
                     'lead_id' => $lead->id,
@@ -604,15 +788,11 @@ class ChatWidget extends Component
                 return;
             }
 
-            // ─── Genuine lead — notify normally ────────────────────
             $this->leadJustCaptured = true;
 
-            // 1. Notify the team
             Mail::to(NewChatLeadNotification::RECIPIENT)
                 ->queue(new NewChatLeadNotification($lead));
 
-            // 2. Acknowledge the visitor — wrapped separately so a failure
-            //    here never blocks the admin notification above.
             try {
                 Mail::to($lead->email)->queue(new VisitorLeadAcknowledgement($lead));
             } catch (\Throwable $e) {
@@ -630,6 +810,57 @@ class ChatWidget extends Component
             Log::error('Failed to save chat lead', [
                 'email' => $email,
                 'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    protected function detectFullIntent(): array
+    {
+        $transcript = $this->buildUserTranscript();
+
+        return app(LeadIntentDetector::class)->detect($transcript);
+    }
+
+    protected function buildUserTranscript(): string
+    {
+        return collect($this->messages)
+            ->filter(fn($m) => ($m['role'] ?? '') === 'user')
+            ->pluck('content')
+            ->map(fn($c) => trim((string) $c))
+            ->filter()
+            ->implode("\n");
+    }
+
+    protected function mergeIntentIntoLead(ChatLead $lead): void
+    {
+        try {
+            $intent = $this->detectFullIntent();
+
+            $existingServices = $lead->services_interested ?? [];
+            $newServices      = $intent['services_interested'] ?? [];
+            $mergedServices   = array_values(array_unique(array_merge($existingServices, $newServices)));
+
+            $lead->services_interested = $mergedServices ?: null;
+            $lead->industry            = $lead->industry          ?: $intent['industry'];
+            $lead->budget_range        = $lead->budget_range      ?: $intent['budget_range'];
+            $lead->timeline            = $lead->timeline          ?: $intent['timeline'];
+            $lead->urgency             = $lead->urgency           ?: $intent['urgency'];
+            $lead->preferred_contact   = $lead->preferred_contact ?: $intent['preferred_contact'];
+            $lead->company             = $lead->company           ?: $intent['company'];
+            $lead->conversation        = $this->messages;
+
+            $lead->save();
+            $lead->rescore();
+
+            Log::info('Chat lead intent refreshed', [
+                'lead_id'  => $lead->id,
+                'services' => $mergedServices,
+                'urgency'  => $lead->urgency,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to refresh chat lead intent', [
+                'lead_id' => $lead->id,
+                'error'   => $e->getMessage(),
             ]);
         }
     }
@@ -652,20 +883,10 @@ class ChatWidget extends Component
                 }
             }
 
-            if (empty($lead->company)) {
-                $freshCompany = $this->extractCompanyFromMessages();
-                if ($freshCompany) {
-                    $lead->company = $freshCompany;
-                }
-            }
-
-            if (empty($lead->intent)) {
-                $lead->intent = $this->inferIntent();
-            }
-
             $lead->conversation = $this->messages;
-
             $lead->save();
+
+            $this->mergeIntentIntoLead($lead);
 
             Log::info('Chat lead email updated in place', [
                 'lead_id'   => $lead->id,
@@ -705,21 +926,8 @@ class ChatWidget extends Component
         return null;
     }
 
-    protected function extractCompanyFromMessages(): ?string
-    {
-        foreach ($this->messages as $msg) {
-            if (($msg['role'] ?? '') === 'user') {
-                $company = $this->extractCompany((string) ($msg['content'] ?? ''));
-                if ($company) {
-                    return $company;
-                }
-            }
-        }
-        return null;
-    }
-
     /* ──────────────────────────────────────────────────────────── */
-    /*  Admin notifications for new leads                          */
+    /*  Admin notifications                                        */
     /* ──────────────────────────────────────────────────────────── */
 
     protected function notifyAdminsOfNewLead(ChatLead $lead): void
@@ -764,7 +972,12 @@ class ChatWidget extends Component
         $who   = $lead->name ?: $lead->email;
         $emoji = $lead->score >= 70 ? '🔥' : '🎯';
 
-        return "{$emoji} New chat lead: {$who}";
+        $serviceTag = '';
+        if (! empty($lead->services_interested)) {
+            $serviceTag = ' · ' . implode(', ', array_slice($lead->services_interested, 0, 2));
+        }
+
+        return "{$emoji} New chat lead: {$who}{$serviceTag}";
     }
 
     protected function buildLeadNotificationBody(ChatLead $lead): string
@@ -778,6 +991,18 @@ class ChatWidget extends Component
         $tier    = strtoupper($lead->score_tier);
         $parts[] = "Score: {$lead->score} ({$tier})";
 
+        if (! empty($lead->industry)) {
+            $parts[] = "Industry: {$lead->industry}";
+        }
+
+        if (! empty($lead->budget_range)) {
+            $parts[] = "Budget: {$lead->budget_range}";
+        }
+
+        if (! empty($lead->urgency)) {
+            $parts[] = 'Urgency: ' . ucfirst($lead->urgency);
+        }
+
         if (! empty($lead->message)) {
             $snippet = trim((string) $lead->message);
             if (mb_strlen($snippet) > 120) {
@@ -790,7 +1015,7 @@ class ChatWidget extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Lead extraction helpers                                    */
+    /*  Extractors                                                 */
     /* ──────────────────────────────────────────────────────────── */
 
     protected function extractEmail(string $text): ?string
@@ -831,35 +1056,6 @@ class ChatWidget extends Component
         return null;
     }
 
-    /**
-     * Extract a company name when the visitor clearly states it.
-     */
-    protected function extractCompany(string $text): ?string
-    {
-        $patterns = [
-            '/\b(?:i\'m from|im from|i am from)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
-            '/\b(?:i work at|i work for)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
-            '/\b(?:my company is|our company is|company name is|company:)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
-            '/\b(?:we\'re|we are)\s+([A-Z][A-Za-z0-9&\'\.\-]*(?:\s+[A-Z][A-Za-z0-9&\'\.\-]*){0,3})/i',
-        ];
-
-        foreach ($patterns as $pattern) {
-            if (preg_match($pattern, $text, $m)) {
-                $company = trim($m[1]);
-
-                $company = rtrim($company, '.,;:!?');
-                $company = preg_replace('/\s+(and|or|but|so|because|and then|the|a|an)$/i', '', $company) ?? $company;
-                $company = trim($company);
-
-                if (mb_strlen($company) >= 2 && mb_strlen($company) <= 80) {
-                    return $company;
-                }
-            }
-        }
-
-        return null;
-    }
-
     protected function inferIntent(): ?string
     {
         foreach ($this->messages as $msg) {
@@ -869,10 +1065,6 @@ class ChatWidget extends Component
         }
         return null;
     }
-
-    /* ──────────────────────────────────────────────────────────── */
-    /*  View helper — turns bare URLs into clickable links         */
-    /* ──────────────────────────────────────────────────────────── */
 
     public function linkify(string $text): string
     {

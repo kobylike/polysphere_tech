@@ -9,10 +9,8 @@ class LeadSpamFilter
 {
     /**
      * A small list of common disposable / throwaway email domains.
-     * Extend this over time based on what actually reaches your inbox.
      */
     protected const DISPOSABLE_DOMAINS = [
-        // Big generic disposables
         'mailinator.com',
         'guerrillamail.com',
         'guerrillamail.net',
@@ -58,8 +56,6 @@ class LeadSpamFilter
 
     /**
      * Local-part patterns that are almost always bot/fake.
-     * Kept small — only the obvious ones. Anything wider risks
-     * rejecting real users who happen to have short addresses.
      */
     protected const FAKE_LOCAL_PARTS = [
         'test',
@@ -94,7 +90,7 @@ class LeadSpamFilter
     ];
 
     /**
-     * Domains that look real but are reserved for testing/documentation.
+     * Domains that look real but are reserved for testing.
      */
     protected const RESERVED_DOMAINS = [
         'example.com',
@@ -110,72 +106,72 @@ class LeadSpamFilter
     /**
      * Return the spam verdict for a given email/message pair.
      *
-     * @return array{is_spam: bool, reason: ?string}
+     * @return array{is_spam: bool, reason: ?string, soft_flag: ?string}
      */
     public function evaluate(string $email, string $message = ''): array
     {
         $email = strtolower(trim($email));
 
         if ($email === '' || ! str_contains($email, '@')) {
-            return ['is_spam' => true, 'reason' => 'Malformed email'];
+            return ['is_spam' => true, 'reason' => 'Malformed email', 'soft_flag' => null];
         }
 
         [$local, $domain] = explode('@', $email, 2);
         $local  = (string) $local;
         $domain = (string) $domain;
 
-        // ─── 1. Reserved test domains ──────────────────────────────
+        // 1. Reserved test domains
         if (in_array($domain, self::RESERVED_DOMAINS, true)) {
-            return ['is_spam' => true, 'reason' => 'Reserved test domain'];
+            return ['is_spam' => true, 'reason' => 'Reserved test domain', 'soft_flag' => null];
         }
 
-        // ─── 2. Disposable email providers ─────────────────────────
+        // 2. Disposable email providers
         if (in_array($domain, self::DISPOSABLE_DOMAINS, true)) {
-            return ['is_spam' => true, 'reason' => 'Disposable email domain'];
+            return ['is_spam' => true, 'reason' => 'Disposable email domain', 'soft_flag' => null];
         }
 
-        // ─── 3. Fake local-part patterns ───────────────────────────
+        // 3. Fake local-part patterns
         if (in_array($local, self::FAKE_LOCAL_PARTS, true)) {
-            return ['is_spam' => true, 'reason' => 'Fake local part'];
+            return ['is_spam' => true, 'reason' => 'Fake local part', 'soft_flag' => null];
         }
 
-        // Numeric-only local part (12345@)
         if (preg_match('/^\d+$/', $local)) {
-            return ['is_spam' => true, 'reason' => 'Numeric-only local part'];
+            return ['is_spam' => true, 'reason' => 'Numeric-only local part', 'soft_flag' => null];
         }
 
-        // Repeated single character (aaa@, 111@)
         if (preg_match('/^(.)\1{3,}$/', $local)) {
-            return ['is_spam' => true, 'reason' => 'Repeated character local part'];
+            return ['is_spam' => true, 'reason' => 'Repeated character local part', 'soft_flag' => null];
         }
 
-        // ─── 4. Domain format sanity ───────────────────────────────
+        // 4. Domain format sanity
         if (! preg_match('/^[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)+$/i', $domain)) {
-            return ['is_spam' => true, 'reason' => 'Malformed domain'];
+            return ['is_spam' => true, 'reason' => 'Malformed domain', 'soft_flag' => null];
         }
 
-        // TLD must be at least 2 alpha characters
         $tld = substr(strrchr($domain, '.'), 1);
         if (! preg_match('/^[a-z]{2,}$/', (string) $tld)) {
-            return ['is_spam' => true, 'reason' => 'Invalid TLD'];
+            return ['is_spam' => true, 'reason' => 'Invalid TLD', 'soft_flag' => null];
         }
 
-        // ─── 5. MX record check (cached) ────────────────────────────
-        // If the domain has no MX records it cannot receive mail,
-        // which almost always means a fake. Skipped silently if
-        // the lookup itself fails (DNS issues, offline, etc.).
+        // 5. MX record check — SOFT FLAG ONLY
+        // A missing MX record almost always means a typo (.con instead
+        // of .com) OR a fake domain. We do NOT auto-hide the lead — we
+        // flag it with a warning so the admin can judge.
         if (! $this->domainAcceptsMail($domain)) {
-            return ['is_spam' => true, 'reason' => 'Domain cannot receive email (no MX records)'];
+            return [
+                'is_spam'   => false,
+                'reason'    => null,
+                'soft_flag' => 'Email domain has no MX records — likely a typo',
+            ];
         }
 
-        // ─── 6. Very short obvious spam messages ────────────────────
-        // (Optional heuristic — disable if it causes false positives.)
+        // 6. Very short message
         $message = trim($message);
         if ($message !== '' && mb_strlen($message) < 3) {
-            return ['is_spam' => true, 'reason' => 'Message too short'];
+            return ['is_spam' => true, 'reason' => 'Message too short', 'soft_flag' => null];
         }
 
-        return ['is_spam' => false, 'reason' => null];
+        return ['is_spam' => false, 'reason' => null, 'soft_flag' => null];
     }
 
     /**
@@ -200,7 +196,6 @@ class LeadSpamFilter
                 return true;
             }
 
-            // Any MX record means the domain can receive mail
             return ! empty($records);
         });
     }

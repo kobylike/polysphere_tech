@@ -24,11 +24,23 @@ class ChatLead extends Model
         'import'       => 'Import',
     ];
 
+    public const URGENCIES = [
+        'high'   => ['label' => 'High',   'color' => '#ef4444', 'icon' => 'fa-bolt'],
+        'medium' => ['label' => 'Medium', 'color' => '#f59e0b', 'icon' => 'fa-clock'],
+        'low'    => ['label' => 'Low',    'color' => '#94a3b8', 'icon' => 'fa-hourglass'],
+    ];
+
     protected $fillable = [
         'email',
         'name',
         'phone',
         'company',
+        'services_interested',
+        'industry',
+        'budget_range',
+        'timeline',
+        'urgency',
+        'preferred_contact',
         'session_id',
         'ip_address',
         'user_agent',
@@ -49,13 +61,14 @@ class ChatLead extends Model
     ];
 
     protected $casts = [
-        'conversation' => 'array',
-        'tags'         => 'array',
-        'notified_at'  => 'datetime',
-        'contacted_at' => 'datetime',
-        'is_starred'   => 'boolean',
-        'is_spam'      => 'boolean',
-        'score'        => 'integer',
+        'conversation'        => 'array',
+        'tags'                => 'array',
+        'services_interested' => 'array',
+        'notified_at'         => 'datetime',
+        'contacted_at'        => 'datetime',
+        'is_starred'          => 'boolean',
+        'is_spam'             => 'boolean',
+        'score'               => 'integer',
     ];
 
     /* ──────────────────────────────────────────────────────────── */
@@ -102,6 +115,15 @@ class ChatLead extends Model
         return $this->status_meta['color'];
     }
 
+    public function getUrgencyMetaAttribute(): ?array
+    {
+        if (empty($this->urgency)) {
+            return null;
+        }
+
+        return self::URGENCIES[$this->urgency] ?? null;
+    }
+
     public function getInitialsAttribute(): string
     {
         $name = trim((string) $this->name);
@@ -128,11 +150,6 @@ class ChatLead extends Model
         return count($this->conversation ?? []);
     }
 
-    public function getFirstPageAttribute(): ?string
-    {
-        return $this->page_url;
-    }
-
     public function getShortPageAttribute(): ?string
     {
         if (! $this->page_url) {
@@ -140,6 +157,17 @@ class ChatLead extends Model
         }
         $path = parse_url($this->page_url, PHP_URL_PATH) ?: '/';
         return $path;
+    }
+
+    public function getPrimaryServiceAttribute(): ?string
+    {
+        $services = $this->services_interested ?? [];
+        return $services[0] ?? null;
+    }
+
+    public function getServicesCountAttribute(): int
+    {
+        return count($this->services_interested ?? []);
     }
 
     /* ──────────────────────────────────────────────────────────── */
@@ -150,14 +178,29 @@ class ChatLead extends Model
     {
         $score = 10;
 
+        // Identity
         if (! empty($lead->name))    $score += 15;
         if (! empty($lead->phone))   $score += 20;
         if (! empty($lead->company)) $score += 15;
 
+        // Intent / qualification
+        if (! empty($lead->services_interested)) $score += 15;
+        if (! empty($lead->industry))            $score += 5;
+
+        // Commercial signals
+        if (! empty($lead->budget_range))        $score += 15;
+        if (! empty($lead->timeline))            $score += 10;
+
+        // Urgency
+        if ($lead->urgency === 'high')   $score += 10;
+        if ($lead->urgency === 'medium') $score += 5;
+
+        // Message depth
         $messageLength = mb_strlen((string) $lead->message);
         if ($messageLength > 60)  $score += 5;
         if ($messageLength > 150) $score += 10;
 
+        // High-intent keywords
         $haystack = strtolower(($lead->message ?? '') . ' ' . ($lead->intent ?? ''));
         $highIntent = ['budget', 'timeline', 'urgent', 'ready to start', 'looking for', 'need a', 'build a', 'we want', 'quote', 'proposal', 'meeting', 'call', 'demo'];
         foreach ($highIntent as $kw) {
@@ -167,13 +210,14 @@ class ChatLead extends Model
             }
         }
 
+        // Page signals
         if (! empty($lead->page_url)) {
             if (str_contains($lead->page_url, '/services')) $score += 10;
             if (str_contains($lead->page_url, '/contact'))  $score += 10;
             if (str_contains($lead->page_url, '/careers'))  $score -= 5;
         }
 
-        // Multiple leads from the same email → engaged
+        // Multi-session engagement
         if (! empty($lead->email)) {
             $otherSessions = static::where('email', $lead->email)
                 ->when($lead->exists, fn($q) => $q->where('id', '!=', $lead->id))
@@ -183,6 +227,16 @@ class ChatLead extends Model
         }
 
         return max(0, min(100, $score));
+    }
+
+    /**
+     * Re-compute and store the score. Useful after merging new intent
+     * data into an existing lead.
+     */
+    public function rescore(): void
+    {
+        $this->score = static::computeScore($this);
+        $this->save();
     }
 
     /* ──────────────────────────────────────────────────────────── */
@@ -207,5 +261,52 @@ class ChatLead extends Model
     public function scopeHot($q)
     {
         return $q->where('score', '>=', 70);
+    }
+
+    public function scopeOfService($q, string $service)
+    {
+        // JSON search — works on MySQL 5.7+ and SQLite
+        return $q->where(function ($qq) use ($service) {
+            $qq->whereJsonContains('services_interested', $service)
+                ->orWhere('services_interested', 'like', '%' . $service . '%');
+        });
+    }
+
+    public function scopeWithUrgency($q, string $urgency)
+    {
+        return $q->where('urgency', $urgency);
+    }
+
+    public function scopeInIndustry($q, string $industry)
+    {
+        return $q->where('industry', $industry);
+    }
+
+    /**
+     * Distinct list of every service label that has been captured.
+     * Used to build the filter dropdown.
+     */
+    public static function allKnownServices(): array
+    {
+        return static::query()
+            ->whereNotNull('services_interested')
+            ->pluck('services_interested')
+            ->flatMap(fn($json) => is_array($json) ? $json : (json_decode($json, true) ?: []))
+            ->filter()
+            ->unique()
+            ->sort()
+            ->values()
+            ->toArray();
+    }
+
+    public static function allKnownIndustries(): array
+    {
+        return static::query()
+            ->whereNotNull('industry')
+            ->where('industry', '!=', '')
+            ->distinct()
+            ->orderBy('industry')
+            ->pluck('industry')
+            ->toArray();
     }
 }

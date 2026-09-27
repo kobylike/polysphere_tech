@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -26,28 +25,29 @@ class LeadManagement extends Component
     /*  Filters                                                    */
     /* ──────────────────────────────────────────────────────────── */
 
-    public string $search        = '';
-    public string $statusFilter  = '';
-    public string $sourceFilter  = '';
-    public string $scoreFilter   = '';
-    public string $starredFilter = '';
-    public string $hasFilter     = '';
-    public string $spamFilter    = '';
-    public string $dateRange     = '';
-    public string $dateFrom      = '';
-    public string $dateTo        = '';
-    public string $sortBy        = 'created_at';
-    public string $sortDir       = 'desc';
-    public int    $perPage       = 20;
+    public string $search         = '';
+    public string $statusFilter   = '';
+    public string $sourceFilter   = '';
+    public string $scoreFilter    = '';
+    public string $serviceFilter  = '';
+    public string $industryFilter = '';
+    public string $urgencyFilter  = '';
+    public string $budgetFilter   = '';
+    public string $starredFilter  = '';
+    public string $hasFilter      = '';
+    public string $spamFilter     = '';
+    public string $dateRange      = '';
+    public string $dateFrom       = '';
+    public string $dateTo         = '';
+    public string $sortBy         = 'created_at';
+    public string $sortDir        = 'desc';
+    public int    $perPage        = 20;
 
     /* ──────────────────────────────────────────────────────────── */
     /*  Real-time polling                                          */
     /* ──────────────────────────────────────────────────────────── */
 
-    /** User-toggleable pause. Persists in the component state. */
     public bool $pollingPaused = false;
-
-    /** Bumped on every poll — lets the view show "updated Xs ago". */
     public ?string $lastPolledAt = null;
 
     /* ──────────────────────────────────────────────────────────── */
@@ -78,7 +78,6 @@ class LeadManagement extends Component
     public string $tagInput    = '';
     public string $exportScope = 'filtered';
 
-    /** Reply modal state */
     public ?ChatLead $replyLead    = null;
     public string    $replySubject = '';
     public string    $replyBody    = '';
@@ -88,19 +87,23 @@ class LeadManagement extends Component
     /* ──────────────────────────────────────────────────────────── */
 
     protected $queryString = [
-        'search'        => ['except' => ''],
-        'statusFilter'  => ['except' => ''],
-        'sourceFilter'  => ['except' => ''],
-        'scoreFilter'   => ['except' => ''],
-        'starredFilter' => ['except' => ''],
-        'hasFilter'     => ['except' => ''],
-        'spamFilter'    => ['except' => ''],
-        'dateRange'     => ['except' => ''],
-        'dateFrom'      => ['except' => ''],
-        'dateTo'        => ['except' => ''],
-        'sortBy'        => ['except' => 'created_at'],
-        'sortDir'       => ['except' => 'desc'],
-        'perPage'       => ['except' => 20],
+        'search'         => ['except' => ''],
+        'statusFilter'   => ['except' => ''],
+        'sourceFilter'   => ['except' => ''],
+        'scoreFilter'    => ['except' => ''],
+        'serviceFilter'  => ['except' => ''],
+        'industryFilter' => ['except' => ''],
+        'urgencyFilter'  => ['except' => ''],
+        'budgetFilter'   => ['except' => ''],
+        'starredFilter'  => ['except' => ''],
+        'hasFilter'      => ['except' => ''],
+        'spamFilter'     => ['except' => 'exclude'],
+        'dateRange'      => ['except' => ''],
+        'dateFrom'       => ['except' => ''],
+        'dateTo'         => ['except' => ''],
+        'sortBy'         => ['except' => 'created_at'],
+        'sortDir'        => ['except' => 'desc'],
+        'perPage'        => ['except' => 20],
     ];
 
     /* ──────────────────────────────────────────────────────────── */
@@ -117,15 +120,9 @@ class LeadManagement extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Polling logic                                              */
+    /*  Polling                                                    */
     /* ──────────────────────────────────────────────────────────── */
 
-    /**
-     * Called by wire:poll every N seconds.
-     *
-     * When a modal is open (or the user has paused polling), skip the
-     * render entirely so form input is never clobbered mid-typing.
-     */
     public function pollTick(): void
     {
         if (! $this->shouldPoll) {
@@ -159,7 +156,7 @@ class LeadManagement extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Filter hooks — reset pagination                            */
+    /*  Filter hooks                                               */
     /* ──────────────────────────────────────────────────────────── */
 
     public function updatingSearch(): void
@@ -175,6 +172,22 @@ class LeadManagement extends Component
         $this->resetPage();
     }
     public function updatingScoreFilter(): void
+    {
+        $this->resetPage();
+    }
+    public function updatingServiceFilter(): void
+    {
+        $this->resetPage();
+    }
+    public function updatingIndustryFilter(): void
+    {
+        $this->resetPage();
+    }
+    public function updatingUrgencyFilter(): void
+    {
+        $this->resetPage();
+    }
+    public function updatingBudgetFilter(): void
     {
         $this->resetPage();
     }
@@ -223,6 +236,10 @@ class LeadManagement extends Component
             'statusFilter',
             'sourceFilter',
             'scoreFilter',
+            'serviceFilter',
+            'industryFilter',
+            'urgencyFilter',
+            'budgetFilter',
             'starredFilter',
             'hasFilter',
             'dateRange',
@@ -259,7 +276,7 @@ class LeadManagement extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Per-row actions                                            */
+    /*  Per-row                                                    */
     /* ──────────────────────────────────────────────────────────── */
 
     public function viewLead(int $id): void
@@ -312,7 +329,7 @@ class LeadManagement extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Reply — modal is side-effect-free until send              */
+    /*  Reply                                                      */
     /* ──────────────────────────────────────────────────────────── */
 
     public function openReply(int $id): void
@@ -335,9 +352,6 @@ class LeadManagement extends Component
             . "\nPolysphere Tech";
 
         $this->showReplyModal = true;
-
-        // No side effects here. The lead is only marked as contacted
-        // once the reply is actually sent (in sendReply()).
     }
 
     public function sendReply(): void
@@ -348,8 +362,6 @@ class LeadManagement extends Component
 
         $this->authorize('view', $this->replyLead);
 
-        // Commit the lead as contacted now that the admin has actually
-        // decided to send — not when the modal was opened.
         $lead = $this->replyLead;
 
         if ($lead->status === 'new') {
@@ -368,9 +380,9 @@ class LeadManagement extends Component
 
             if (class_exists(ActivityLogger::class)) {
                 ActivityLogger::log('Lead reply sent', [
-                    'lead_id'  => $lead->id,
-                    'email'    => $lead->email,
-                    'sent_by'  => Auth::id(),
+                    'lead_id' => $lead->id,
+                    'email'   => $lead->email,
+                    'sent_by' => Auth::id(),
                 ], 'lead');
             }
         }
@@ -399,7 +411,7 @@ class LeadManagement extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Status change                                              */
+    /*  Status                                                     */
     /* ──────────────────────────────────────────────────────────── */
 
     public function openStatusModal(int $id): void
@@ -808,6 +820,12 @@ class LeadManagement extends Component
                 'Name',
                 'Phone',
                 'Company',
+                'Services Interested',
+                'Industry',
+                'Budget',
+                'Timeline',
+                'Urgency',
+                'Preferred Contact',
                 'Source',
                 'Intent',
                 'Message',
@@ -829,6 +847,12 @@ class LeadManagement extends Component
                     $lead->name,
                     $lead->phone,
                     $lead->company,
+                    is_array($lead->services_interested) ? implode(', ', $lead->services_interested) : '',
+                    $lead->industry,
+                    $lead->budget_range,
+                    $lead->timeline,
+                    $lead->urgency,
+                    $lead->preferred_contact,
                     $lead->source,
                     $lead->intent,
                     $lead->message,
@@ -844,7 +868,7 @@ class LeadManagement extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Query building                                             */
+    /*  Query                                                      */
     /* ──────────────────────────────────────────────────────────── */
 
     protected function baseQuery()
@@ -859,6 +883,10 @@ class LeadManagement extends Component
                         ->orWhere('company', 'like', $term)
                         ->orWhere('message', 'like', $term)
                         ->orWhere('intent', 'like', $term)
+                        ->orWhere('industry', 'like', $term)
+                        ->orWhere('budget_range', 'like', $term)
+                        ->orWhere('timeline', 'like', $term)
+                        ->orWhere('services_interested', 'like', $term)
                         ->orWhere('ip_address', 'like', $term);
                 });
             })
@@ -867,6 +895,18 @@ class LeadManagement extends Component
             ->when($this->scoreFilter === 'hot',  fn($q) => $q->where('score', '>=', 70))
             ->when($this->scoreFilter === 'warm', fn($q) => $q->whereBetween('score', [40, 69]))
             ->when($this->scoreFilter === 'cold', fn($q) => $q->where('score', '<', 40))
+            ->when($this->serviceFilter, function ($q) {
+                $q->where(function ($qq) {
+                    $qq->whereJsonContains('services_interested', $this->serviceFilter)
+                        ->orWhere('services_interested', 'like', '%' . $this->serviceFilter . '%');
+                });
+            })
+            ->when($this->industryFilter, fn($q) => $q->where('industry', $this->industryFilter))
+            ->when($this->urgencyFilter, fn($q) => $q->where('urgency', $this->urgencyFilter))
+            ->when($this->budgetFilter === 'has', fn($q) => $q->whereNotNull('budget_range')->where('budget_range', '!=', ''))
+            ->when($this->budgetFilter === 'none', fn($q) => $q->where(function ($qq) {
+                $qq->whereNull('budget_range')->orWhere('budget_range', '');
+            }))
             ->when($this->starredFilter === 'starred', fn($q) => $q->where('is_starred', true))
             ->when($this->hasFilter === 'has-phone',   fn($q) => $q->whereNotNull('phone')->where('phone', '!=', ''))
             ->when($this->hasFilter === 'has-company', fn($q) => $q->whereNotNull('company')->where('company', '!=', ''))
@@ -885,15 +925,16 @@ class LeadManagement extends Component
     protected function buildStats(): array
     {
         return [
-            'total'     => ChatLead::notSpam()->count(),
-            'new'       => ChatLead::notSpam()->where('status', 'new')->count(),
-            'today'     => ChatLead::notSpam()->whereDate('created_at', today())->count(),
-            'week'      => ChatLead::notSpam()->where('created_at', '>=', now()->subDays(7))->count(),
-            'contacted' => ChatLead::notSpam()->whereIn('status', ['contacted', 'qualified', 'converted'])->count(),
-            'converted' => ChatLead::notSpam()->where('status', 'converted')->count(),
-            'hot'       => ChatLead::notSpam()->where('score', '>=', 70)->count(),
-            'starred'   => ChatLead::starred()->notSpam()->count(),
-            'spam'      => ChatLead::onlySpam()->count(),
+            'total'         => ChatLead::notSpam()->count(),
+            'new'           => ChatLead::notSpam()->where('status', 'new')->count(),
+            'today'         => ChatLead::notSpam()->whereDate('created_at', today())->count(),
+            'week'          => ChatLead::notSpam()->where('created_at', '>=', now()->subDays(7))->count(),
+            'contacted'     => ChatLead::notSpam()->whereIn('status', ['contacted', 'qualified', 'converted'])->count(),
+            'converted'     => ChatLead::notSpam()->where('status', 'converted')->count(),
+            'hot'           => ChatLead::notSpam()->where('score', '>=', 70)->count(),
+            'starred'       => ChatLead::starred()->notSpam()->count(),
+            'spam'          => ChatLead::onlySpam()->count(),
+            'with_services' => ChatLead::notSpam()->whereNotNull('services_interested')->count(),
         ];
     }
 
@@ -906,10 +947,12 @@ class LeadManagement extends Component
         $this->authorize('viewAny', ChatLead::class);
 
         return view('livewire.admin.leads.lead-management', [
-            'leads'    => $this->baseQuery()->paginate($this->perPage),
-            'stats'    => $this->buildStats(),
-            'statuses' => ChatLead::STATUSES,
-            'sources'  => ChatLead::SOURCES,
+            'leads'           => $this->baseQuery()->paginate($this->perPage),
+            'stats'           => $this->buildStats(),
+            'statuses'        => ChatLead::STATUSES,
+            'sources'         => ChatLead::SOURCES,
+            'knownServices'   => ChatLead::allKnownServices(),
+            'knownIndustries' => ChatLead::allKnownIndustries(),
         ]);
     }
 }
