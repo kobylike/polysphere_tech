@@ -15,6 +15,10 @@ class TermsComponent extends Component
 
     public function render()
     {
-        return view('livewire.auth.terms-component');
+        return view('livewire.auth.terms-component')
+            ->layoutData([
+                'description' => 'Read the terms and conditions for using Polysphere Tech services.',
+                'canonical'   => route('terms'),
+            ]);
     }
 }

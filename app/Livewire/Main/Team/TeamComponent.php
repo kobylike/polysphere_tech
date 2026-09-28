@@ -11,7 +11,6 @@ class TeamComponent extends Component
 {
     public function render()
     {
-        // Fetch featured team members ordered by display_order
         $teamMembers = User::whereHas('profile', function ($query) {
             $query->where('is_featured_team', true);
         })
@@ -21,9 +20,11 @@ class TeamComponent extends Component
             ->select('users.*')
             ->get();
 
-
         return view('livewire.main.team.team-component', [
             'teamMembers' => $teamMembers,
-        ]);
+        ])->layoutData([
+            'description' => 'Meet the engineers, designers and strategists behind Polysphere Tech.',
+            'canonical'   => route('team'),
+        ])->title('Our Team | Polysphere Tech');
     }
 }

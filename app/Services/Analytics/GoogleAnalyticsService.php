@@ -40,8 +40,8 @@ class GoogleAnalyticsService
 
     public function __construct()
     {
-        $propertyId = config('services.google_analytics.property_id');
-        $credentialsPath = config('services.google_analytics.credentials_path');
+        $propertyId      = config('services.google_analytics.property_id');
+        $credentialsPath = $this->resolveCredentialsPath();
 
         $this->property = 'properties/' . $propertyId;
 
@@ -52,8 +52,20 @@ class GoogleAnalyticsService
                 ]);
                 $this->configured = true;
             } catch (Throwable $e) {
-                Log::error('GA4: failed to initialize client', ['error' => $e->getMessage()]);
+                Log::error('GA4: failed to initialize client', [
+                    'path'  => $credentialsPath,
+                    'error' => $e->getMessage(),
+                ]);
             }
+        } else {
+            // Surface *why* we're not configured instead of failing silently.
+            // Check storage/logs/laravel.log after a page load in production.
+            Log::warning('GA4: not configured', [
+                'has_property_id'  => (bool) $propertyId,
+                'credentials_path' => $credentialsPath,
+                'path_exists'      => $credentialsPath ? file_exists($credentialsPath) : false,
+                'path_readable'    => $credentialsPath ? is_readable($credentialsPath) : false,
+            ]);
         }
     }
 
@@ -423,6 +435,58 @@ class GoogleAnalyticsService
         foreach (['overview', 'timeseries', 'traffic-sources', 'devices', 'browsers'] as $suffix) {
             Cache::forget($this->cacheKey($suffix, $period));
         }
+    }
+
+    // ─── Credential resolution ─────────────────────────────────────────
+
+    /**
+     * Turn whatever the .env gave us into an absolute, readable path that
+     * works identically on Windows dev and Linux prod.
+     *
+     *  1. If GA4_CREDENTIALS_JSON is set, dump it to
+     *     storage/app/ga4/service-account.json once and use that.
+     *  2. Otherwise take GA4_CREDENTIALS_PATH. If it's relative, treat it
+     *     as relative to storage_path(). If it's already absolute, use it
+     *     as-is so power users can point anywhere they like.
+     */
+    protected function resolveCredentialsPath(): ?string
+    {
+        $inlineJson = config('services.google_analytics.credentials_json');
+        $storedPath = storage_path('app/ga4/service-account.json');
+
+        // 1. Inline JSON from env (best for Heroku / Fly / Forge / Vapor)
+        if (!empty($inlineJson)) {
+            if (!is_file($storedPath)) {
+                @mkdir(dirname($storedPath), 0755, true);
+                @file_put_contents($storedPath, $inlineJson);
+                @chmod($storedPath, 0600);
+            }
+
+            if (is_readable($storedPath)) {
+                return $storedPath;
+            }
+        }
+
+        // 2. Path from env
+        $path = config('services.google_analytics.credentials_path');
+        if (empty($path)) {
+            return null;
+        }
+
+        // Relative? Anchor to storage_path() so the same .env value works
+        // on both Windows and Linux.
+        if (!$this->looksAbsolute($path)) {
+            $path = storage_path($path);
+        }
+
+        return $path;
+    }
+
+    protected function looksAbsolute(string $path): bool
+    {
+        return str_starts_with($path, '/')
+            || str_starts_with($path, '\\\\')
+            || (bool) preg_match('#^[A-Za-z]:[\\\\/]#', $path); // C:\ or C:/
     }
 
     // ─── Shared helpers ────────────────────────────────────────────────

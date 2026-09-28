@@ -166,6 +166,16 @@
         --}}
         @stack('schema')
 
+        @production
+            <script async data-navigate-once src="https://www.googletagmanager.com/gtag/js?id=G-355G42DGFP"></script>
+            <script data-navigate-once>
+                window.dataLayer = window.dataLayer || [];
+                function gtag() { dataLayer.push(arguments); }
+                gtag('js', new Date());
+                gtag('config', 'G-355G42DGFP');
+            </script>
+        @endproduction
+
         @livewireStyles
         @stack('styles')
 

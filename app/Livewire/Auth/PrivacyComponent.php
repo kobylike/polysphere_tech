@@ -15,6 +15,10 @@ class PrivacyComponent extends Component
 
     public function render()
     {
-        return view('livewire.auth.privacy-component');
+        return view('livewire.auth.privacy-component')
+            ->layoutData([
+                'description' => 'Read how Polysphere Tech collects, uses, and protects your personal data.',
+                'canonical'   => route('privacy'),
+            ]);
     }
 }
