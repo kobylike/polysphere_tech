@@ -69,7 +69,7 @@
                                             <div class="content">
                                                 <span class="date">
                                                     <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
-                                                        {{ $post->published_at->format('d M, Y') }}
+                                                        {{ $post->published_at?->format('d M, Y') }}
                                                     </a>
                                                 </span>
                                                 <h6>

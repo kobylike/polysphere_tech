@@ -4,6 +4,7 @@ namespace App\Livewire\Main\Partials;
 
 use App\Models\Post;
 use App\Models\Service;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 
@@ -12,8 +13,8 @@ class Footer extends Component
     public function render()
     {
         // ─── Latest 2 published, public, non-scheduled blog posts ────────
-        $recentPosts = Cache::remember(
-            'footer:recent_posts',
+        $recentPosts = collect(Cache::remember(
+            'footer:recent_posts_v2',
             now()->addMinutes(10),
             fn() => Post::query()
                 ->where('status', 'published')
@@ -25,18 +26,34 @@ class Footer extends Component
                 ->orderByDesc('published_at')
                 ->limit(2)
                 ->get(['id', 'title', 'slug', 'featured_image', 'published_at'])
-        );
+                ->map(fn($p) => [
+                    'id'             => $p->id,
+                    'title'          => $p->title,
+                    'slug'           => $p->slug,
+                    'featured_image' => $p->featured_image,
+                    'published_at'   => $p->published_at?->toDateTimeString(),
+                ])
+                ->all()
+        ))->map(fn($p) => (object) array_merge($p, [
+            'published_at' => $p['published_at'] ? Carbon::parse($p['published_at']) : null,
+        ]));
 
         // ─── Up to 5 active services ─────────────────────────────────────
-        $services = Cache::remember(
-            'footer:services',
+        $services = collect(Cache::remember(
+            'footer:services_v2',
             now()->addMinutes(10),
             fn() => Service::query()
                 ->where('status', 'active')
                 ->orderBy('order', 'asc')
                 ->limit(5)
                 ->get(['id', 'name', 'slug'])
-        );
+                ->map(fn($s) => [
+                    'id'   => $s->id,
+                    'name' => $s->name,
+                    'slug' => $s->slug,
+                ])
+                ->all()
+        ))->map(fn($s) => (object) $s);
 
         // ─── Social media URLs ──────────────────────────────────────────
         $socials = [
