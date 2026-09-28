@@ -1,6 +1,19 @@
 User-agent: *
 Allow: /
 
+# Search — infinite URL permutations, do not crawl
+Disallow: /search
+
+# Livewire internal endpoints — not real pages
+Disallow: /livewire
+
+# Tokenized / one-time links — never index
+Disallow: /comment/verify/
+Disallow: /newsletter/verify/
+Disallow: /newsletter/unsubscribe/
+Disallow: /applications/
+Disallow: /careers/*/apply
+
 # Auth
 Disallow: /login
 Disallow: /register

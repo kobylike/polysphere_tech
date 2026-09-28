@@ -96,6 +96,11 @@ class VacancyComponent extends Component
             'totalOpen'          => (clone $base)->count(),
             'totalDepartments'   => (clone $base)->distinct('department_id')->count('department_id'),
             'totalRemote'        => (clone $base)->where('workplace_type', WorkplaceType::Remote->value)->count(),
-        ]);
+        ])->layoutData([
+            'description' => 'Explore open roles at Polysphere Tech and build software that helps businesses scale.',
+            'canonical'   => route('vacancies'),
+            'noindex'     => filled($this->search) || filled($this->departmentFilter)
+                || filled($this->employmentTypeFilter) || filled($this->workplaceTypeFilter),
+        ])->title('Careers | Polysphere Tech');
     }
 }

@@ -26,6 +26,11 @@ class ServiceComponent extends Component
     {
         return view('livewire.main.services.service-component', [
             'services' => $this->getServices(),
-        ]);
+        ])->layoutData([
+            'description' => 'Explore Polysphere Tech services — custom software development, SaaS engineering, cloud solutions, IT consulting and digital transformation.',
+            'canonical'   => route('services'),
+            // No filters on this page — the listing itself should be indexed.
+            'noindex'     => false,
+        ])->title('Services | Polysphere Tech');
     }
 }

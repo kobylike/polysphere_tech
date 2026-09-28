@@ -4,6 +4,7 @@ namespace App\Livewire\Main\Projects;
 
 use App\Models\Project;
 use App\Models\Service;
+use Illuminate\Support\Str;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -13,6 +14,11 @@ class ProjectComponent extends Component
 
     public $service = ''; // filter by service slug
     public $perPage = 6;
+
+    protected $queryString = [
+        'service' => ['except' => ''],
+        'page'    => ['except' => 1],
+    ];
 
     public function updatingService()
     {
@@ -48,6 +54,15 @@ class ProjectComponent extends Component
         return view('livewire.main.projects.project-component', [
             'projects' => $this->getProjects(),
             'services' => $this->getServices(),
-        ]);
+        ])->layoutData([
+            'description' => 'Explore our portfolio of software development, SaaS and IT consulting projects delivered by Polysphere Tech.',
+            'canonical'   => route('projects'),
+            // Don't let Google index filtered/paginated views — only the clean listing.
+            'noindex'     => filled($this->service),
+        ])->title(
+            filled($this->service)
+                ? Str::headline($this->service) . ' Projects | Polysphere Tech'
+                : 'Projects | Polysphere Tech'
+        );
     }
 }

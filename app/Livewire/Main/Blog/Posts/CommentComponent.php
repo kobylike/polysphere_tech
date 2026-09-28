@@ -43,6 +43,13 @@ class CommentComponent extends Component
     // ─── State ──────────────────────────────────────────────────────
     public $submitted = false;
 
+    /**
+     * Guest rate limit: max comments (top-level + replies) per IP per hour.
+     */
+    protected int $guestCommentLimit = 3;
+
+    protected int $guestCommentWindowSeconds = 3600;
+
     protected $rules = [
         'body' => 'required|string|min:2|max:5000',
         'guestName' => 'required_if:user_id,null|string|max:100',
@@ -81,6 +88,10 @@ class CommentComponent extends Component
         $this->perPage += 5;
     }
 
+    // ────────────────────────────────────────────────────────────
+    //  Submit top-level comment
+    // ────────────────────────────────────────────────────────────
+
     public function submit()
     {
         $this->validateOnly('body');
@@ -89,11 +100,13 @@ class CommentComponent extends Component
             $this->validateOnly('guestEmail');
         }
 
+        // Honeypot — silently fake success for bots
         if (!empty($this->honeypot)) {
             $this->fakeSuccess();
             return;
         }
 
+        // Timing trap — bots submit too fast
         $elapsed = now()->valueOf() - (float) $this->renderedAt;
         if ($elapsed < 2000) {
             $this->fakeSuccess();
@@ -105,14 +118,8 @@ class CommentComponent extends Component
             return;
         }
 
-        if (!Auth::check()) {
-            $key = 'guest-comment:' . request()->ip();
-            if (RateLimiter::tooManyAttempts($key, 3)) {
-                $seconds = RateLimiter::availableIn($key);
-                $this->addError('body', "Too many attempts. Please wait {$seconds} seconds.");
-                return;
-            }
-            RateLimiter::hit($key, 3600);
+        if (!$this->enforceGuestRateLimit('body')) {
+            return;
         }
 
         $data = [
@@ -138,15 +145,25 @@ class CommentComponent extends Component
                 ->exists();
 
             if ($trusted) {
-                $comment->update(['verified_at' => now(), 'verification_token' => null]);
+                $comment->update([
+                    'verified_at' => now(),
+                    'verification_token' => null,
+                ]);
                 $this->submitted = false;
-                session()->put('verified_guest', ['name' => $this->guestName, 'email' => $this->guestEmail]);
+                session()->put('verified_guest', [
+                    'name' => $this->guestName,
+                    'email' => $this->guestEmail,
+                ]);
             } else {
                 $url = route('comment.verify', ['token' => $comment->verification_token]);
                 Mail::to($comment->guest_email)->send(new CommentVerificationMail($comment, $url));
                 $this->submitted = true;
                 $this->reset(['body', 'guestName', 'guestEmail']);
-                $this->dispatch('notify', type: 'info', message: 'Please check your email to verify your comment.');
+                $this->dispatch(
+                    'notify',
+                    type: 'info',
+                    message: 'Please check your email to verify your comment.'
+                );
             }
         } else {
             $this->reset(['body', 'editingCommentId']);
@@ -155,6 +172,10 @@ class CommentComponent extends Component
         $this->renderedAt = now()->valueOf();
         $this->dispatch('commentSubmitted');
     }
+
+    // ────────────────────────────────────────────────────────────
+    //  Submit reply
+    // ────────────────────────────────────────────────────────────
 
     public function saveReply($parentId)
     {
@@ -166,6 +187,11 @@ class CommentComponent extends Component
 
         if ($this->containsProfanity($this->replyBody)) {
             $this->addError('replyBody', 'Please avoid using inappropriate language.');
+            return;
+        }
+
+        // Rate limit replies too — previously they were unrestricted
+        if (!$this->enforceGuestRateLimit('replyBody')) {
             return;
         }
 
@@ -192,29 +218,53 @@ class CommentComponent extends Component
                 ->exists();
 
             if ($trusted) {
-                $reply->update(['verified_at' => now(), 'verification_token' => null]);
-                session()->put('verified_guest', ['name' => $this->replyGuestName, 'email' => $this->replyGuestEmail]);
+                $reply->update([
+                    'verified_at' => now(),
+                    'verification_token' => null,
+                ]);
+                session()->put('verified_guest', [
+                    'name' => $this->replyGuestName,
+                    'email' => $this->replyGuestEmail,
+                ]);
             } else {
                 $url = route('comment.verify', ['token' => $reply->verification_token]);
                 Mail::to($reply->guest_email)->send(new CommentVerificationMail($reply, $url));
-                $this->dispatch('notify', type: 'info', message: 'Please check your email to verify your reply.');
+                $this->dispatch(
+                    'notify',
+                    type: 'info',
+                    message: 'Please check your email to verify your reply.'
+                );
             }
         }
 
-        $this->reset(['replyBody', 'replyGuestName', 'replyGuestEmail', 'replyingTo', 'editingReplyId']);
+        $this->reset([
+            'replyBody',
+            'replyGuestName',
+            'replyGuestEmail',
+            'replyingTo',
+            'editingReplyId',
+        ]);
         $this->renderedAt = now()->valueOf();
         $this->dispatch('commentSubmitted');
     }
 
-    // ─── Edit Comment ──────────────────────────────────────────────
+    // ────────────────────────────────────────────────────────────
+    //  Edit / delete top-level comment
+    // ────────────────────────────────────────────────────────────
 
     public function editComment($id)
     {
         $comment = Comment::findOrFail($id);
-        if (Auth::id() !== $comment->user_id) {
-            $this->dispatch('notify', type: 'error', message: 'You cannot edit this comment.');
+
+        if (!$this->canModifyComment($comment)) {
+            $this->dispatch(
+                'notify',
+                type: 'error',
+                message: 'You cannot edit this comment.'
+            );
             return;
         }
+
         $this->editingCommentId = $id;
         $this->body = $comment->body;
     }
@@ -228,51 +278,62 @@ class CommentComponent extends Component
     public function updateComment()
     {
         $this->validate(['body' => 'required|string|min:2|max:5000']);
+
         $comment = Comment::findOrFail($this->editingCommentId);
-        if (Auth::id() !== $comment->user_id) {
-            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
+
+        if (!$this->canModifyComment($comment)) {
+            $this->dispatch(
+                'notify',
+                type: 'error',
+                message: 'Permission denied.'
+            );
             return;
         }
+
         if ($this->containsProfanity($this->body)) {
             $this->addError('body', 'Please avoid using inappropriate language.');
             return;
         }
+
         $comment->update(['body' => $this->body]);
         $this->editingCommentId = null;
         $this->body = '';
     }
 
-    // ─── Delete (no modal, uses wire:confirm on the frontend) ───────
-
     public function deleteComment($id)
     {
         $comment = Comment::findOrFail($id);
-        if (Auth::id() !== $comment->user_id) {
-            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
+
+        if (!$this->canModifyComment($comment)) {
+            $this->dispatch(
+                'notify',
+                type: 'error',
+                message: 'Permission denied.'
+            );
             return;
         }
+
         $comment->delete();
         $this->dispatch('commentSubmitted');
     }
 
-    public function deleteReply($id)
-    {
-        $reply = Comment::findOrFail($id);
-        if (Auth::id() !== $reply->user_id) {
-            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
-            return;
-        }
-        $reply->delete();
-        $this->dispatch('commentSubmitted');
-    }
+    // ────────────────────────────────────────────────────────────
+    //  Edit / delete reply
+    // ────────────────────────────────────────────────────────────
 
     public function editReply($id)
     {
         $reply = Comment::findOrFail($id);
-        if (Auth::id() !== $reply->user_id) {
-            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
+
+        if (!$this->canModifyComment($reply)) {
+            $this->dispatch(
+                'notify',
+                type: 'error',
+                message: 'Permission denied.'
+            );
             return;
         }
+
         $this->editingReplyId = $id;
         $this->replyBody = $reply->body;
         $this->replyingTo = $reply->parent_id;
@@ -285,6 +346,23 @@ class CommentComponent extends Component
         $this->replyGuestName = '';
         $this->replyGuestEmail = '';
         $this->replyingTo = null;
+    }
+
+    public function deleteReply($id)
+    {
+        $reply = Comment::findOrFail($id);
+
+        if (!$this->canModifyComment($reply)) {
+            $this->dispatch(
+                'notify',
+                type: 'error',
+                message: 'Permission denied.'
+            );
+            return;
+        }
+
+        $reply->delete();
+        $this->dispatch('commentSubmitted');
     }
 
     public function toggleReplyForm($id)
@@ -314,10 +392,80 @@ class CommentComponent extends Component
         }
     }
 
+    // ────────────────────────────────────────────────────────────
+    //  Ownership & rate-limiting helpers
+    // ────────────────────────────────────────────────────────────
+
+    /**
+     * Determine whether the current visitor may edit or delete the comment.
+     *
+     * - Logged-in users may only modify comments they own.
+     * - Guests may only modify guest comments whose `guest_email` matches
+     *   the email they verified in this session. This closes the previous
+     *   hole where `Auth::id() === $comment->user_id` was true for both
+     *   null values, letting guests edit each other's comments.
+     */
+    protected function canModifyComment(Comment $comment): bool
+    {
+        if (Auth::check()) {
+            return (int) Auth::id() === (int) $comment->user_id;
+        }
+
+        // Comment belongs to a registered user — guests can never touch it
+        if ($comment->user_id !== null) {
+            return false;
+        }
+
+        $verified = session('verified_guest');
+        if (!$verified || empty($verified['email']) || empty($comment->guest_email)) {
+            return false;
+        }
+
+        return strcasecmp($comment->guest_email, $verified['email']) === 0;
+    }
+
+    /**
+     * Enforce an hourly comment/reply budget for guests, keyed by IP.
+     * Logged-in users are exempt.
+     *
+     * @param  string  $errorField  Which Livewire field to attach the error to
+     *                              ('body' for comments, 'replyBody' for replies).
+     */
+    protected function enforceGuestRateLimit(string $errorField): bool
+    {
+        if (Auth::check()) {
+            return true;
+        }
+
+        $key = 'guest-comment:' . request()->ip();
+
+        if (RateLimiter::tooManyAttempts($key, $this->guestCommentLimit)) {
+            $seconds = RateLimiter::availableIn($key);
+            $this->addError(
+                $errorField,
+                "Too many attempts. Please wait {$seconds} seconds."
+            );
+            return false;
+        }
+
+        RateLimiter::hit($key, $this->guestCommentWindowSeconds);
+        return true;
+    }
+
+    // ────────────────────────────────────────────────────────────
+    //  Profanity filter
+    // ────────────────────────────────────────────────────────────
+
+    /**
+     * Block only unambiguous profanity/slurs. Borderline words like
+     * "suck", "damn", "cock", "cum", "piss", "balls" were removed because
+     * they trigger on legitimate uses ("damn near", "cocktail", "cum laude").
+     */
     protected function containsProfanity($text): bool
     {
         $badWords = [
             'fuck',
+            'fucking',
             'shit',
             'asshole',
             'bitch',
@@ -332,27 +480,39 @@ class CommentComponent extends Component
             'faggot',
             'retard',
             'cocksucker',
-            'cum',
-            'suck',
-            'fucking',
-            'sucks',
-            'piss',
-            'pissed',
-            'cock',
-            'balls',
-            'damn',
         ];
+
         $clean = preg_replace('/\s+/', ' ', trim($text));
-        $lower = strtolower($clean);
         $pattern = '/\b(' . implode('|', array_map('preg_quote', $badWords)) . ')\b/i';
-        return preg_match($pattern, $lower) === 1;
+
+        return preg_match($pattern, strtolower($clean)) === 1;
     }
+
+    // ────────────────────────────────────────────────────────────
+    //  Bot honeypot success
+    // ────────────────────────────────────────────────────────────
 
     protected function fakeSuccess()
     {
         $this->submitted = true;
-        $this->reset(['body', 'guestName', 'guestEmail', 'replyBody', 'replyGuestName', 'replyGuestEmail']);
+        $this->reset([
+            'body',
+            'guestName',
+            'guestEmail',
+            'replyBody',
+            'replyGuestName',
+            'replyGuestEmail',
+        ]);
+
+        // Reset the timing baseline so subsequent legit-looking submissions
+        // don't accidentally trip the "too fast" trap again.
+        $this->renderedAt = now()->valueOf();
     }
+
+    // ────────────────────────────────────────────────────────────
+    //  Render — no layoutData needed, this component is embedded in
+    //  PostDetails (which owns the page-level SEO metadata).
+    // ────────────────────────────────────────────────────────────
 
     public function render()
     {
