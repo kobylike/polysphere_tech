@@ -33,6 +33,13 @@
             </div>
         @endunless
 
+        @if($ga4Configured && (int) ($overview['sessions'] ?? 0) === 0)
+            <div class="alert alert-info d-flex align-items-center gap-2">
+                <i class="fas fa-info-circle"></i>
+                <div>Live data is working. Reports and charts fill in about 24–48 hours after tracking starts.</div>
+            </div>
+        @endif
+
         <div class="row">
 
             <!-- ─── Period selector ─── -->
@@ -49,28 +56,29 @@
 
             <!-- ─── LIVE RIGHT NOW ─── -->
             <div class="col-xl-3 col-sm-6" wire:poll.15s="$refresh">
-                <div class="card chart-grd same-card border-start border-4 border-success">
-                    <div class="card-body depostit-card p-0">
-                        <div class="depostit-card-media d-flex justify-content-between pb-0">
+                <div class="card live-card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-start">
                             <div>
-                                <h6 class="d-flex align-items-center gap-1">
-                                    <span class="live-dot"></span> Live Right Now
-                                </h6>
-                                <h3>{{ $this->realtimeActiveUsers }}</h3>
+                                <div class="live-label"><span class="live-dot"></span> Live right now</div>
+                                <div class="live-count">{{ $this->realtimeActiveUsers }}</div>
+                                <div class="live-sub">
+                                    {{ Str::plural('active visitor', (int) $this->realtimeActiveUsers) }}
+                                </div>
                             </div>
-                            <div class="icon-box bg-success-light">
-                                <i class="fas fa-bolt text-success"></i>
-                            </div>
+                            <div class="icon-box bg-success-light"><i class="fas fa-bolt text-success"></i></div>
                         </div>
-                        <div class="mt-2">
-                            @forelse($this->realtimeTopPages as $page)
-                                <div class="d-flex justify-content-between small text-muted">
-                                    <span class="text-truncate" style="max-width: 160px;"
-                                        title="{{ $page['page'] }}">{{ $page['page'] }}</span>
-                                    <span>{{ $page['users'] }}</span>
+
+                        <div class="live-pages">
+                            @forelse(array_slice($this->realtimeTopPages, 0, 3) as $page)
+                                <div class="live-page-row">
+                                    <span class="live-page-name" title="{{ $page['page'] }}">
+                                        {{ Str::limit(Str::before($page['page'], ' | Polysphere Tech'), 26) }}
+                                    </span>
+                                    <span class="live-page-count">{{ $page['users'] }}</span>
                                 </div>
                             @empty
-                                <small class="text-muted">No active visitors</small>
+                                <div class="live-empty">No one on the site right now</div>
                             @endforelse
                         </div>
                     </div>
@@ -278,6 +286,64 @@
 </div>
 
 <style>
+    .live-card {
+        height: 100%;
+        border-left: 4px solid #3AC977;
+    }
+
+    .live-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .live-count {
+        font-size: 34px;
+        font-weight: 700;
+        line-height: 1.1;
+        color: #0f172a;
+        margin-top: 4px;
+    }
+
+    .live-sub {
+        font-size: 12px;
+        color: #64748b;
+    }
+
+    .live-pages {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px solid #eef2f6;
+    }
+
+    .live-page-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 12.5px;
+        padding: 3px 0;
+        color: #334155;
+    }
+
+    .live-page-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .live-page-count {
+        font-weight: 600;
+        color: #0f172a;
+    }
+
+    .live-empty {
+        font-size: 12.5px;
+        color: #64748b;
+    }
+
     .live-dot {
         display: inline-block;
         width: 8px;
