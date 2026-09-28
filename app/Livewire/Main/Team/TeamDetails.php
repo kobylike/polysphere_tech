@@ -3,9 +3,11 @@
 namespace App\Livewire\Main\Team;
 
 use App\Models\User;
-
+use Illuminate\Support\Str;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('layouts.app')]
 class TeamDetails extends Component
 {
     public User $member;
@@ -24,8 +26,28 @@ class TeamDetails extends Component
             ->firstOrFail();
     }
 
+    private function metaDescription(): string
+    {
+        if (filled($this->member->about_me)) {
+            return Str::limit(strip_tags($this->member->about_me), 160);
+        }
+
+        $position = $this->member->profile?->position;
+
+        return $position
+            ? Str::limit("{$this->member->name}, {$position} at Polysphere Tech.", 160)
+            : Str::limit("{$this->member->name} is part of the Polysphere Tech team.", 160);
+    }
+
     public function render()
     {
-        return view('livewire.main.team.team-details');
+        return view('livewire.main.team.team-details')
+            ->layoutData([
+                'description' => $this->metaDescription(),
+                'canonical'   => route('team.details', $this->member->username),
+                'ogImage'     => $this->member->avatar_url ?? null,
+                'ogType'      => 'profile',
+            ])
+            ->title($this->member->name . ' | Polysphere Tech Team');
     }
 }

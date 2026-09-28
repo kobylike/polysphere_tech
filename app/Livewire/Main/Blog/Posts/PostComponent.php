@@ -138,6 +138,14 @@ class PostComponent extends Component
             'categoriesData' => $this->getCategoriesWithCount(),
             'recentPosts'    => $this->getRecentPosts(),
             'popularTags'    => $this->getPopularTags(),
-        ]);
+        ])->layoutData([
+            'description' => 'Insights on software development, SaaS and digital transformation from the Polysphere Tech team.',
+            'canonical'   => route('posts'),
+            'noindex'     => filled($this->search) || filled($this->category),
+        ])->title(
+            filled($this->category)
+                ? \Illuminate\Support\Str::headline($this->category) . ' Articles | Polysphere Tech'
+                : 'Blog | Polysphere Tech'
+        );
     }
 }

@@ -44,6 +44,11 @@ class IndexComponent extends Component
 
     public function render()
     {
-        return view('livewire.main.index-component');
+        return view('livewire.main.index-component')
+            ->layoutData([
+                'description' => 'Polysphere Tech delivers custom software development, SaaS platforms, and digital transformation solutions for modern businesses.',
+                'canonical'   => route('index'),
+            ])
+            ->title('Polysphere Tech - IT Solutions & Software Development');
     }
 }

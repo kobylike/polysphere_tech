@@ -5,8 +5,9 @@ namespace App\Livewire\Main\Blog\Posts;
 use App\Models\Category;
 use App\Models\Post;
 use App\Models\Tag;
-use Livewire\Component;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
+use Livewire\Component;
 
 #[Layout('layouts.app')]
 class PostDetails extends Component
@@ -68,8 +69,34 @@ class PostDetails extends Component
         $this->redirectRoute('posts', ['search' => $this->search], navigate: true);
     }
 
+    private function metaDescription(): string
+    {
+        if (!empty($this->post->seo_description)) {
+            return $this->post->seo_description;
+        }
+
+        $source = $this->post->excerpt ?: $this->post->content;
+
+        return Str::limit(strip_tags((string) $source), 160);
+    }
+
+    private function ogImage(): ?string
+    {
+        return $this->post->featured_image
+            ? asset('storage/' . $this->post->featured_image)
+            : null;
+    }
+
     public function render()
     {
-        return view('livewire.main.blog.posts.post-details');
+        return view('livewire.main.blog.posts.post-details')
+            ->layoutData([
+                'description' => $this->metaDescription(),
+                'keywords'    => $this->post->seo_keywords,
+                'canonical'   => route('blog.details', $this->post->slug),
+                'ogImage'     => $this->ogImage(),
+                'ogType'      => 'article',
+            ])
+            ->title($this->post->seo_title ?: $this->post->title . ' | Polysphere Tech');
     }
 }

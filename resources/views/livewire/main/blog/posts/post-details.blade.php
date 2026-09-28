@@ -1,13 +1,15 @@
-@php
-    $title = $post->seo_title ?? $post->title;
-    $seo_description = $post->seo_description ?? strip_tags($post->excerpt ?? $post->content);
-    $seo_keywords = $post->seo_keywords ?? '';
-@endphp
+{{-- @php
+$title = $post->seo_title ?? $post->title;
+$seo_description = $post->seo_description ?? strip_tags($post->excerpt ?? $post->content);
+$seo_keywords = $post->seo_keywords ?? '';
+@endphp --}}
 
 <div>
+    <x-seo.blog-posting :post="$post" />
     <!-- Breadcrumb area start -->
     <div class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
-        <div class="breadcrumb__thumb" style="background-image: url('{{ asset('assets/main/imgs/resources/blog2.jpg') }}');">
+        <div class="breadcrumb__thumb"
+            style="background-image: url('{{ asset('assets/main/imgs/resources/blog2.jpg') }}');">
         </div>
         <div class="breadcrumb__thumb_2"
             style="background-image: url('{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}');"></div>

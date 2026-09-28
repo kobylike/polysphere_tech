@@ -15,7 +15,12 @@ class AboutComponent extends Component
     }
 
     public function render()
-    {
-        return view('livewire.main.about-component');
-    }
+{
+    return view('livewire.main.about-component')
+        ->layoutData([
+            'description' => 'Learn who we are, what we build, and how Polysphere Tech helps businesses scale with custom software.',
+            'canonical'   => route('about'),
+        ])
+        ->title('About Us | Polysphere Tech');
+}
 }

@@ -4,8 +4,11 @@ namespace App\Livewire\Main\Vacancies;
 
 use App\Enums\VacancyStatus;
 use App\Models\Vacancy;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('layouts.app')]
 class VacancyDetails extends Component
 {
     public Vacancy $vacancy;
@@ -23,6 +26,15 @@ class VacancyDetails extends Component
         ]);
 
         $this->vacancy->refresh();
+    }
+
+    private function metaDescription(): string
+    {
+        if (!empty($this->vacancy->meta_description)) {
+            return $this->vacancy->meta_description;
+        }
+
+        return Str::limit(strip_tags((string) $this->vacancy->summary), 160);
     }
 
     public function render()
@@ -48,6 +60,15 @@ class VacancyDetails extends Component
 
         return view('livewire.main.vacancies.vacancy-details', [
             'related' => $related,
-        ]);
+        ])
+            ->layoutData([
+                'description' => $this->metaDescription(),
+                'canonical'   => route('vacancy.details', $this->vacancy->slug),
+                'ogType'      => 'website',
+                // Closed/expired listings stay reachable but drop out of search.
+                // `false` is passed through intact for open vacancies.
+                'noindex'     => !$this->vacancy->is_open,
+            ])
+            ->title($this->vacancy->meta_title ?: $this->vacancy->title . ' | Polysphere Tech Careers');
     }
 }

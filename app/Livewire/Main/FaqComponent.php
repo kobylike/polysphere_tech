@@ -36,9 +36,12 @@ class FaqComponent extends Component
     }
 
     public function render()
-    {
-        return view('livewire.main.faq-component', [
-            'filteredFaqs' => $this->getFilteredFaqsProperty(),
-        ]);
-    }
+{
+    return view('livewire.main.faq-component', [
+        'filteredFaqs' => $this->getFilteredFaqsProperty(),
+    ])->layoutData([
+        'description' => 'Answers to common questions about our software development, SaaS and IT consulting services.',
+        'canonical'   => route('faq'),
+    ])->title('FAQ | Polysphere Tech');
+}
 }

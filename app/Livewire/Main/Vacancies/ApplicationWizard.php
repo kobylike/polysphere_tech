@@ -590,6 +590,12 @@ class ApplicationWizard extends Component
 
     public function render()
     {
-        return view('livewire.main.vacancies.application-wizard');
+        return view('livewire.main.vacancies.application-wizard')
+            ->layoutData([
+                'description' => "Apply for {$this->vacancy->title} at Polysphere Tech.",
+                'canonical'   => route('vacancies.apply', $this->vacancy->slug),
+                'noindex'     => true,
+            ])
+            ->title('Apply: ' . $this->vacancy->title . ' | Polysphere Tech Careers');
     }
 }

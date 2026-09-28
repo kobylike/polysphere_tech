@@ -20,6 +20,12 @@ class ApplicationStatus extends Component
 
     public function render()
     {
-        return view('livewire.main.vacancies.application-status');
+        return view('livewire.main.vacancies.application-status')
+            ->layoutData([
+                'description' => 'Track the status of your application.',
+                'canonical'   => route('applications.status', $this->application->tracking_token),
+                'noindex'     => true,
+            ])
+            ->title('Application Status | Polysphere Tech');
     }
 }

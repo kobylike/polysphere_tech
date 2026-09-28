@@ -1,4 +1,6 @@
 <div>
+    <x-seo.job-posting :vacancy="$vacancy" />
+
     @php
         /** @var \App\Models\Vacancy $vacancy */
         $workplaceClass = match ($vacancy->workplace_type->value) {
@@ -235,17 +237,13 @@
                     </a>
                 </div>
                 <div class="row g-4">
-                    <div class="row g-4">
-                        @foreach($related as $rv)
-                            <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
-                                @include('livewire.main.partials.vacancy-card', [
-                                    'vacancy' => $rv,
-                                    'featured' => false,
-                                ])
-                            </div>
-                        @endforeach
-                    </div>
+                    @foreach($related as $rv)
+                        <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6">
+                            @include('livewire.main.partials.vacancy-card', ['vacancy' => $rv, 'featured' => false])
+                        </div>
+                    @endforeach
                 </div>
+            </div>
         </section>
     @endif
 </div>

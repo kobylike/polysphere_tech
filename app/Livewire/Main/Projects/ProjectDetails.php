@@ -4,8 +4,11 @@ namespace App\Livewire\Main\Projects;
 
 use App\Models\Project;
 use App\Models\Service;
+use Illuminate\Support\Str;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('layouts.app')]
 class ProjectDetails extends Component
 {
     public Project $project;
@@ -92,8 +95,34 @@ class ProjectDetails extends Component
         return Service::where('status', 'active')->orderBy('name')->get();
     }
 
+    private function metaDescription(): string
+    {
+        if (!empty($this->project->seo_description)) {
+            return $this->project->seo_description;
+        }
+
+        $source = $this->project->excerpt ?: $this->project->content;
+
+        return Str::limit(strip_tags((string) $source), 160);
+    }
+
+    private function ogImage(): ?string
+    {
+        return $this->project->featured_image
+            ? asset('storage/' . $this->project->featured_image)
+            : null;
+    }
+
     public function render()
     {
-        return view('livewire.main.projects.project-details');
+        return view('livewire.main.projects.project-details')
+            ->layoutData([
+                'description' => $this->metaDescription(),
+                'keywords'    => $this->project->seo_keywords,
+                'canonical'   => route('project.details', $this->project->slug),
+                'ogImage'     => $this->ogImage(),
+                'ogType'      => 'article',
+            ])
+            ->title($this->project->seo_title ?: $this->project->title . ' | Polysphere Tech');
     }
 }
