@@ -334,3 +334,12 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
             ->name('admin.departments');
     });
 });
+Route::get('/debug-url', function () {
+    return response()->json([
+        'full_url' => request()->fullUrl(),
+        'is_secure' => request()->isSecure(),
+        'scheme' => request()->getScheme(),
+        'x_forwarded_proto' => request()->header('X-Forwarded-Proto'),
+        'app_url_config' => config('app.url'),
+    ]);
+});
