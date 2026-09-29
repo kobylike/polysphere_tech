@@ -33,14 +33,19 @@ class ChatWidget extends Component
 
     protected int $maxHistory = 20;
 
-    protected string $model = 'gemini-3.6-flash';
+    /**
+     * Primary model. Updated 2026-09-29 to gemini-3.8-flash per Google's
+     * deprecation notice for gemini-3.6-flash and gemini-2.5-flash.
+     */
+    protected string $model = 'gemini-3.8-flash';
 
     /**
-     * Fallback models tried in order if the primary returns 5xx.
-     * Keeps the bot alive during Google-side traffic spikes.
+     * Fallback models tried in order if the primary returns 5xx or 404.
+     * Keeps the bot alive during Google-side traffic spikes or model
+     * retirements. Order matters — first working model wins.
      */
     protected array $fallbackModels = [
-        'gemini-2.5-flash',
+        'gemini-3.6-flash',
         'gemini-2.0-flash',
     ];
 
@@ -646,19 +651,28 @@ class ChatWidget extends Component
                 }
 
                 if ($response !== null) {
+                    $status = $response->status();
+
                     $lastError = [
                         'model'  => $model,
-                        'status' => $response->status(),
+                        'status' => $status,
                         'body'   => mb_substr($response->body(), 0, 500),
                     ];
 
-                    // If it's a 4xx error, no point trying other models.
-                    if ($response->status() < 500) {
+                    // ONLY stop the chain on errors that affect the
+                    // whole account — bad API key, rate limit, etc.
+                    // For everything else (404 model retired, 400 bad
+                    // request shape, 405, etc.) try the next model.
+                    if (in_array($status, [401, 403, 429], true)) {
+                        Log::warning('Gemini account-level error — stopping fallback chain', [
+                            'model'  => $model,
+                            'status' => $status,
+                        ]);
                         break;
                     }
                 }
 
-                // Try the next model
+                // Otherwise — try the next model in the list
             }
 
             // ─── All models failed ────────────────────────────────
@@ -670,8 +684,8 @@ class ChatWidget extends Component
 
                 $status = $response?->status();
 
-                // Google-side outage (5xx) — friendly message with human route
-                if (in_array($status, [500, 502, 503, 504], true)) {
+                // Google-side outage (5xx) OR all models unavailable (404)
+                if (in_array($status, [500, 502, 503, 504, 404], true)) {
                     $this->pushAssistantMessage(
                         "I'm getting a lot of traffic right now and my main service is briefly overloaded. "
                             . "You can try again in a moment, or tap \"Talk to a human\" and I'll pass your "
@@ -699,7 +713,7 @@ class ChatWidget extends Component
             // ─── Successful response ──────────────────────────────
             if ($usedModel !== $this->model) {
                 Log::info('Gemini chat replied via fallback model', [
-                    'model' => $usedModel,
+                    'model'        => $usedModel,
                     'user_message' => end($this->messages)['content'] ?? null,
                 ]);
             }
