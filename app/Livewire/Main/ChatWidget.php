@@ -34,9 +34,9 @@ class ChatWidget extends Component
     protected int $maxHistory = 20;
 
     /**
-     * Primary model. Updated 2026-09-29 after testing — gemini-3.5-flash-lite
-     * is currently the only 3.x model reliably available on the free tier.
-     * Lite is smaller and faster; more than adequate for a knowledge-base bot.
+     * Primary model. gemini-3.5-flash-lite is currently the most reliably
+     * available 3.x model on the free tier; faster and cheaper than full
+     * models and more than adequate for a knowledge-base bot.
      */
     protected string $model = 'gemini-3.5-flash-lite';
 
@@ -47,7 +47,7 @@ class ChatWidget extends Component
      * need to change this unless Google retires every model listed.
      */
     protected array $fallbackModels = [
-        'gemini-3.8-flash',   // newest, often overloaded
+        'gemini-3.8-flash',
         'gemini-3.7-flash',
         'gemini-3.5-flash',
         'gemini-3.6-flash',
@@ -112,6 +112,16 @@ class ChatWidget extends Component
 
         $this->newMessage = $chip['message'];
         $this->send();
+    }
+
+    /**
+     * Handle an external CTA (e.g. the FAQ page button) asking us to open.
+     */
+    #[On('open-chat-widget')]
+    public function openChat(): void
+    {
+        $this->isOpen = true;
+        $this->hasUnread = false;
     }
 
     /* ──────────────────────────────────────────────────────────── */
@@ -638,7 +648,6 @@ class ChatWidget extends Component
 
         $apiKey = config('services.gemini.key');
 
-        // Build the ordered list of models to try: primary first, then fallbacks.
         $models = array_merge([$this->model], $this->fallbackModels);
 
         $response  = null;
@@ -651,7 +660,7 @@ class ChatWidget extends Component
 
                 if ($response !== null && $response->successful()) {
                     $usedModel = $model;
-                    break; // Got a good response
+                    break;
                 }
 
                 if ($response !== null) {
@@ -663,10 +672,7 @@ class ChatWidget extends Component
                         'body'   => mb_substr($response->body(), 0, 500),
                     ];
 
-                    // ONLY stop the chain on errors that affect the
-                    // whole account — bad API key, rate limit, etc.
-                    // For everything else (404 model retired, 400 bad
-                    // request shape, 405, etc.) try the next model.
+                    // Only stop on account-level errors.
                     if (in_array($status, [401, 403, 429], true)) {
                         Log::warning('Gemini account-level error — stopping fallback chain', [
                             'model'  => $model,
@@ -677,7 +683,6 @@ class ChatWidget extends Component
                 }
             }
 
-            // ─── All models failed ────────────────────────────────
             if ($response === null || $response->failed()) {
                 Log::error('Gemini API error — all models failed', [
                     'attempted'  => $models,
@@ -686,7 +691,6 @@ class ChatWidget extends Component
 
                 $status = $response?->status();
 
-                // Google-side outage (5xx) OR all models unavailable (404)
                 if (in_array($status, [500, 502, 503, 504, 404], true)) {
                     $this->pushAssistantMessage(
                         "I'm getting a lot of traffic right now and my main service is briefly overloaded. "
@@ -696,7 +700,6 @@ class ChatWidget extends Component
                     return;
                 }
 
-                // Rate limit
                 if ($status === 429) {
                     $this->pushAssistantMessage(
                         "I'm a bit overloaded at the moment. Give me a few seconds and try again, "
@@ -705,14 +708,12 @@ class ChatWidget extends Component
                     return;
                 }
 
-                // Generic fallback
                 $this->pushAssistantMessage(
                     "Sorry, I'm having trouble connecting right now. Please try again, or email contact@polyspheretech.com."
                 );
                 return;
             }
 
-            // ─── Successful response ──────────────────────────────
             if ($usedModel !== $this->model) {
                 Log::info('Gemini chat replied via fallback model', [
                     'model'        => $usedModel,
@@ -768,10 +769,6 @@ class ChatWidget extends Component
     /**
      * Call Gemini with retry on transient 5xx errors.
      * Uses the v1 endpoint for access to the latest models.
-     *
-     * Note: thinkingConfig has been removed from generationConfig so the
-     * request is compatible across all model generations (Lite models
-     * don't support thinkingLevel).
      */
     protected function callGeminiWithRetry(
         string $model,
@@ -797,7 +794,6 @@ class ChatWidget extends Component
                     ],
                 ]);
 
-                // Success or client error — return immediately, no retry
                 if ($response->successful() || $response->clientError()) {
                     return $response;
                 }
