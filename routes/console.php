@@ -10,3 +10,7 @@ Artisan::command('inspire', function () {
 
 
 Schedule::command('sitemap:generate')->dailyAt('02:00')->withoutOverlapping();
+
+Schedule::command('queue:work --stop-when-empty --max-time=50 --tries=3')
+    ->everyMinute()
+    ->withoutOverlapping();
