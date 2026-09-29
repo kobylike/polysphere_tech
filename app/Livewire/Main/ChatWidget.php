@@ -661,8 +661,6 @@ class ChatWidget extends Component
 
                     // ONLY stop the chain on errors that affect the
                     // whole account — bad API key, rate limit, etc.
-                    // For everything else (404 model retired, 400 bad
-                    // request shape, 405, etc.) try the next model.
                     if (in_array($status, [401, 403, 429], true)) {
                         Log::warning('Gemini account-level error — stopping fallback chain', [
                             'model'  => $model,
@@ -671,8 +669,6 @@ class ChatWidget extends Component
                         break;
                     }
                 }
-
-                // Otherwise — try the next model in the list
             }
 
             // ─── All models failed ────────────────────────────────
@@ -684,7 +680,6 @@ class ChatWidget extends Component
 
                 $status = $response?->status();
 
-                // Google-side outage (5xx) OR all models unavailable (404)
                 if (in_array($status, [500, 502, 503, 504, 404], true)) {
                     $this->pushAssistantMessage(
                         "I'm getting a lot of traffic right now and my main service is briefly overloaded. "
@@ -694,7 +689,6 @@ class ChatWidget extends Component
                     return;
                 }
 
-                // Rate limit
                 if ($status === 429) {
                     $this->pushAssistantMessage(
                         "I'm a bit overloaded at the moment. Give me a few seconds and try again, "
@@ -703,7 +697,6 @@ class ChatWidget extends Component
                     return;
                 }
 
-                // Generic fallback
                 $this->pushAssistantMessage(
                     "Sorry, I'm having trouble connecting right now. Please try again, or email contact@polyspheretech.com."
                 );
@@ -730,7 +723,6 @@ class ChatWidget extends Component
                     'response_len' => mb_strlen($text),
                     'usage'        => $data['usageMetadata'] ?? null,
                 ]);
-
                 $text = rtrim($text, " \t\n\r\0\x0B.,;:-—") . '…';
             }
 
@@ -743,7 +735,6 @@ class ChatWidget extends Component
                     'user_message'    => end($this->messages)['content'] ?? null,
                     'body'            => mb_substr($response->body(), 0, 800),
                 ]);
-
                 $this->pushAssistantMessage(
                     "I didn't quite catch that — could you rephrase, or email contact@polyspheretech.com so a human can help?"
                 );
@@ -765,7 +756,7 @@ class ChatWidget extends Component
 
     /**
      * Call Gemini with retry on transient 5xx errors.
-     * Returns null only if every network attempt throws.
+     * Uses the v1 API endpoint for access to the latest models.
      */
     protected function callGeminiWithRetry(
         string $model,
@@ -773,7 +764,8 @@ class ChatWidget extends Component
         array $contents,
         int $attempts = 2
     ): ?\Illuminate\Http\Client\Response {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+        // *** THE FIX IS HERE: v1 instead of v1beta ***
+        $url = "https://generativelanguage.googleapis.com/v1/models/{$model}:generateContent?key={$apiKey}";
 
         $response = null;
 
@@ -799,7 +791,6 @@ class ChatWidget extends Component
                     return $response;
                 }
 
-                // Server error (5xx) — log and retry
                 Log::warning("Gemini {$model} returned {$response->status()}, attempt {$i}/{$attempts}", [
                     'body' => mb_substr($response->body(), 0, 300),
                 ]);
@@ -809,7 +800,6 @@ class ChatWidget extends Component
                 ]);
             }
 
-            // Wait before retrying (0.5s then 1s)
             if ($i < $attempts) {
                 usleep(500_000 * $i);
             }
