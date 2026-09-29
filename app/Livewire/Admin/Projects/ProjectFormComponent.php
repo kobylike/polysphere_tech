@@ -381,9 +381,30 @@ class ProjectFormComponent extends Component
 
         return sprintf("%.{$decimals}f", $bytes / (1024 ** $factor)) . $units[$factor];
     }
+/**
+ * Livewire properties don't pass through Laravel's ConvertEmptyStringsToNull
+ * middleware the way normal request input does, so a blank optional field
+ * arrives as '' instead of null. That breaks 'nullable' (which only skips
+ * further rules for an actual null) and, for integer/date columns, crashes
+ * the insert with a type error. This replicates what the middleware does.
+ */
+protected function nullifyEmptyOptionalFields(): void
+{
+    $optionalFields = [
+        'published_at', 'seo_title', 'seo_description', 'seo_keywords',
+        'service_id', 'video_url', 'start_year', 'end_year',
+        'client', 'company', 'location', 'content', 'excerpt',
+        'challenge_content', 'final_view_content',
+    ];
 
-    public function save()
+    foreach ($optionalFields as $field) {
+        if ($this->$field === '') {
+            $this->$field = null;
+        }
+    }
+}    public function save()
     {
+        $this->nullifyEmptyOptionalFields();
         $this->validate();
 
         if ($this->projectId) {
