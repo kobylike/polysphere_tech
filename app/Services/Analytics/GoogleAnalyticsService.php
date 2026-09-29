@@ -13,6 +13,7 @@ use Google\Analytics\Data\V1beta\RunReportRequest;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Throwable;
+use Google\Analytics\Data\V1beta\MinuteRange;
 
 /**
  * Thin wrapper around the official GA4 "Data API" client
@@ -40,7 +41,7 @@ class GoogleAnalyticsService
     protected string $property;
 
     protected bool $configured = false;
-
+    protected const REALTIME_WINDOW_MINUTES = 5;
     public function __construct()
     {
         $propertyId      = config('services.google_analytics.property_id');
@@ -93,6 +94,13 @@ class GoogleAnalyticsService
      * definition its complement, so deriving it this way sidesteps the
      * ambiguity entirely.
      */
+
+    protected function realtimeRange(): MinuteRange
+    {
+        return (new MinuteRange())
+            ->setStartMinutesAgo(self::REALTIME_WINDOW_MINUTES - 1)
+            ->setEndMinutesAgo(0);
+    }
     public function overview(string $period = '30d'): array
     {
         if (!$this->configured) {
@@ -375,6 +383,7 @@ class GoogleAnalyticsService
                 $response = $this->client->runRealtimeReport(
                     (new RunRealtimeReportRequest())
                         ->setProperty($this->property)
+                        ->setMinuteRanges([$this->realtimeRange()])
                         ->setMetrics([$this->metric('activeUsers')])
                 );
 
@@ -404,13 +413,10 @@ class GoogleAnalyticsService
                 $response = $this->client->runRealtimeReport(
                     (new RunRealtimeReportRequest())
                         ->setProperty($this->property)
+                        ->setMinuteRanges([$this->realtimeRange()])
                         ->setDimensions([$this->dimension('unifiedScreenName')])
                         ->setMetrics([$this->metric('activeUsers')])
-                        ->setOrderBys([
-                            (new OrderBy())
-                                ->setMetric((new MetricOrderBy())->setMetricName('activeUsers'))
-                                ->setDesc(true),
-                        ])
+                        ->setOrderBys([ /* unchanged */])
                         ->setLimit($limit)
                 );
 
