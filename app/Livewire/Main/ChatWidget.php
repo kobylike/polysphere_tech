@@ -35,6 +35,15 @@ class ChatWidget extends Component
 
     protected string $model = 'gemini-3.6-flash';
 
+    /**
+     * Fallback models tried in order if the primary returns 5xx.
+     * Keeps the bot alive during Google-side traffic spikes.
+     */
+    protected array $fallbackModels = [
+        'gemini-2.5-flash',
+        'gemini-2.0-flash',
+    ];
+
     protected int $leadLockMinutes = 30;
 
     protected int $sessionRateLimit = 15;
@@ -605,7 +614,7 @@ class ChatWidget extends Component
     }
 
     /* ──────────────────────────────────────────────────────────── */
-    /*  Reply                                                      */
+    /*  Reply — with retry + model fallback                        */
     /* ──────────────────────────────────────────────────────────── */
 
     #[On('message-sent')]
@@ -619,33 +628,80 @@ class ChatWidget extends Component
             ->all();
 
         $apiKey = config('services.gemini.key');
-        $url    = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$apiKey}";
+
+        // Build the ordered list of models to try: primary first, then fallbacks.
+        $models = array_merge([$this->model], $this->fallbackModels);
+
+        $response  = null;
+        $usedModel = null;
+        $lastError = null;
 
         try {
-            $response = Http::withHeaders([
-                'content-type' => 'application/json',
-            ])->timeout(30)->post($url, [
-                'system_instruction' => [
-                    'parts' => [['text' => $this->systemPrompt()]],
-                ],
-                'contents' => $contents,
-                'generationConfig' => [
-                    'maxOutputTokens' => 2000,
-                    'thinkingConfig'  => [
-                        'thinkingLevel' => 'minimal',
-                    ],
-                ],
-            ]);
+            foreach ($models as $model) {
+                $response = $this->callGeminiWithRetry($model, $apiKey, $contents);
 
-            if ($response->failed()) {
-                Log::error('Gemini API error', [
-                    'status' => $response->status(),
-                    'body'   => mb_substr($response->body(), 0, 1000),
+                if ($response !== null && $response->successful()) {
+                    $usedModel = $model;
+                    break; // Got a good response
+                }
+
+                if ($response !== null) {
+                    $lastError = [
+                        'model'  => $model,
+                        'status' => $response->status(),
+                        'body'   => mb_substr($response->body(), 0, 500),
+                    ];
+
+                    // If it's a 4xx error, no point trying other models.
+                    if ($response->status() < 500) {
+                        break;
+                    }
+                }
+
+                // Try the next model
+            }
+
+            // ─── All models failed ────────────────────────────────
+            if ($response === null || $response->failed()) {
+                Log::error('Gemini API error — all models failed', [
+                    'attempted'  => $models,
+                    'last_error' => $lastError,
                 ]);
+
+                $status = $response?->status();
+
+                // Google-side outage (5xx) — friendly message with human route
+                if (in_array($status, [500, 502, 503, 504], true)) {
+                    $this->pushAssistantMessage(
+                        "I'm getting a lot of traffic right now and my main service is briefly overloaded. "
+                            . "You can try again in a moment, or tap \"Talk to a human\" and I'll pass your "
+                            . "details to our team directly — or email contact@polyspheretech.com."
+                    );
+                    return;
+                }
+
+                // Rate limit
+                if ($status === 429) {
+                    $this->pushAssistantMessage(
+                        "I'm a bit overloaded at the moment. Give me a few seconds and try again, "
+                            . "or reach the team directly at contact@polyspheretech.com."
+                    );
+                    return;
+                }
+
+                // Generic fallback
                 $this->pushAssistantMessage(
                     "Sorry, I'm having trouble connecting right now. Please try again, or email contact@polyspheretech.com."
                 );
                 return;
+            }
+
+            // ─── Successful response ──────────────────────────────
+            if ($usedModel !== $this->model) {
+                Log::info('Gemini chat replied via fallback model', [
+                    'model' => $usedModel,
+                    'user_message' => end($this->messages)['content'] ?? null,
+                ]);
             }
 
             $data = $response->json();
@@ -655,6 +711,7 @@ class ChatWidget extends Component
 
             if ($finishReason === 'MAX_TOKENS' && ! empty($text)) {
                 Log::warning('Gemini response truncated (MAX_TOKENS)', [
+                    'model'        => $usedModel,
                     'user_message' => end($this->messages)['content'] ?? null,
                     'response_len' => mb_strlen($text),
                     'usage'        => $data['usageMetadata'] ?? null,
@@ -665,6 +722,7 @@ class ChatWidget extends Component
 
             if (empty($text)) {
                 Log::warning('Gemini returned no text', [
+                    'model'           => $usedModel,
                     'finish_reason'   => $finishReason,
                     'usage_metadata'  => $data['usageMetadata'] ?? null,
                     'prompt_feedback' => $data['promptFeedback'] ?? null,
@@ -689,6 +747,61 @@ class ChatWidget extends Component
         } finally {
             $this->isThinking = false;
         }
+    }
+
+    /**
+     * Call Gemini with retry on transient 5xx errors.
+     * Returns null only if every network attempt throws.
+     */
+    protected function callGeminiWithRetry(
+        string $model,
+        string $apiKey,
+        array $contents,
+        int $attempts = 2
+    ): ?\Illuminate\Http\Client\Response {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+        $response = null;
+
+        for ($i = 1; $i <= $attempts; $i++) {
+            try {
+                $response = Http::withHeaders([
+                    'content-type' => 'application/json',
+                ])->timeout(30)->post($url, [
+                    'system_instruction' => [
+                        'parts' => [['text' => $this->systemPrompt()]],
+                    ],
+                    'contents' => $contents,
+                    'generationConfig' => [
+                        'maxOutputTokens' => 2000,
+                        'thinkingConfig'  => [
+                            'thinkingLevel' => 'minimal',
+                        ],
+                    ],
+                ]);
+
+                // Success or client error — return immediately, no retry
+                if ($response->successful() || $response->clientError()) {
+                    return $response;
+                }
+
+                // Server error (5xx) — log and retry
+                Log::warning("Gemini {$model} returned {$response->status()}, attempt {$i}/{$attempts}", [
+                    'body' => mb_substr($response->body(), 0, 300),
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning("Gemini {$model} exception, attempt {$i}/{$attempts}", [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Wait before retrying (0.5s then 1s)
+            if ($i < $attempts) {
+                usleep(500_000 * $i);
+            }
+        }
+
+        return $response;
     }
 
     protected function pushAssistantMessage(string $text): void
