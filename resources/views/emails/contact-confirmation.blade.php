@@ -104,8 +104,9 @@
 
                             <p style="margin:0; font-size:13px; line-height:1.7; color:#94A3B8;">
                                 Need this sooner? Call us directly at
-                                <a href="tel:+1234567890" style="color:#4338CA; font-weight:600; text-decoration:none;">
-                                    +1 (234) 567-8900
+                                <a href="tel:+233597563427"
+                                    style="color:#4338CA; font-weight:600; text-decoration:none;">
+                                    +233 (59) 756‑3427
                                 </a>
                             </p>
 
