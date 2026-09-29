@@ -142,6 +142,13 @@ class ServiceFormComponent extends Component
      */
     public function updatedAdditionalImages()
     {
+        \Illuminate\Support\Facades\Log::info('upload debug', [
+            'is_secure' => request()->isSecure(),
+            'scheme' => request()->getScheme(),
+            'x_forwarded_proto' => request()->header('X-Forwarded-Proto'),
+            'app_url' => config('app.url'),
+            'generated_urls' => collect($this->additional_images)->map(fn($f) => $f->temporaryUrl())->all(),
+        ]);
         if ($this->mergedAdditionalImages !== null) {
             $this->additional_images = $this->mergedAdditionalImages;
             $this->mergedAdditionalImages = null;
