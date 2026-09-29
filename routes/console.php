@@ -9,4 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 
-Schedule::command('sitemap:generate')->everyMinute();
+Schedule::command('sitemap:generate')->dailyAt('02:00')->withoutOverlapping();
