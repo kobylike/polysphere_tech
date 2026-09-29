@@ -24,14 +24,17 @@ use Throwable;
  * GA4 integration can never take down the admin dashboard. Errors are
  * logged so you can still see what went wrong.
  *
- * All reads are cached for 30 minutes per property+period+report. GA4's
- * Data API has a real (and fairly low) daily quota per property, so
- * hammering it on every page load/poll will get you rate-limited. Only
- * the realtime methods bypass the cache, and even they're capped by
- * their own short TTL — see realtimeActiveUsers()/realtimeByPage().
+ * Standard reports are cached for 30 minutes per property+period+report.
+ * GA4's Data API has a real (and fairly low) daily quota per property, so
+ * hammering it on every page load/poll will get you rate-limited. The
+ * realtime methods use a much shorter TTL (REALTIME_TTL_SECONDS) so the
+ * "Live right now" card feels live while still protecting quota.
  */
 class GoogleAnalyticsService
 {
+    /** How long realtime results are cached. Keep at or below the dashboard's poll interval (15s). */
+    protected const REALTIME_TTL_SECONDS = 10;
+
     protected ?BetaAnalyticsDataClient $client = null;
 
     protected string $property;
@@ -357,10 +360,9 @@ class GoogleAnalyticsService
     }
 
     /**
-     * Users on the site RIGHT NOW. Realtime data is inherently volatile,
-     * so this is cached for only 60 seconds — long enough to protect
-     * quota if several admins have the dashboard open, short enough to
-     * still feel "live".
+     * Users on the site RIGHT NOW. Cached for REALTIME_TTL_SECONDS only —
+     * long enough to protect quota if several admins have the dashboard
+     * open, short enough that every 15-second poll gets a fresh value.
      */
     public function realtimeActiveUsers(): int
     {
@@ -368,7 +370,7 @@ class GoogleAnalyticsService
             return 0;
         }
 
-        return Cache::remember($this->cacheKey('realtime', 'active-users'), now()->addSeconds(60), function () {
+        return Cache::remember($this->cacheKey('realtime', 'active-users'), now()->addSeconds(self::REALTIME_TTL_SECONDS), function () {
             try {
                 $response = $this->client->runRealtimeReport(
                     (new RunRealtimeReportRequest())
@@ -397,7 +399,7 @@ class GoogleAnalyticsService
             return [];
         }
 
-        return Cache::remember($this->cacheKey('realtime', 'by-page:' . $limit), now()->addSeconds(60), function () use ($limit) {
+        return Cache::remember($this->cacheKey('realtime', 'by-page:' . $limit), now()->addSeconds(self::REALTIME_TTL_SECONDS), function () use ($limit) {
             try {
                 $response = $this->client->runRealtimeReport(
                     (new RunRealtimeReportRequest())
@@ -429,11 +431,26 @@ class GoogleAnalyticsService
         });
     }
 
-    /** Forget every cached report for the given period — call after big site changes if you want fresh numbers early. */
+    /**
+     * Forget every cached report for the given period — used by the
+     * dashboard's Refresh button so it really does fetch fresh numbers.
+     * Clears the grouped reports, top pages, top countries (for the
+     * limits the dashboard uses) and the realtime widgets.
+     */
     public function flushCache(string $period = '30d'): void
     {
         foreach (['overview', 'timeseries', 'traffic-sources', 'devices', 'browsers'] as $suffix) {
             Cache::forget($this->cacheKey($suffix, $period));
+        }
+
+        foreach ([8, 10] as $limit) {
+            Cache::forget($this->cacheKey('top-pages', $period . ':' . $limit));
+            Cache::forget($this->cacheKey('top-countries', $period . ':' . $limit));
+        }
+
+        Cache::forget($this->cacheKey('realtime', 'active-users'));
+        foreach ([3, 4, 5, 8, 10] as $limit) {
+            Cache::forget($this->cacheKey('realtime', 'by-page:' . $limit));
         }
     }
 
