@@ -33,13 +33,6 @@
             </div>
         @endunless
 
-        @if($ga4Configured && (int) ($overview['sessions'] ?? 0) === 0)
-            <div class="alert alert-info d-flex align-items-center gap-2">
-                <i class="fas fa-info-circle"></i>
-                <div>Live data is working. Reports and charts fill in about 24–48 hours after tracking starts.</div>
-            </div>
-        @endif
-
         <div class="row">
 
             <!-- ─── Period selector ─── -->
@@ -311,9 +304,14 @@
 
 @push('scripts')
     <script>
-        // Same bootstrap pattern as before — only the per-chart options
-        // below are upgraded (rounded bars, softer grid, styled tooltips,
-        // smoother lines, thinner doughnut ring, cleaner legend swatches).
+        // Mirrors the KPI dashboard's chart bootstrap pattern exactly
+        // (dynamic ESM import of Chart.js v4 to dodge the theme's global
+        // Chart.js v2 bundle, dual alpine:init/window.Alpine registration
+        // so it survives wire:navigate regardless of load order, and
+        // Chart.getChart()-based destroy-before-recreate so re-mounting
+        // this component on the same canvas never hits Chart.js's
+        // "canvas already in use" guard). See dashboard-component.blade.php
+        // for the full rationale in comments.
         function registerAnalyticsChartsComponent() {
             Alpine.data('analyticsCharts', () => ({
                 trafficChart: null,
@@ -362,63 +360,17 @@
                         data: {
                             labels: data.labels,
                             datasets: [
-                                { label: 'Sessions',  data: data.sessions,  borderColor: '#0D99FF', backgroundColor: 'rgba(13,153,255,0.10)', tension: 0.35, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#0D99FF', pointHoverBorderColor: '#ffffff', pointHoverBorderWidth: 2 },
-                                { label: 'Users',     data: data.users,     borderColor: '#3AC977', backgroundColor: 'rgba(58,201,119,0.10)', tension: 0.35, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#3AC977', pointHoverBorderColor: '#ffffff', pointHoverBorderWidth: 2 },
-                                { label: 'Pageviews', data: data.pageviews, borderColor: '#FF9F00', backgroundColor: 'rgba(255,159,0,0.08)',  tension: 0.35, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 5, pointHoverBackgroundColor: '#FF9F00', pointHoverBorderColor: '#ffffff', pointHoverBorderWidth: 2 },
+                                { label: 'Sessions', data: data.sessions, borderColor: '#0D99FF', backgroundColor: 'rgba(13,153,255,0.08)', tension: 0.25, fill: true },
+                                { label: 'Users', data: data.users, borderColor: '#3AC977', backgroundColor: 'rgba(58,201,119,0.08)', tension: 0.25, fill: true },
+                                { label: 'Pageviews', data: data.pageviews, borderColor: '#FF9F00', backgroundColor: 'rgba(255,159,0,0.06)', tension: 0.25, fill: true },
                             ],
                         },
                         options: {
                             responsive: true,
                             maintainAspectRatio: false,
                             interaction: { mode: 'index', intersect: false },
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        usePointStyle: true,
-                                        pointStyle: 'rectRounded',
-                                        boxWidth: 8,
-                                        boxHeight: 8,
-                                        padding: 16,
-                                        color: '#64748b',
-                                        font: { size: 12, weight: '500' },
-                                    },
-                                },
-                                tooltip: {
-                                    backgroundColor: '#0b1220',
-                                    padding: 12,
-                                    cornerRadius: 10,
-                                    titleColor: '#cbd5e1',
-                                    titleFont: { size: 12, weight: '600' },
-                                    bodyColor: '#ffffff',
-                                    bodyFont: { size: 12, weight: '500' },
-                                    bodySpacing: 6,
-                                    boxPadding: 6,
-                                    usePointStyle: true,
-                                },
-                            },
-                            scales: {
-                                x: {
-                                    grid: { display: false },
-                                    border: { display: false },
-                                    ticks: {
-                                        color: '#94a3b8',
-                                        font: { size: 11 },
-                                        maxRotation: 0,
-                                        autoSkipPadding: 24,
-                                    },
-                                },
-                                y: {
-                                    beginAtZero: true,
-                                    grid: { color: '#eef2f7', drawTicks: false },
-                                    border: { display: false },
-                                    ticks: {
-                                        color: '#94a3b8',
-                                        font: { size: 11 },
-                                        padding: 8,
-                                    },
-                                },
-                            },
+                            plugins: { legend: { position: 'bottom' } },
+                            scales: { y: { beginAtZero: true } },
                         },
                     });
                 },
@@ -430,32 +382,8 @@
                     if (existing) existing.destroy();
                     this.sourcesChart = new this.ChartJS(ctx, {
                         type: 'doughnut',
-                        data: {
-                            labels: data.labels,
-                            datasets: [{
-                                data: data.data,
-                                backgroundColor: data.colors,
-                                borderWidth: 0,
-                                hoverOffset: 8,
-                                spacing: 2,
-                            }],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            cutout: '68%',
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    backgroundColor: '#0b1220',
-                                    padding: 12,
-                                    cornerRadius: 10,
-                                    bodyColor: '#ffffff',
-                                    bodyFont: { size: 12, weight: '500' },
-                                    usePointStyle: true,
-                                },
-                            },
-                        },
+                        data: { labels: data.labels, datasets: [{ data: data.data, backgroundColor: data.colors, borderWidth: 0 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } },
                     });
                 },
 
@@ -466,42 +394,8 @@
                     if (existing) existing.destroy();
                     this.deviceChart = new this.ChartJS(ctx, {
                         type: 'pie',
-                        data: {
-                            labels: data.labels,
-                            datasets: [{
-                                data: data.data,
-                                backgroundColor: data.colors,
-                                borderWidth: 0,
-                                hoverOffset: 8,
-                                spacing: 2,
-                            }],
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        usePointStyle: true,
-                                        pointStyle: 'rectRounded',
-                                        boxWidth: 8,
-                                        boxHeight: 8,
-                                        padding: 14,
-                                        color: '#64748b',
-                                        font: { size: 12, weight: '500' },
-                                    },
-                                },
-                                tooltip: {
-                                    backgroundColor: '#0b1220',
-                                    padding: 12,
-                                    cornerRadius: 10,
-                                    bodyColor: '#ffffff',
-                                    bodyFont: { size: 12, weight: '500' },
-                                    usePointStyle: true,
-                                },
-                            },
-                        },
+                        data: { labels: data.labels, datasets: [{ data: data.data, backgroundColor: data.colors, borderWidth: 0 }] },
+                        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } },
                     });
                 },
 
@@ -512,45 +406,13 @@
                     if (existing) existing.destroy();
                     this.browserChart = new this.ChartJS(ctx, {
                         type: 'bar',
-                        data: {
-                            labels: data.labels,
-                            datasets: [{
-                                label: 'Sessions',
-                                data: data.data,
-                                backgroundColor: data.colors,
-                                borderRadius: 6,
-                                borderSkipped: false,
-                                barThickness: 14,
-                            }],
-                        },
+                        data: { labels: data.labels, datasets: [{ label: 'Sessions', data: data.data, backgroundColor: data.colors }] },
                         options: {
                             indexAxis: 'y',
                             responsive: true,
                             maintainAspectRatio: false,
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: {
-                                    backgroundColor: '#0b1220',
-                                    padding: 12,
-                                    cornerRadius: 10,
-                                    bodyColor: '#ffffff',
-                                    bodyFont: { size: 12, weight: '500' },
-                                    usePointStyle: true,
-                                },
-                            },
-                            scales: {
-                                x: {
-                                    beginAtZero: true,
-                                    grid: { color: '#eef2f7', drawTicks: false },
-                                    border: { display: false },
-                                    ticks: { color: '#94a3b8', font: { size: 11 }, padding: 6 },
-                                },
-                                y: {
-                                    grid: { display: false },
-                                    border: { display: false },
-                                    ticks: { color: '#475569', font: { size: 12 }, padding: 6 },
-                                },
-                            },
+                            plugins: { legend: { display: false } },
+                            scales: { x: { beginAtZero: true } },
                         },
                     });
                 },
