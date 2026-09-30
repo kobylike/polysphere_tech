@@ -33,7 +33,9 @@ class ChatMessengerComponent extends Component
     public string $attachmentName        = '';
     public bool   $showAttachmentPreview = false;
 
-    // Store friend IDs for JS subscription management
+    // Store friend IDs for JS subscription management — scoped to users we
+    // actually have a conversation with (see loadFriends() below), NOT
+    // every user in the system.
     public array $friendIds = [];
 
     // ─── Presence: online user IDs from Reverb ────────────────────
@@ -94,6 +96,12 @@ class ChatMessengerComponent extends Component
                 $user->last_message_body   = $lastMessage?->body;
                 $user->last_message_type   = $lastMessage?->attachment_type;
                 $user->last_message_is_mine = $lastMessage?->sender_id === $userId;
+                // Tracks whether a real conversation exists with this user —
+                // matches the authorization rule in routes/channels.php for
+                // the App.Models.User.{id} channel exactly. Used below to
+                // avoid subscribing to channels that are guaranteed to be
+                // denied.
+                $user->has_conversation     = $lastMessage !== null;
 
                 // ── Online status ───────────────────────────────────
                 // Primary source of truth: last_seen_at, kept fresh by the
@@ -112,7 +120,19 @@ class ChatMessengerComponent extends Component
             ->values();
 
         $this->totalReceivedMessages = $usersWithUnread;
-        $this->friendIds             = $this->friends->pluck('id')->toArray();
+
+        // IMPORTANT: this is NOT "every user in the system" — it's scoped to
+        // people we've actually exchanged messages with. The full contact
+        // list for the sidebar itself is still $this->friends (unchanged).
+        // Subscribing to App.Models.User.{id} for someone with no
+        // conversation is guaranteed to be denied by routes/channels.php's
+        // own authorization rule, so requesting it at all was pure waste —
+        // on a team of N users, every page load fired N-1 simultaneous
+        // /broadcasting/auth requests, almost all correctly rejected as 403.
+        $this->friendIds = $this->friends
+            ->filter(fn($u) => $u->has_conversation)
+            ->pluck('id')
+            ->toArray();
 
         $this->dispatch('update-profile-subscriptions', friendIds: $this->friendIds);
 
