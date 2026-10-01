@@ -412,98 +412,163 @@
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
 
-        // ──────────────────────────────────────────────────────────────
-        // CKEditor – Single instance, safe re‑init
-        // ──────────────────────────────────────────────────────────────
+        // ═══════════════════════════════════════════════════════════════════
+        // CKEDITOR — one instance, one Livewire binding, guaranteed.
+        //
+        // Duplicates came from THREE callers hitting ClassicEditor.create()
+        // on #ckeditor: cms.js, livewire:initialized, and livewire:navigated.
+        // We patch ClassicEditor.create() so any second call returns the
+        // already-existing instance — making duplicates structurally
+        // impossible. Then we ALWAYS call create() ourselves, so we're
+        // guaranteed a handle on the instance (whether we made it or cms.js
+        // did), and we attach the Livewire content-sync listener to it.
+        //
+        // The previous version bailed out early if el.ckeditorInstance was
+        // already set — which is exactly what happened when cms.js won the
+        // race — so no change:data listener was ever attached and content
+        // never reached the Livewire component. That's fixed here: we never
+        // bail, we just get handed the same instance back.
+        // ═══════════════════════════════════════════════════════════════════
+
+        (function installCKEditorDuplicateGuard() {
+            function patch() {
+                if (!window.ClassicEditor) return false;
+                if (window.ClassicEditor.__duplicateGuardInstalled) return true;
+
+                const originalCreate = window.ClassicEditor.create.bind(window.ClassicEditor);
+
+                window.ClassicEditor.create = function (element, config) {
+                    const isTarget = element instanceof HTMLElement && element.id === 'ckeditor';
+
+                    if (isTarget && element.ckeditorInstance) {
+                        return Promise.resolve(element.ckeditorInstance);
+                    }
+
+                    // cms.js-created editor that never tagged the textarea:
+                    // detect the wrapper and tear it down so we end up with
+                    // exactly one editor we actually have a handle on.
+                    if (isTarget) {
+                        const sib = element.nextElementSibling;
+                        if (sib && sib.classList && sib.classList.contains('ck-editor')) {
+                            sib.remove();
+                        }
+                    }
+
+                    return originalCreate(element, config).then(editor => {
+                        if (isTarget) element.ckeditorInstance = editor;
+                        return editor;
+                    });
+                };
+
+                window.ClassicEditor.__duplicateGuardInstalled = true;
+                return true;
+            }
+
+            if (!patch()) {
+                const iv = setInterval(() => {
+                    if (patch()) clearInterval(iv);
+                }, 10);
+                setTimeout(() => clearInterval(iv), 10000);
+            }
+        })();
+
+        // ─── Our own init ──────────────────────────────────────────────────
+
+        const ckConfig = {
+            toolbar: [
+                'heading', '|',
+                'bold', 'italic', 'link', '|',
+                'bulletedList', 'numberedList', 'blockQuote', '|',
+                'imageUpload', '|',
+                'undo', 'redo'
+            ],
+            image: {
+                toolbar: [
+                    'imageTextAlternative',
+                    'imageStyle:alignLeft',
+                    'imageStyle:alignCenter',
+                    'imageStyle:alignRight'
+                ],
+                styles: ['alignLeft', 'alignCenter', 'alignRight']
+            },
+            simpleUpload: {
+                uploadUrl: '{{ route('ckeditor.upload') }}',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+            }
+        };
+
+        function attachLivewireContentSync(editor) {
+            if (editor.__lwContentSynced) return;
+            editor.__lwContentSynced = true;
+
+            // Push editor content → Livewire on every change.
+            editor.model.document.on('change:data', () => {
+                @this.set('content', editor.getData());
+            });
+
+            // Seed editor with whatever content Livewire already has.
+            if (@this.content) {
+                editor.setData(@this.content);
+            }
+        }
 
         function initCKEditor() {
-            const editorElement = document.querySelector('#ckeditor');
-            if (!editorElement) {
-                // No editor element yet – skip
+            const el = document.querySelector('#ckeditor');
+            if (!el) return;
+
+            // ClassicEditor may not have loaded yet. Poll briefly until it is.
+            if (typeof ClassicEditor === 'undefined') {
+                setTimeout(initCKEditor, 50);
                 return;
             }
 
-            // If there's already an instance attached to this element, destroy it first
-            if (editorElement.ckeditorInstance) {
-                editorElement.ckeditorInstance.destroy().then(() => {
-                    editorElement.ckeditorInstance = null;
-                    // Now create a fresh one
-                    createCKEditor(editorElement);
-                }).catch(() => {
-                    // If destroy fails, just create anew
-                    createCKEditor(editorElement);
-                });
-            } else {
-                createCKEditor(editorElement);
-            }
-        }
-
-        function createCKEditor(element) {
-            if (typeof ClassicEditor === 'undefined') return;
-
-            ClassicEditor
-                .create(element, {
-                    toolbar: [
-                        'heading', '|',
-                        'bold', 'italic', 'link', '|',
-                        'bulletedList', 'numberedList', 'blockQuote', '|',
-                        'imageUpload', '|',
-                        'undo', 'redo'
-                    ],
-                    image: {
-                        toolbar: [
-                            'imageTextAlternative',
-                            'imageStyle:alignLeft',
-                            'imageStyle:alignCenter',
-                            'imageStyle:alignRight'
-                        ],
-                        styles: [
-                            'alignLeft', 'alignCenter', 'alignRight'
-                        ]
-                    },
-                    simpleUpload: {
-                        uploadUrl: '{{ route('ckeditor.upload') }}',
-                        headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        }
-                    }
-                })
+            // Thanks to the patch, this returns the existing instance if one
+            // exists — either ours from a prior call, or cms.js's. We always
+            // end up with the real instance in .then(), so we can always
+            // attach the Livewire content-sync listener to it. No early bail.
+            ClassicEditor.create(el, ckConfig)
                 .then(editor => {
-                    // Store instance on the element
-                    element.ckeditorInstance = editor;
-
-                    // Sync content with Livewire
-                    editor.model.document.on('change:data', () => {
-                        @this.set('content', editor.getData());
-                    });
-                    if (@this.content) {
-                        editor.setData(@this.content);
-                    }
+                    el.ckeditorInstance = editor;
+                    attachLivewireContentSync(editor);
                 })
-                .catch(error => console.error('CKEditor error:', error));
+                .catch(err => console.error('CKEditor init error:', err));
         }
 
-        // ─── Listen to Livewire events ──────────────────────────────
+        // ─── Listen to Livewire events ─────────────────────────────────────
 
         document.addEventListener('livewire:initialized', initCKEditor);
+        document.addEventListener('livewire:navigated', initCKEditor);
 
-        document.addEventListener('livewire:navigating', function () {
-            const element = document.querySelector('#ckeditor');
-            if (element && element.ckeditorInstance) {
-                element.ckeditorInstance.destroy().then(() => {
-                    element.ckeditorInstance = null;
-                }).catch(() => {
-                    element.ckeditorInstance = null;
-                });
-            }
-        });
+        // Kick off immediately too, in case Livewire's events already fired
+        // before this script was parsed (both load near each other).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCKEditor);
+        } else {
+            initCKEditor();
+        }
 
-        document.addEventListener('livewire:navigated', function () {
-            // Re-init only if the element exists and has no instance
-            const element = document.querySelector('#ckeditor');
-            if (element && !element.ckeditorInstance) {
-                initCKEditor();
+        // Tear down on navigation away: destroy the instance AND strip any
+        // wrapper nodes, so the guard's create-patch starts fresh next page.
+        document.addEventListener('livewire:navigating', () => {
+            const el = document.querySelector('#ckeditor');
+            if (!el) return;
+
+            const inst = el.ckeditorInstance;
+            try { delete el.ckeditorInstance; } catch (e) { el.ckeditorInstance = null; }
+
+            if (inst && typeof inst.destroy === 'function') {
+                try { inst.destroy(); } catch (e) { }
             }
+
+            // Safety net: remove any stray .ck-editor wrappers next to the
+            // textarea so nothing lingers into the next page.
+            let sib = el.nextElementSibling;
+            while (sib && sib.classList && sib.classList.contains('ck-editor')) {
+                const next = sib.nextElementSibling;
+                sib.remove();
+                sib = next;
+            }
+            el.style.display = 'none';
         });
     </script>
 @endpush
