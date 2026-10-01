@@ -274,12 +274,12 @@
                                                 class="form-control phone-number-input @error('emergency_contact_phone_local') is-invalid @enderror"
                                                 style="border-radius: 0 0.5rem 0.5rem 0; font-size: 0.85rem; padding: 0.35rem 0.65rem;"
                                                 x-data x-on:input="
-                                                                                   let v = $el.value.replace(/[^0-9]/g, '');
-                                                                                   let max = {{ $emergency_countryInfo['maxLength'] ?? 15 }};
-                                                                                   if (v.length > max) v = v.substring(0, max);
-                                                                                   $el.value = v;
-                                                                                   $wire.emergency_setPhone(v);
-                                                                               ">
+                                                                                       let v = $el.value.replace(/[^0-9]/g, '');
+                                                                                       let max = {{ $emergency_countryInfo['maxLength'] ?? 15 }};
+                                                                                       if (v.length > max) v = v.substring(0, max);
+                                                                                       $el.value = v;
+                                                                                       $wire.emergency_setPhone(v);
+                                                                                   ">
                                         </div>
                                         @if($emergency_showCountryDropdown)
                                             <div class="dropdown-menu show p-0 mt-1 shadow-lg position-absolute phone-country-dropdown"
@@ -355,8 +355,20 @@
                                         </div>
                                         <div class="col-sm-5 col-4">
                                             <div class="d-flex align-items-center gap-2">
+                                                {{--
+                                                FIX: a range input fires its native `input` event
+                                                continuously while being dragged (potentially dozens
+                                                of times per second) — wire:model.live with no
+                                                debounce meant every single one of those fired a full
+                                                Livewire round-trip carrying the entire component's
+                                                state. Debouncing collapses a drag gesture into one
+                                                request every 300ms instead of one per pixel moved,
+                                                which was the actual source of the request burst that
+                                                occasionally collided with (and 403'd) unrelated
+                                                requests like the profile save itself.
+                                                --}}
                                                 <input type="range" class="form-range flex-grow-1" min="1" max="100"
-                                                    step="1" wire:model.live="skills.{{ $index }}.level"
+                                                    step="1" wire:model.live.debounce.300ms="skills.{{ $index }}.level"
                                                     style="cursor: pointer; padding: 0;">
                                                 <span class="badge bg-primary"
                                                     style="min-width: 40px; font-size: 0.7rem;">{{ $skill['level'] ?? 50 }}%</span>
@@ -387,12 +399,12 @@
                                 @php $yearOptions = range(date('Y') + 5, 1950); @endphp
                                 @foreach($education as $index => $edu)
                                     <div class="row g-1 mb-2 align-items-end" wire:key="edu-{{ $index }}" x-data="{
-                                                                    startYear: @entangle('education.' . $index . '.start_year'),
-                                                                    get endYearOptions() {
-                                                                        if (!this.startYear) return @js($yearOptions);
-                                                                        return @js($yearOptions).filter(y => y >= this.startYear);
-                                                                    }
-                                                                }">
+                                                                        startYear: @entangle('education.' . $index . '.start_year'),
+                                                                        get endYearOptions() {
+                                                                            if (!this.startYear) return @js($yearOptions);
+                                                                            return @js($yearOptions).filter(y => y >= this.startYear);
+                                                                        }
+                                                                    }">
                                         <div class="col-sm-3 col-6">
                                             <input type="text" class="form-control form-control-sm"
                                                 wire:model="education.{{ $index }}.institution" placeholder="Institution">
