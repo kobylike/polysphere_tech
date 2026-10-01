@@ -412,167 +412,98 @@
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
 
-        // ═══════════════════════════════════════════════════════════════════
-            // CKEDITOR — exactly one instance, guaranteed.
-            //
-            // Root cause of the duplicates:
-            //   `assets/users/js/dashboard/cms.js` (loaded via defer in the
-            //   layout) ALSO calls ClassicEditor.create() on #ckeditor. On top
-            //   of that, both `livewire:initialized` and `livewire:navigated`
-            //   fire on first load, and since create() is async, neither had
-            //   set el.ckeditorInstance before the other fired.
-            //
-            // Fix: monkey-patch ClassicEditor.create() so that any call
-            // targeting an element that already owns an editor simply returns
-            // the existing instance. This makes duplicates structurally
-            // impossible — no matter who calls create(), how many times, or in
-            // what order. Our own init code below then just does its best to
-            // be the "first" caller.
-            // ═══════════════════════════════════════════════════════════════════
+        // ──────────────────────────────────────────────────────────────
+        // CKEditor – Single instance, safe re‑init
+        // ──────────────────────────────────────────────────────────────
 
-            (function installCKEditorDuplicateGuard() {
-                function patch() {
-                    if (!window.ClassicEditor) return false;
-                    if (window.ClassicEditor.__duplicateGuardInstalled) return true;
+        function initCKEditor() {
+            const editorElement = document.querySelector('#ckeditor');
+            if (!editorElement) {
+                // No editor element yet – skip
+                return;
+            }
 
-                    const originalCreate = window.ClassicEditor.create.bind(window.ClassicEditor);
+            // If there's already an instance attached to this element, destroy it first
+            if (editorElement.ckeditorInstance) {
+                editorElement.ckeditorInstance.destroy().then(() => {
+                    editorElement.ckeditorInstance = null;
+                    // Now create a fresh one
+                    createCKEditor(editorElement);
+                }).catch(() => {
+                    // If destroy fails, just create anew
+                    createCKEditor(editorElement);
+                });
+            } else {
+                createCKEditor(editorElement);
+            }
+        }
 
-                    window.ClassicEditor.create = function (element, config) {
-                        const isTarget = element instanceof HTMLElement && element.id === 'ckeditor';
+        function createCKEditor(element) {
+            if (typeof ClassicEditor === 'undefined') return;
 
-                        // Already has an editor on this exact element? Return it.
-                        if (isTarget && element.ckeditorInstance) {
-                            return Promise.resolve(element.ckeditorInstance);
+            ClassicEditor
+                .create(element, {
+                    toolbar: [
+                        'heading', '|',
+                        'bold', 'italic', 'link', '|',
+                        'bulletedList', 'numberedList', 'blockQuote', '|',
+                        'imageUpload', '|',
+                        'undo', 'redo'
+                    ],
+                    image: {
+                        toolbar: [
+                            'imageTextAlternative',
+                            'imageStyle:alignLeft',
+                            'imageStyle:alignCenter',
+                            'imageStyle:alignRight'
+                        ],
+                        styles: [
+                            'alignLeft', 'alignCenter', 'alignRight'
+                        ]
+                    },
+                    simpleUpload: {
+                        uploadUrl: '{{ route('ckeditor.upload') }}',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
                         }
-
-                        // Also guard against a cms.js-created editor that never
-                        // set ckeditorInstance on the textarea — detect via the
-                        // presence of a sibling .ck-editor wrapper.
-                        if (isTarget) {
-                            const sib = element.nextElementSibling;
-                            if (sib && sib.classList && sib.classList.contains('ck-editor')) {
-                                // An editor already exists for this element but we
-                                // don't have a handle on it. Remove the stray DOM
-                                // so we can create a fresh, tracked one instead.
-                                sib.remove();
-                            }
-                        }
-
-                        return originalCreate(element, config).then(editor => {
-                            if (isTarget) {
-                                element.ckeditorInstance = editor;
-                            }
-                            return editor;
-                        });
-                    };
-
-                    window.ClassicEditor.__duplicateGuardInstalled = true;
-                    return true;
-                }
-
-                // Patch immediately if ckeditor.js already ran; otherwise poll
-                // briefly until it does. cms.js is also deferred, so this
-                // normally installs before cms.js gets a chance to call create().
-                if (!patch()) {
-                    const iv = setInterval(() => {
-                        if (patch()) clearInterval(iv);
-                    }, 10);
-                    setTimeout(() => clearInterval(iv), 10000);
-                }
-            })();
-
-            // ─── Our own init ──────────────────────────────────────────────────
-
-            let ckEditorGeneration = 0;
-
-            function nukeCKEditorDOM() {
-                document.querySelectorAll('.ck-editor').forEach(node => {
-                    const prev = node.previousElementSibling;
-                    if (prev && prev.id === 'ckeditor') {
-                        try { delete prev.ckeditorInstance; } catch (e) { prev.ckeditorInstance = null; }
-                        prev.style.display = 'none';
                     }
-                    node.remove();
+                })
+                .then(editor => {
+                    // Store instance on the element
+                    element.ckeditorInstance = editor;
+
+                    // Sync content with Livewire
+                    editor.model.document.on('change:data', () => {
+                        @this.set('content', editor.getData());
+                    });
+                    if (@this.content) {
+                        editor.setData(@this.content);
+                    }
+                })
+                .catch(error => console.error('CKEditor error:', error));
+        }
+
+        // ─── Listen to Livewire events ──────────────────────────────
+
+        document.addEventListener('livewire:initialized', initCKEditor);
+
+        document.addEventListener('livewire:navigating', function () {
+            const element = document.querySelector('#ckeditor');
+            if (element && element.ckeditorInstance) {
+                element.ckeditorInstance.destroy().then(() => {
+                    element.ckeditorInstance = null;
+                }).catch(() => {
+                    element.ckeditorInstance = null;
                 });
             }
+        });
 
-            function initCKEditor() {
-                const gen = ++ckEditorGeneration;
-
-                // Defer one tick so any competing init (cms.js, Livewire morph)
-                // has already run before we make our decision.
-                setTimeout(() => {
-                    if (gen !== ckEditorGeneration) return; // superseded
-
-                    const el = document.querySelector('#ckeditor');
-                    if (!el) return;
-
-                    // Already initialized — by us (via ckeditorInstance) or by
-                    // cms.js (via the sibling .ck-editor wrapper). Leave it alone.
-                    if (el.ckeditorInstance) return;
-                    if (el.nextElementSibling?.classList.contains('ck-editor')) return;
-
-                    if (typeof ClassicEditor === 'undefined') return;
-
-                    ClassicEditor
-                        .create(el, {
-                            toolbar: [
-                                'heading', '|',
-                                'bold', 'italic', 'link', '|',
-                                'bulletedList', 'numberedList', 'blockQuote', '|',
-                                'imageUpload', '|',
-                                'undo', 'redo'
-                            ],
-                            image: {
-                                toolbar: [
-                                    'imageTextAlternative',
-                                    'imageStyle:alignLeft',
-                                    'imageStyle:alignCenter',
-                                    'imageStyle:alignRight'
-                                ],
-                                styles: ['alignLeft', 'alignCenter', 'alignRight']
-                            },
-                            simpleUpload: {
-                                uploadUrl: '{{ route('ckeditor.upload') }}',
-                                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-                            }
-                        })
-                        .then(editor => {
-                            // If a newer init() superseded us while create() was
-                            // still pending, destroy this one rather than let it
-                            // linger alongside whatever the newer init produced.
-                            if (gen !== ckEditorGeneration) {
-                                try { editor.destroy(); } catch (e) {}
-                                return;
-                            }
-
-                            // The patch above sets el.ckeditorInstance, but set
-                            // it again defensively in case we're running against
-                            // an unpatched CKEditor.
-                            el.ckeditorInstance = editor;
-
-                            editor.model.document.on('change:data', () => {
-                                @this.set('content', editor.getData());
-                            });
-
-                            if (@this.content) {
-                                editor.setData(@this.content);
-                            }
-                        })
-                        .catch(err => console.error('CKEditor error:', err));
-                }, 50);
+        document.addEventListener('livewire:navigated', function () {
+            // Re-init only if the element exists and has no instance
+            const element = document.querySelector('#ckeditor');
+            if (element && !element.ckeditorInstance) {
+                initCKEditor();
             }
-
-            // ─── Listen to Livewire events ─────────────────────────────────────
-
-            document.addEventListener('livewire:initialized', initCKEditor);
-            document.addEventListener('livewire:navigated', initCKEditor);
-
-            // Tear down cleanly on navigation away. Only destroys — creation is
-            // `livewire:navigated`'s job.
-            document.addEventListener('livewire:navigating', () => {
-                ckEditorGeneration++; // invalidate any pending async creates
-                nukeCKEditorDOM();
-            });
-        </script>
+        });
+    </script>
 @endpush
