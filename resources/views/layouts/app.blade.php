@@ -61,9 +61,10 @@
     <meta name="theme-color" content="#3b82f6">
 
     <!-- Favicon -->
-    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/main/imgs/favicon.svg') }}">
+    <link rel="icon" type="image/png" sizes="96x96" href="{{ asset('assets/main/imgs/favicon-96x96.png') }}">
     <link rel="icon" type="image/svg+xml" href="{{ asset('assets/main/imgs/favicon.svg') }}">
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/main/imgs/apple-touch-icon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('assets/main/imgs/favicon-96x96.png') }}">
+    <link rel="apple-touch-icon" sizes="96x96" href="{{ asset('assets/main/imgs/favicon-96x96.png') }}">
 
     <!-- Performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
