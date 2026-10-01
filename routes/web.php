@@ -333,4 +333,6 @@ Route::middleware(['auth', 'force.password.change'])->group(function () {
             ->middleware('can:View Departments')
             ->name('admin.departments');
     });
+    Route::get('/livewire-preview-asset/{filename}/view', [\Livewire\Features\SupportFileUploads\FilePreviewController::class, 'handle'])
+        ->name('livewire.preview-file');
 });
