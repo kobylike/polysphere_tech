@@ -55,10 +55,7 @@ class AppServiceProvider extends ServiceProvider
             URL::forceScheme('https');
         }
 
-        $this->app->booted(function () {
-            \Illuminate\Support\Facades\Route::get('/livewire-preview-asset/{filename}/view', [\Livewire\Features\SupportFileUploads\FilePreviewController::class, 'handle'])
-                ->name('livewire.preview-file');
-        });
+
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Role::class, RolePolicy::class);
         Gate::policy(Permission::class, PermissionPolicy::class);
