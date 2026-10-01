@@ -11,7 +11,7 @@
         $metaDescription = $description ?? 'Polysphere Tech delivers custom software development, SaaS platforms, and digital transformation solutions. We build future-ready technology for modern businesses.';
         $metaKeywords = $keywords ?? 'IT solutions, software development, SaaS platform, digital transformation, custom software, IT consulting, Polysphere Tech';
         $canonicalUrl = $canonical ?? url()->current();
-        $ogImageUrl = $ogImage ?? asset('assets/main/imgs/og-default.jpg');
+        $ogImageUrl = $ogImage ?? asset('assets/main/imgs/logo/logo-white.png');
         $ogType = $ogType ?? 'website';
         $isNoindex = $noindex ?? false;
         $siteName = 'Polysphere Tech';
