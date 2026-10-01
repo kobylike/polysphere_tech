@@ -84,7 +84,7 @@
                                 <div class="card h-auto">
                                     <div class="card-body pt-3">
                                         <div wire:ignore>
-                                            <textarea id="ckeditor" wire:model.live.debounce.1000ms="content"
+                                            <textarea id="post-content-editor" wire:model.live.debounce.1000ms="content"
                                                 style="display:none;"></textarea>
                                         </div>
                                     </div>
@@ -413,31 +413,20 @@
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // CKEDITOR — one visible editor, one Livewire binding.
+        // CKEDITOR — one creator, one editor, one Livewire binding.
         //
-        // Two callers try to create an editor on #ckeditor:
-        //   - assets/users/js/dashboard/cms.js  (deferred, from <head>)
-        //   - our own init here
+        // The theme's cms.js also does ClassicEditor.create('#ckeditor').
+        // Both scripts are `defer`, so cms.js won the race before any
+        // monkey-patch could install, and the resulting second editor
+        // fought ours for DOM ownership — leaving a visible-but-dead
+        // editable that swallowed keystrokes.
         //
-        // Because both are `defer`, cms.js runs in the SAME tick as
-        // ckeditor.js — there is no timer gap for a monkey-patch to install
-        // in between. So the patch alone can't stop cms.js from creating
-        // the first editor. Instead we take the pragmatic route:
-        //
-        //   1. Our init is the authoritative creator. It attaches the
-        //      Livewire content-sync listener to whichever editor it ends
-        //      up with, and remembers it as `myEditor`.
-        //   2. A MutationObserver on #ckeditor's parent removes any OTHER
-        //      `.ck-editor` wrapper that appears (i.e. cms.js's), keeping
-        //      only `myEditor.ui.element`.
-        //   3. A short polling loop repeats that cleanup for ~5s, because
-        //      cms.js's create() resolves asynchronously and may land a
-        //      beat after our observer fires.
-        //
-        // Net result: the user sees exactly one editor, and it's the one
-        // wired to Livewire. Content sync works because we always read via
-        // editor.getData() — not via the source textarea's value.
+        // Instead of refereeing that race, we've renamed the textarea to
+        // #post-content-editor. cms.js's document.querySelector('#ckeditor')
+        // now returns null, so it does nothing. We are the only caller.
         // ═══════════════════════════════════════════════════════════════════
+
+        const CK_EDITOR_ID = 'post-content-editor';
 
         const ckConfig = {
             toolbar: [
@@ -462,138 +451,53 @@
             }
         };
 
-        // Our authoritative editor — its UI element is the one we keep.
-        let myEditor = null;
-        let cleaningStrays = false;
-
-        function removeStrayEditors() {
-            if (cleaningStrays) return;
-            if (!myEditor || !myEditor.ui || !myEditor.ui.element) return;
-
-            const el = document.querySelector('#ckeditor');
-            if (!el) return;
-
-            const keep = myEditor.ui.element;
-
-            cleaningStrays = true;
-            try {
-                let sib = el.nextElementSibling;
-                while (sib) {
-                    const next = sib.nextElementSibling;
-                    if (sib.classList && sib.classList.contains('ck-editor') && sib !== keep) {
-                        sib.remove();
-                    }
-                    sib = next;
-                }
-            } finally {
-                cleaningStrays = false;
-            }
-        }
-
-        function attachLivewireContentSync(editor) {
-            if (editor.__lwContentSynced) return;
-            editor.__lwContentSynced = true;
-
-            editor.model.document.on('change:data', () => {
-                @this.set('content', editor.getData());
-            });
-
-            if (@this.content) {
-                editor.setData(@this.content);
-            }
-        }
+        let creating = false;
 
         function initCKEditor() {
-            const el = document.querySelector('#ckeditor');
-            if (!el) return;
+            const el = document.getElementById(CK_EDITOR_ID);
+            if (!el) return;                          // component not on this page
+            if (el.ckeditorInstance) return;          // already built
+            if (creating) return;                     // create() in flight
 
             if (typeof ClassicEditor === 'undefined') {
                 setTimeout(initCKEditor, 50);
                 return;
             }
 
-            // Already have our editor live — just make sure no stray appeared.
-            if (myEditor && el.ckeditorInstance === myEditor) {
-                removeStrayEditors();
-                return;
-            }
+            creating = true;
 
-            // The textarea already owns an instance (cms.js's editor, or one
-            // from a previous init on this same page). Adopt it instead of
-            // creating a second one.
-            if (el.ckeditorInstance) {
-                myEditor = el.ckeditorInstance;
-                attachLivewireContentSync(myEditor);
-                removeStrayEditors();
-                return;
-            }
-
-            // No instance yet — create ours.
-            ClassicEditor.create(el, ckConfig)
+            ClassicEditor
+                .create(el, ckConfig)
                 .then(editor => {
+                    creating = false;
                     el.ckeditorInstance = editor;
-                    myEditor = editor;
-                    attachLivewireContentSync(editor);
-                    removeStrayEditors();
+
+                    // Push editor content → Livewire on every keystroke.
+                    editor.model.document.on('change:data', () => {
+                        @this.set('content', editor.getData());
+                    });
+
+                    // Seed the editor with whatever Livewire already has
+                    // (populated on edit pages via mount()).
+                    if (@this.content) {
+                        editor.setData(@this.content);
+                    }
                 })
-                .catch(err => console.error('CKEditor init error:', err));
+                .catch(err => {
+                    creating = false;
+                    console.error('CKEditor init error:', err);
+                });
         }
 
-        // ─── Stray-editor watcher ──────────────────────────────────────────
+        // ─── Livewire lifecycle ────────────────────────────────────────────
 
-        let strayWatcherStarted = false;
-        let strayObserver = null;
+        document.addEventListener('livewire:initialized', initCKEditor);
+        document.addEventListener('livewire:navigated', initCKEditor);
 
-        function startStrayWatcher() {
-            if (strayWatcherStarted) return;
-            const el = document.querySelector('#ckeditor');
-            if (!el || !el.parentNode) return;
-
-            strayWatcherStarted = true;
-
-            // 1) React immediately to new siblings appearing.
-            strayObserver = new MutationObserver(() => {
-                if (myEditor) removeStrayEditors();
-            });
-            strayObserver.observe(el.parentNode, { childList: true });
-
-            // 2) Belt-and-braces polling for ~5s, since cms.js's create()
-            //    resolves asynchronously and can land a beat after the
-            //    observer fires.
-            let ticks = 0;
-            const iv = setInterval(() => {
-                if (myEditor) removeStrayEditors();
-                if (++ticks > 25) clearInterval(iv); // 25 * 200ms = 5s
-            }, 200);
-        }
-
-        function stopStrayWatcher() {
-            if (strayObserver) {
-                try { strayObserver.disconnect(); } catch (e) { }
-                strayObserver = null;
-            }
-            strayWatcherStarted = false;
-        }
-
-        // ─── Wire it up ────────────────────────────────────────────────────
-
-        document.addEventListener('livewire:initialized', () => {
-            initCKEditor();
-            startStrayWatcher();
-        });
-
-        document.addEventListener('livewire:navigated', () => {
-            myEditor = null;
-            stopStrayWatcher();
-            initCKEditor();
-            startStrayWatcher();
-        });
-
-        // Tear down cleanly on navigation away.
+        // Tear down cleanly when leaving the page so the next one starts
+        // fresh — no orphaned instance, no leftover `.ck-editor` wrapper.
         document.addEventListener('livewire:navigating', () => {
-            stopStrayWatcher();
-
-            const el = document.querySelector('#ckeditor');
+            const el = document.getElementById(CK_EDITOR_ID);
             if (!el) return;
 
             const inst = el.ckeditorInstance;
@@ -609,19 +513,14 @@
                 sib = next;
             }
             el.style.display = 'none';
-            myEditor = null;
         });
 
-        // Kick off immediately too, in case Livewire's events fired before
+        // Kick off immediately too — in case Livewire's events fired before
         // this script was parsed.
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => {
-                initCKEditor();
-                startStrayWatcher();
-            });
+            document.addEventListener('DOMContentLoaded', initCKEditor);
         } else {
             initCKEditor();
-            startStrayWatcher();
         }
     </script>
 @endpush
