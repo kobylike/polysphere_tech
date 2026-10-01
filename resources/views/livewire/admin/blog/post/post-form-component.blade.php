@@ -413,33 +413,38 @@
         }
 
         // ──────────────────────────────────────────────────────────────
-        // CKEditor – Single instance, safe re‑init
+        // CKEditor – single instance, safe re-init
+        //
+        // Both `livewire:initialized` and `livewire:navigated` fire on the
+        // very first page load, and ClassicEditor.create() is async. Without
+        // a guard, both listeners call create() before either has set
+        // element.ckeditorInstance, producing TWO stacked editors. The
+        // ckEditorBusy flag (checked in both initCKEditor and createCKEditor)
+        // makes the whole pipeline idempotent no matter how many times or in
+        // what order these events fire.
         // ──────────────────────────────────────────────────────────────
+
+        let ckEditorBusy = false;
 
         function initCKEditor() {
             const editorElement = document.querySelector('#ckeditor');
-            if (!editorElement) {
-                // No editor element yet – skip
-                return;
-            }
+            if (!editorElement) return;
 
-            // If there's already an instance attached to this element, destroy it first
-            if (editorElement.ckeditorInstance) {
-                editorElement.ckeditorInstance.destroy().then(() => {
-                    editorElement.ckeditorInstance = null;
-                    // Now create a fresh one
-                    createCKEditor(editorElement);
-                }).catch(() => {
-                    // If destroy fails, just create anew
-                    createCKEditor(editorElement);
-                });
-            } else {
-                createCKEditor(editorElement);
-            }
+            // Already have an editor attached — nothing to do.
+            if (editorElement.ckeditorInstance) return;
+
+            // A create/destroy is already in flight — don't stack another.
+            if (ckEditorBusy) return;
+
+            createCKEditor(editorElement);
         }
 
         function createCKEditor(element) {
             if (typeof ClassicEditor === 'undefined') return;
+            if (element.ckeditorInstance) return;
+            if (ckEditorBusy) return;
+
+            ckEditorBusy = true;
 
             ClassicEditor
                 .create(element, {
@@ -469,8 +474,11 @@
                     }
                 })
                 .then(editor => {
-                    // Store instance on the element
+                    // Only mark the element as owning an instance once the
+                    // instance actually exists — this is what makes the
+                    // guard in initCKEditor() reliable.
                     element.ckeditorInstance = editor;
+                    ckEditorBusy = false;
 
                     // Sync content with Livewire
                     editor.model.document.on('change:data', () => {
@@ -480,30 +488,30 @@
                         editor.setData(@this.content);
                     }
                 })
-                .catch(error => console.error('CKEditor error:', error));
+                .catch(error => {
+                    ckEditorBusy = false;
+                    console.error('CKEditor error:', error);
+                });
         }
 
         // ─── Listen to Livewire events ──────────────────────────────
 
         document.addEventListener('livewire:initialized', initCKEditor);
+        document.addEventListener('livewire:navigated', initCKEditor);
 
+        // Destroy cleanly when leaving the page so the next page starts fresh.
+        // Do NOT recreate here — that's `livewire:navigated`'s job.
         document.addEventListener('livewire:navigating', function () {
             const element = document.querySelector('#ckeditor');
-            if (element && element.ckeditorInstance) {
-                element.ckeditorInstance.destroy().then(() => {
-                    element.ckeditorInstance = null;
-                }).catch(() => {
-                    element.ckeditorInstance = null;
-                });
-            }
-        });
+            if (!element || !element.ckeditorInstance) return;
 
-        document.addEventListener('livewire:navigated', function () {
-            // Re-init only if the element exists and has no instance
-            const element = document.querySelector('#ckeditor');
-            if (element && !element.ckeditorInstance) {
-                initCKEditor();
-            }
+            const inst = element.ckeditorInstance;
+            element.ckeditorInstance = null;
+            ckEditorBusy = true;
+
+            inst.destroy()
+                .catch(() => { })
+                .then(() => { ckEditorBusy = false; });
         });
     </script>
 @endpush
