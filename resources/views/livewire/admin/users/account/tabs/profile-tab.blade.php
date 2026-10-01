@@ -354,20 +354,23 @@
                                                 wire:model="skills.{{ $index }}.name" placeholder="Skill name">
                                         </div>
                                         <div class="col-sm-5 col-4">
-                                            <div class="d-flex align-items-center gap-2">
+                                            <div class="d-flex align-items-center gap-2"
+                                                x-data="{ level: {{ (int) ($skill['level'] ?? 50) }} }">
                                                 <!--
-                                                            FIX: was wire:model.live (fires a full Livewire request on
-                                                            EVERY 'input' event — and a range slider fires that
-                                                            continuously while being dragged, potentially dozens of
-                                                            times per second). Debounced to 300ms so dragging the
-                                                            slider sends at most a couple of requests instead of a
-                                                            flood, without any visible change to the UX.
+                                                            FIX: wire:model.live fired a full Livewire request on every
+                                                            single 'input' event while dragging (continuous, many per
+                                                            second) — debouncing still sent several requests across a
+                                                            long drag. Switched to plain deferred wire:model (no .live):
+                                                            it never fires its own request; the value just rides along
+                                                            with whatever request happens next (e.g. clicking Save).
+                                                            x-model gives the badge instant visual feedback purely
+                                                            client-side, with zero network calls while dragging.
                                                         -->
                                                 <input type="range" class="form-range flex-grow-1" min="1" max="100"
-                                                    step="1" wire:model.live.debounce.500ms="skills.{{ $index }}.level"
+                                                    step="1" wire:model="skills.{{ $index }}.level" x-model.number="level"
                                                     style="cursor: pointer; padding: 0;">
-                                                <span class="badge bg-primary"
-                                                    style="min-width: 40px; font-size: 0.7rem;">{{ $skill['level'] ?? 50 }}%</span>
+                                                <span class="badge bg-primary" style="min-width: 40px; font-size: 0.7rem;"
+                                                    x-text="level + '%'"></span>
                                             </div>
                                         </div>
                                         <div class="col-sm-3 col-2 text-end">
