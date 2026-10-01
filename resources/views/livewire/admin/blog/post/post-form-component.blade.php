@@ -413,114 +413,172 @@
         }
 
         // ═══════════════════════════════════════════════════════════════════
-        // CKEDITOR — one creator, one editor, one Livewire binding.
+        // CKEDITOR — one editor, Livewire-bound, survives wire:navigate.
         //
-        // The theme's cms.js also does ClassicEditor.create('#ckeditor').
-        // Both scripts are `defer`, so cms.js won the race before any
-        // monkey-patch could install, and the resulting second editor
-        // fought ours for DOM ownership — leaving a visible-but-dead
-        // editable that swallowed keystrokes.
-        //
-        // Instead of refereeing that race, we've renamed the textarea to
-        // #post-content-editor. cms.js's document.querySelector('#ckeditor')
-        // now returns null, so it does nothing. We are the only caller.
+        // Problems this solves:
+        //   1. cms.js also calls create('#ckeditor') → renamed textarea to
+        //      #post-content-editor so cms.js finds nothing.
+        //   2. @this bakes the *initial* component into the closure → stale
+        //      after wire:navigate. Fixed by resolving the current component
+        //      dynamically from the DOM (`[wire\:id]`) at use time.
+        //   3. wire:navigate + wire:ignore leaves the old editor's DOM
+        //      behind → orphaned contenteditable intercepts clicks. Fixed
+        //      by destroying on `livewire:navigating` and cleaning stray
+        //      `.ck-editor` wrappers before creating.
+        //   4. Re-executed @stack scripts accumulate listeners → we register
+        //      a teardown hook on window so the next execution removes the
+        //      previous set before binding its own.
         // ═══════════════════════════════════════════════════════════════════
 
-        const CK_EDITOR_ID = 'post-content-editor';
+        (function () {
+            // Clean up any previous manager (from an earlier @stack execution)
+            if (window.__ckEditorManager && typeof window.__ckEditorManager.teardown === 'function') {
+                try { window.__ckEditorManager.teardown(); } catch (e) { }
+            }
 
-        const ckConfig = {
-            toolbar: [
-                'heading', '|',
-                'bold', 'italic', 'link', '|',
-                'bulletedList', 'numberedList', 'blockQuote', '|',
-                'imageUpload', '|',
-                'undo', 'redo'
-            ],
-            image: {
+            const CK_EDITOR_ID = 'post-content-editor';
+
+            const ckConfig = {
                 toolbar: [
-                    'imageTextAlternative',
-                    'imageStyle:alignLeft',
-                    'imageStyle:alignCenter',
-                    'imageStyle:alignRight'
+                    'heading', '|',
+                    'bold', 'italic', 'link', '|',
+                    'bulletedList', 'numberedList', 'blockQuote', '|',
+                    'imageUpload', '|',
+                    'undo', 'redo'
                 ],
-                styles: ['alignLeft', 'alignCenter', 'alignRight']
-            },
-            simpleUpload: {
-                uploadUrl: '{{ route('ckeditor.upload') }}',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                image: {
+                    toolbar: [
+                        'imageTextAlternative',
+                        'imageStyle:alignLeft',
+                        'imageStyle:alignCenter',
+                        'imageStyle:alignRight'
+                    ],
+                    styles: ['alignLeft', 'alignCenter', 'alignRight']
+                },
+                simpleUpload: {
+                    uploadUrl: '{{ route('ckeditor.upload') }}',
+                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                }
+            };
+
+            let creating = false;
+
+            // Resolve the CURRENT Livewire component owning this element.
+            // Never relies on @this — which goes stale after wire:navigate.
+            function getComponent(el) {
+                if (!window.Livewire || typeof window.Livewire.find !== 'function') return null;
+                const wireEl = el.closest('[wire\\:id]');
+                if (!wireEl) return null;
+                const id = wireEl.getAttribute('wire:id');
+                return id ? window.Livewire.find(id) : null;
             }
-        };
 
-        let creating = false;
-
-        function initCKEditor() {
-            const el = document.getElementById(CK_EDITOR_ID);
-            if (!el) return;                          // component not on this page
-            if (el.ckeditorInstance) return;          // already built
-            if (creating) return;                     // create() in flight
-
-            if (typeof ClassicEditor === 'undefined') {
-                setTimeout(initCKEditor, 50);
-                return;
-            }
-
-            creating = true;
-
-            ClassicEditor
-                .create(el, ckConfig)
-                .then(editor => {
-                    creating = false;
-                    el.ckeditorInstance = editor;
-
-                    // Push editor content → Livewire on every keystroke.
-                    editor.model.document.on('change:data', () => {
-                        @this.set('content', editor.getData());
-                    });
-
-                    // Seed the editor with whatever Livewire already has
-                    // (populated on edit pages via mount()).
-                    if (@this.content) {
-                        editor.setData(@this.content);
+            function cleanStrayWrappers(el) {
+                let sib = el.nextElementSibling;
+                while (sib) {
+                    const next = sib.nextElementSibling;
+                    if (sib.classList && sib.classList.contains('ck-editor')) {
+                        sib.remove();
                     }
-                })
-                .catch(err => {
-                    creating = false;
-                    console.error('CKEditor init error:', err);
-                });
-        }
-
-        // ─── Livewire lifecycle ────────────────────────────────────────────
-
-        document.addEventListener('livewire:initialized', initCKEditor);
-        document.addEventListener('livewire:navigated', initCKEditor);
-
-        // Tear down cleanly when leaving the page so the next one starts
-        // fresh — no orphaned instance, no leftover `.ck-editor` wrapper.
-        document.addEventListener('livewire:navigating', () => {
-            const el = document.getElementById(CK_EDITOR_ID);
-            if (!el) return;
-
-            const inst = el.ckeditorInstance;
-            try { delete el.ckeditorInstance; } catch (e) { el.ckeditorInstance = null; }
-            if (inst && typeof inst.destroy === 'function') {
-                try { inst.destroy(); } catch (e) { }
+                    sib = next;
+                }
             }
 
-            let sib = el.nextElementSibling;
-            while (sib) {
-                const next = sib.nextElementSibling;
-                if (sib.classList && sib.classList.contains('ck-editor')) sib.remove();
-                sib = next;
-            }
-            el.style.display = 'none';
-        });
+            function destroyEditor() {
+                const el = document.getElementById(CK_EDITOR_ID);
+                if (!el) return;
 
-        // Kick off immediately too — in case Livewire's events fired before
-        // this script was parsed.
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initCKEditor);
-        } else {
-            initCKEditor();
-        }
+                const inst = el.ckeditorInstance;
+                try { delete el.ckeditorInstance; } catch (e) { el.ckeditorInstance = null; }
+
+                if (inst && typeof inst.destroy === 'function') {
+                    try {
+                        const p = inst.destroy();
+                        if (p && typeof p.catch === 'function') p.catch(() => { });
+                    } catch (e) { }
+                }
+
+                cleanStrayWrappers(el);
+                el.style.display = 'none';
+            }
+
+            function createEditor() {
+                const el = document.getElementById(CK_EDITOR_ID);
+                if (!el) return;               // not on this page
+                if (el.ckeditorInstance) return; // already built
+                if (creating) return;            // create() in flight
+
+                if (typeof ClassicEditor === 'undefined') {
+                    setTimeout(createEditor, 100);
+                    return;
+                }
+
+                // Sweep any leftover wrapper before we start (handles the
+                // case where a prior navigation's destroy didn't fully clean).
+                cleanStrayWrappers(el);
+                creating = true;
+
+                ClassicEditor
+                    .create(el, ckConfig)
+                    .then(editor => {
+                        creating = false;
+                        el.ckeditorInstance = editor;
+
+                        // Push editor content → current Livewire component on
+                        // every keystroke. getComponent() is re-evaluated each
+                        // time, so after a wire:navigate this listener always
+                        // targets the newest component instance.
+                        editor.model.document.on('change:data', () => {
+                            const comp = getComponent(el);
+                            if (comp) comp.set('content', editor.getData());
+                        });
+
+                        // Seed the editor with whatever the component already
+                        // has (populated on edit pages via mount()).
+                        const comp = getComponent(el);
+                        if (comp && comp.content) {
+                            editor.setData(comp.content);
+                        }
+                    })
+                    .catch(err => {
+                        creating = false;
+                        console.error('CKEditor init error:', err);
+                    });
+            }
+
+            function onNavigating() {
+                // Invalidate any in-flight create so a fresh one is allowed
+                // to start on the new page.
+                creating = false;
+                destroyEditor();
+            }
+
+            function onNavigated() {
+                // Give the morph a tick to finish moving/keeping the
+                // wire:ignore textarea before we scan for it.
+                setTimeout(createEditor, 120);
+            }
+
+            document.addEventListener('livewire:navigating', onNavigating);
+            document.addEventListener('livewire:navigated', onNavigated);
+
+            // First-load kickoff.
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => setTimeout(createEditor, 120));
+            } else {
+                setTimeout(createEditor, 120);
+            }
+
+            // Expose a teardown hook so the NEXT execution of this script
+            // (after wire:navigate replaces @stack('scripts')) can remove
+            // these listeners cleanly instead of accumulating them.
+            window.__ckEditorManager = {
+                teardown: function () {
+                    document.removeEventListener('livewire:navigating', onNavigating);
+                    document.removeEventListener('livewire:navigated', onNavigated);
+                    destroyEditor();
+                }
+            };
+        })();
     </script>
 @endpush
