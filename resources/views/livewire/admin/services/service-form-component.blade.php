@@ -169,7 +169,7 @@
                                     <!-- Additional Images (max 2) -->
                                     <div class="filter cm-content-box box-primary">
                                         <div class="content-title">
-                                            <div class="cpa">Additional Images (max 2)</div>
+                                            <div class="cpa">TESTING 123 - Additional Images (max 2)</div>
                                             <div class="tools"><a href="javascript:void(0);"
                                                     class="expand SlideToolHeader"><i class="fal fa-angle-down"></i></a>
                                             </div>
