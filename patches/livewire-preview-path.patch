@@ -1,0 +1,11 @@
+--- a/src/Mechanisms/HandleRequests/EndpointResolver.php
++++ b/src/Mechanisms/HandleRequests/EndpointResolver.php
+@@ -58,7 +58,7 @@
+      */
+     public static function previewPath(): string
+     {
+-        return static::prefix() . '/preview-file/{filename}';
++        return static::prefix() . '/preview-file/{filename}/view';
+     }
+ 
+     /**

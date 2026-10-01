@@ -1,0 +1,17 @@
+{
+    "_hash": "1ef8853faee380be52659744343c3df0380f09807ad76cb3b626fde9e4f4c956",
+    "patches": {
+        "livewire/livewire": [
+            {
+                "package": "livewire/livewire",
+                "description": "Fix preview-file URL to avoid CDN static-asset query-string stripping",
+                "url": "patches/livewire-preview-path.patch",
+                "sha256": "184880ee1ba28fa5d2c8fdc9acc4dc2517f7e2015fc32050dbc63b61dd2825ea",
+                "depth": 1,
+                "extra": {
+                    "provenance": "root"
+                }
+            }
+        ]
+    }
+}

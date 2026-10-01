@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "440a123ea735d4b5f6c3fea750269f32",
+    "content-hash": "d94bf8c29f807e5adf10e339318783da",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -318,6 +318,129 @@
                 }
             ],
             "time": "2025-01-03T16:18:33+00:00"
+        },
+        {
+            "name": "cweagans/composer-configurable-plugin",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cweagans/composer-configurable-plugin.git",
+                "reference": "15433906511a108a1806710e988629fd24b89974"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cweagans/composer-configurable-plugin/zipball/15433906511a108a1806710e988629fd24b89974",
+                "reference": "15433906511a108a1806710e988629fd24b89974",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=8.0.0"
+            },
+            "require-dev": {
+                "codeception/codeception": "~4.0",
+                "codeception/module-asserts": "^2.0",
+                "composer/composer": "~2.0",
+                "php-coveralls/php-coveralls": "~2.0",
+                "php-parallel-lint/php-parallel-lint": "^1.0.0",
+                "phpro/grumphp": "^1.8.0",
+                "sebastian/phpcpd": "^6.0",
+                "squizlabs/php_codesniffer": "^3.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "cweagans\\Composer\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Cameron Eagans",
+                    "email": "me@cweagans.net"
+                }
+            ],
+            "description": "Provides a lightweight configuration system for Composer plugins.",
+            "support": {
+                "issues": "https://github.com/cweagans/composer-configurable-plugin/issues",
+                "source": "https://github.com/cweagans/composer-configurable-plugin/tree/2.0.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/cweagans",
+                    "type": "github"
+                }
+            ],
+            "time": "2023-02-12T04:58:58+00:00"
+        },
+        {
+            "name": "cweagans/composer-patches",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cweagans/composer-patches.git",
+                "reference": "bfa6018a5f864653d9ed899b902ea72f858a2cf7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cweagans/composer-patches/zipball/bfa6018a5f864653d9ed899b902ea72f858a2cf7",
+                "reference": "bfa6018a5f864653d9ed899b902ea72f858a2cf7",
+                "shasum": ""
+            },
+            "require": {
+                "composer-plugin-api": "^2.0",
+                "cweagans/composer-configurable-plugin": "^2.0",
+                "ext-json": "*",
+                "php": ">=8.0.0"
+            },
+            "require-dev": {
+                "codeception/codeception": "~4.0",
+                "codeception/module-asserts": "^2.0",
+                "codeception/module-cli": "^2.0",
+                "codeception/module-filesystem": "^2.0",
+                "composer/composer": "~2.0",
+                "php-coveralls/php-coveralls": "~2.0",
+                "php-parallel-lint/php-parallel-lint": "^1.0.0",
+                "phpro/grumphp": "^1.8.0",
+                "sebastian/phpcpd": "^6.0",
+                "squizlabs/php_codesniffer": "^4.0"
+            },
+            "type": "composer-plugin",
+            "extra": {
+                "_": "The following two lines ensure that composer-patches is loaded as early as possible.",
+                "class": "cweagans\\Composer\\Plugin\\Patches",
+                "plugin-modifies-downloads": true,
+                "plugin-modifies-install-path": true
+            },
+            "autoload": {
+                "psr-4": {
+                    "cweagans\\Composer\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Cameron Eagans",
+                    "email": "me@cweagans.net"
+                }
+            ],
+            "description": "Provides a way to patch Composer packages.",
+            "support": {
+                "issues": "https://github.com/cweagans/composer-patches/issues",
+                "source": "https://github.com/cweagans/composer-patches/tree/2.0.0"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/cweagans",
+                    "type": "github"
+                }
+            ],
+            "time": "2025-10-30T23:44:22+00:00"
         },
         {
             "name": "dasprid/enum",
@@ -2951,16 +3074,16 @@
         },
         {
             "name": "livewire/livewire",
-            "version": "v4.4.2",
+            "version": "v4.4.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/livewire.git",
-                "reference": "4a030935e6c255c89a114b00ece66326f78157c0"
+                "reference": "5976d18b1c808287017a17337d9e68dc1ca64ca2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/livewire/zipball/4a030935e6c255c89a114b00ece66326f78157c0",
-                "reference": "4a030935e6c255c89a114b00ece66326f78157c0",
+                "url": "https://api.github.com/repos/livewire/livewire/zipball/5976d18b1c808287017a17337d9e68dc1ca64ca2",
+                "reference": "5976d18b1c808287017a17337d9e68dc1ca64ca2",
                 "shasum": ""
             },
             "require": {
@@ -3015,7 +3138,7 @@
             "description": "A front-end framework for Laravel.",
             "support": {
                 "issues": "https://github.com/livewire/livewire/issues",
-                "source": "https://github.com/livewire/livewire/tree/v4.4.2"
+                "source": "https://github.com/livewire/livewire/tree/v4.4.7"
             },
             "funding": [
                 {
@@ -3023,7 +3146,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-08-24T15:02:06+00:00"
+            "time": "2026-09-28T18:12:51+00:00"
         },
         {
             "name": "monolog/monolog",

@@ -3,11 +3,15 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.3",
         "bacon/bacon-qr-code": "^3.1",
+        "cweagans/composer-patches": "^2.0",
         "google/analytics-data": "^0.27.0",
         "laravel/framework": "^13.17",
         "laravel/reverb": "*",
@@ -80,6 +84,11 @@
     "extra": {
         "laravel": {
             "dont-discover": []
+        },
+        "patches": {
+            "livewire/livewire": {
+                "Fix preview-file URL to avoid CDN static-asset query-string stripping": "patches/livewire-preview-path.patch"
+            }
         }
     },
     "config": {
@@ -87,6 +96,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "allow-plugins": {
+            "cweagans/composer-patches": true,
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
         }
