@@ -10,7 +10,13 @@
         'mainEntityOfPage' => ['@type' => 'WebPage', '@id' => route('blog.details', $post->slug)],
         'datePublished' => optional($post->published_at ?? $post->created_at)->toIso8601String(),
         'dateModified' => optional($post->updated_at)->toIso8601String(),
-        'author' => ['@type' => 'Person', 'name' => $post->author?->name ?? 'Polysphere Tech'],
+        'author' => array_filter([
+            '@type' => 'Person',
+            'name' => $post->author?->name ?? 'Polysphere Tech',
+            'url' => ($post->author?->profile?->is_featured_team && $post->author?->username)
+                ? route('team.details', $post->author->username)
+                : null,
+        ]),
         'publisher' => [
             '@type' => 'Organization',
             'name' => 'Polysphere Tech',
