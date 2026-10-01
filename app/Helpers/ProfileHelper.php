@@ -13,33 +13,47 @@ class ProfileHelper
      */
     public static function broadcast(User $user): void
     {
-        $profile = $user->profile;
+        try {
+            $profile = $user->profile;
 
-        broadcast(new ProfileUpdated(
-            $user,
-            [
-                'name'       => $user->name,
-                'email'      => $user->email,
-                'phone'      => $user->phone,
-                'avatar_url' => $user->avatar_url,
-                'initials'   => $user->initials,
-            ],
-            $profile ? [
-                'about_me'                => $profile->about_me,
-                'skills'                 => $profile->skills,
-                'education'              => $profile->education,
-                'social_links'           => $profile->social_links,
-                'position'               => $profile->position,
-                'gender'                 => $profile->gender,
-                'date_of_birth'          => $profile->date_of_birth?->toDateString(),
-                'country_code'           => $profile->country_code,
-                'city'                   => $profile->city,
-                'emergency_contact_name' => $profile->emergency_contact_name,
-                'emergency_contact_phone' => $profile->emergency_contact_phone,
-                'is_employee'            => $profile->is_employee,
-                // add any other fields you want to sync
-            ] : null
-        ));
+            broadcast(new ProfileUpdated(
+                $user,
+                [
+                    'name'       => $user->name,
+                    'email'      => $user->email,
+                    'phone'      => $user->phone,
+                    'avatar_url' => $user->avatar_url,
+                    'initials'   => $user->initials,
+                ],
+                $profile ? [
+                    'about_me'                => $profile->about_me,
+                    'skills'                 => $profile->skills,
+                    'education'              => $profile->education,
+                    'social_links'           => $profile->social_links,
+                    'position'               => $profile->position,
+                    'gender'                 => $profile->gender,
+                    'date_of_birth'          => $profile->date_of_birth?->toDateString(),
+                    'country_code'           => $profile->country_code,
+                    'city'                   => $profile->city,
+                    'emergency_contact_name' => $profile->emergency_contact_name,
+                    'emergency_contact_phone' => $profile->emergency_contact_phone,
+                    'is_employee'            => $profile->is_employee,
+                    // add any other fields you want to sync
+                ] : null
+            ))->toOthers();
+            // ->toOthers() excludes the browser that triggered this save from
+            // receiving its own broadcast back. Without it, the saving user's
+            // own tab gets an immediate WebSocket push of its own change,
+            // which fires a second Livewire request (AccountSettings::syncProfile,
+            // etc.) that can land right on top of the save's own response —
+            // that collision was causing intermittent 403s on save.
+        } catch (\Throwable $e) {
+            // Real-time sync is a nice-to-have, not a save-blocking requirement.
+            // A broadcasting failure (timeout, blocked outbound connection,
+            // driver misconfigured/down) must never surface as an error on
+            // profile save/delete — the profile itself already saved fine.
+            report($e);
+        }
     }
 
     /**
