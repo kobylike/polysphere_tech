@@ -369,7 +369,7 @@
                                         class="fab fa-facebook-f"></i></a></li>
                             <li><a href="https://x.com/polyspheretech" target="_blank" rel="noopener noreferrer"
                                     aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
-                            <li><a href="https://www.youtube.com/@@polyspheretech" target="_blank"
+                            <li><a href="https://www.youtube.com/@polyspheretech" target="_blank"
                                     rel="noopener noreferrer" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
                             </li>
                             <li><a href="https://www.linkedin.com/company/polysphere-tech/" target="_blank"
@@ -378,6 +378,10 @@
                             <li><a href="https://www.instagram.com/polyspheretech" target="_blank"
                                     rel="noopener noreferrer" aria-label="Instagram"><i
                                         class="fab fa-instagram"></i></a></li>
+
+                            <li><a href=" https://www.tiktok.com/@polyspheretech" target="_blank"
+                                    rel="noopener noreferrer" aria-label="tiktok"><i class="fab fa-tiktok"></i></a></li>
+
                         </ul>
                     </div>
                 </div>

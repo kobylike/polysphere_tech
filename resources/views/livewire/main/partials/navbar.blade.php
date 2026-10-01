@@ -23,6 +23,9 @@
                             class="fab fa-instagram"></i></a></span>
                 <span><a href="https://www.youtube.com/@polyspheretech" target="_blank" rel="noopener noreferrer"><i
                             class="fab fa-youtube"></i></a></span>
+                <span><a href=" https://www.tiktok.com/@polyspheretech" target="_blank" rel="noopener noreferrer"><i
+                            class="fab fa-tiktok"></i></a></span>
+
             </div>
         </div>
     </div>

@@ -1,278 +1,225 @@
-<!-- livewire/admin/dashboard/dashboard-component.blade.php -->
-<div x-data="dashboardCharts()" x-init="initCharts()" @update-charts.window="updateCharts($event.detail)">
+<!-- livewire/admin/dashboard/advanced-analytics-component.blade.php -->
+<div class="analytics-page" x-data="analyticsCharts()" x-init="initCharts()"
+    @update-analytics-charts.window="updateCharts($event.detail)">
 
     <!-- ─── Page Header ────────────────────────────────────────────── -->
     <div class="page-titles">
         <ol class="breadcrumb">
             <li>
-                <h5 class="bc-title">Dashboard</h5>
+                <h5 class="bc-title">Advanced Analytics</h5>
             </li>
             <li class="breadcrumb-item">
-                <a href="javascript:void(0)" wire:navigate.hover>
-                    <svg width="17" height="17" viewBox="0 0 17 17" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path
-                            d="M2.125 6.375L8.5 1.41667L14.875 6.375V14.1667C14.875 14.5424 14.7257 14.9027 14.4601 15.1684C14.1944 15.4341 13.8341 15.5833 13.4583 15.5833H3.54167C3.16594 15.5833 2.80561 15.4341 2.53993 15.1684C2.27426 14.9027 2.125 14.5424 2.125 14.1667V6.375Z"
-                            stroke="#2C2C2C" stroke-linecap="round" stroke-linejoin="round" />
-                        <path d="M6.375 15.5833V8.5H10.625V15.5833" stroke="#2C2C2C" stroke-linecap="round"
-                            stroke-linejoin="round" />
-                    </svg>
-                    Home
-                </a>
+                <a href="{{ route('dashboard') }}" wire:navigate.hover>Dashboard</a>
             </li>
-            <li class="breadcrumb-item active"><a href="javascript:void(0)" wire:navigate.hover>Dashboard</a></li>
+            <li class="breadcrumb-item active"><a href="javascript:void(0)">Website Analytics</a></li>
         </ol>
-        <a class="text-primary fs-13" data-bs-toggle="offcanvas" href="#offcanvasExample1" role="button"
-            aria-controls="offcanvasExample1" wire:navigate.hover>+ Add Task</a>
+        <div class="d-flex align-items-center gap-2">
+            <button wire:click="forceRefresh" wire:loading.attr="disabled" class="btn btn-outline-primary btn-sm">
+                <span wire:loading.remove wire:target="forceRefresh"><i class="fas fa-sync-alt"></i> Refresh</span>
+                <span wire:loading wire:target="forceRefresh"><i class="fas fa-spinner fa-spin"></i> Refreshing…</span>
+            </button>
+        </div>
     </div>
 
     <div class="container-fluid">
+
+        @unless($ga4Configured)
+            <div class="alert alert-warning d-flex align-items-center gap-2">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>
+                    <strong>Google Analytics isn't connected yet.</strong>
+                    Set <code>GA4_PROPERTY_ID</code> and <code>GA4_CREDENTIALS_PATH</code> in your <code>.env</code>
+                    and drop your service-account JSON in place to start seeing live data here.
+                </div>
+            </div>
+        @endunless
+
+        @if($ga4Configured && (int) ($overview['sessions'] ?? 0) === 0)
+            <div class="alert alert-info d-flex align-items-center gap-2">
+                <i class="fas fa-info-circle"></i>
+                <div>Live data is working. Reports and charts fill in about 24–48 hours after tracking starts.</div>
+            </div>
+        @endif
+
         <div class="row">
 
-            <!-- ─── EXECUTIVE SUMMARY KPI CARDS ─── -->
-            <div class="col-xl-9 wid-100">
-                <div class="row">
-                    <!-- Total Users -->
-                    <div class="col-xl-3 col-sm-6">
-                        <div class="card chart-grd same-card">
-                            <div class="card-body depostit-card p-0">
-                                <div class="depostit-card-media d-flex justify-content-between pb-0">
-                                    <div>
-                                        <h6>Total Users</h6>
-                                        <h3>{{ $stats['total_users'] }}</h3>
-                                    </div>
-                                    <div class="icon-box bg-primary-light">
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M17.5 19.375V17.9167C17.5 13.675 14.075 10.2083 10 10.2083C5.925 10.2083 2.5 13.675 2.5 17.9167V19.375M10 10.2083C12.3467 10.2083 14.1667 8.38833 14.1667 6.04167C14.1667 3.695 12.3467 1.875 10 1.875C7.65333 1.875 5.83333 3.695 5.83333 6.04167C5.83333 8.38833 7.65333 10.2083 10 10.2083Z"
-                                                stroke="var(--primary)" stroke-linecap="round"
-                                                stroke-linejoin="round" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <small class="text-muted">Active: {{ $stats['active_users'] }}</small>
-                                    <span class="badge bg-success ms-2">+{{ $stats['new_users_today'] }} today</span>
-                                </div>
+            <!-- ─── Period selector ─── -->
+            <div class="col-12 mb-2">
+                <ul class="nav nav-pills mix-chart-tab">
+                    @foreach(['7d' => '7 Days', '30d' => '30 Days', '90d' => '90 Days', '12m' => '12 Months'] as $value => $label)
+                        <li class="nav-item">
+                            <button class="nav-link {{ $period === $value ? 'active' : '' }}"
+                                wire:click="$set('period', '{{ $value }}')" type="button">{{ $label }}</button>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+
+            <!-- ─── LIVE RIGHT NOW ─── -->
+            <div class="col-xl-3 col-sm-6" wire:poll.15s="$refresh">
+                @php
+                    $liveNow = (int) $this->realtimeActiveUsers;
+                    $livePages = array_slice($this->realtimeTopPages, 0, 4);
+                    $liveMax = max(1, collect($livePages)->max('users') ?? 1);
+                @endphp
+
+                <div class="card chart-grd same-card live-hero">
+                    <div class="live-hero-orb live-hero-orb--1"></div>
+                    <div class="live-hero-orb live-hero-orb--2"></div>
+
+                    <div class="live-hero-body">
+                        <div class="live-hero-head">
+                            <div class="live-hero-badge">
+                                <span class="live-dot"></span>
+                                <span>LIVE</span>
+                            </div>
+                            <span class="live-hero-updated">refreshes every 15s</span>
+                        </div>
+
+                        <div class="live-hero-main">
+                            <div class="live-hero-rings" aria-hidden="true">
+                                <span></span><span></span><span></span>
+                            </div>
+                            <div class="live-hero-count">{{ $liveNow }}</div>
+                            <div class="live-hero-label">
+                                {{ Str::plural('visitor', $liveNow) }} on the site right now
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Total Projects -->
-                    <div class="col-xl-3 col-sm-6">
-                        <div class="card chart-grd same-card">
-                            <div class="card-body depostit-card p-0">
-                                <div class="depostit-card-media d-flex justify-content-between pb-0">
-                                    <div>
-                                        <h6>Total Projects</h6>
-                                        <h3>{{ $stats['total_projects'] }}</h3>
-                                    </div>
-                                    <div class="icon-box bg-success-light">
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M2.5 5.83333V15.8333C2.5 17.0833 3.33333 17.9167 4.58333 17.9167H15.4167C16.6667 17.9167 17.5 17.0833 17.5 15.8333V5.83333C17.5 4.58333 16.6667 3.75 15.4167 3.75H4.58333C3.33333 3.75 2.5 4.58333 2.5 5.83333Z"
-                                                stroke="#3AC977" stroke-width="1.5" />
-                                            <path d="M2.5 10H17.5" stroke="#3AC977" stroke-width="1.5"
-                                                stroke-linecap="round" />
-                                            <path d="M13.3333 14.1667H15" stroke="#3AC977" stroke-width="1.5"
-                                                stroke-linecap="round" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <span class="badge bg-primary">Published: {{ $stats['published_projects'] }}</span>
-                                    <span class="badge bg-warning ms-1">Draft: {{ $stats['draft_projects'] }}</span>
-                                </div>
+                        <div class="live-hero-pages">
+                            <div class="live-hero-pages-head">
+                                <span>Top active pages</span>
+                                <span>{{ count($this->realtimeTopPages) }} tracked</span>
                             </div>
+
+                            @forelse($livePages as $page)
+                                @php
+                                    $clean = trim(Str::before($page['page'], ' | Polysphere Tech')) ?: $page['page'];
+                                    $pct = max(6, (int) round(($page['users'] / $liveMax) * 100));
+                                @endphp
+                                <div class="live-hero-page">
+                                    <div class="live-hero-page-row">
+                                        <span class="live-hero-page-name" title="{{ $page['page'] }}">{{ $clean }}</span>
+                                        <span class="live-hero-page-count">{{ $page['users'] }}</span>
+                                    </div>
+                                    <div class="live-hero-page-bar">
+                                        <div class="live-hero-page-bar-fill" style="width: {{ $pct }}%"></div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="live-hero-empty">Nobody on the site right now</div>
+                            @endforelse
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Services -->
-                    <div class="col-xl-3 col-sm-6">
-                        <div class="card chart-grd same-card">
-                            <div class="card-body depostit-card p-0">
-                                <div class="depostit-card-media d-flex justify-content-between pb-0">
-                                    <div>
-                                        <h6>Services</h6>
-                                        <h3>{{ $stats['total_services'] }}</h3>
-                                    </div>
-                                    <div class="icon-box bg-info-light">
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M10 1.875L1.875 6.875L10 11.875L18.125 6.875L10 1.875Z"
-                                                stroke="#0D99FF" stroke-width="1.5" stroke-linejoin="round" />
-                                            <path d="M3.75 9.375V14.375L10 18.125L16.25 14.375V9.375" stroke="#0D99FF"
-                                                stroke-width="1.5" stroke-linejoin="round" />
-                                            <path d="M15 14.375L17.5 16.25" stroke="#0D99FF" stroke-width="1.5"
-                                                stroke-linecap="round" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="mt-2">
-                                    <span class="badge bg-success">Active: {{ $stats['active_services'] }}</span>
-                                </div>
+            <!-- ─── Sessions ─── -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card chart-grd same-card">
+                    <div class="card-body depostit-card p-0">
+                        <div class="depostit-card-media d-flex justify-content-between pb-0">
+                            <div>
+                                <h6>Sessions</h6>
+                                <h3>{{ number_format($overview['sessions']) }}</h3>
+                            </div>
+                            <div class="icon-box bg-primary-light">
+                                <i class="fas fa-chart-line text-primary"></i>
                             </div>
                         </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Users: {{ number_format($overview['active_users']) }}</small>
+                            <span class="badge bg-success ms-2">+{{ number_format($overview['new_users']) }} new</span>
+                        </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- 2FA Adoption -->
-                    <div class="col-xl-3 col-sm-6 same-card">
-                        <div class="card">
-                            <div class="card-body depostit-card">
-                                <div class="depostit-card-media d-flex justify-content-between style-1">
-                                    <div>
-                                        <h6>2FA Adoption</h6>
-                                        <h3>{{ $stats['two_factor_adoption'] }}%</h3>
-                                    </div>
-                                    <div class="icon-box bg-secondary-light">
-                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
-                                            xmlns="http://www.w3.org/2000/svg">
-                                            <path
-                                                d="M4.16667 8.75V6.25C4.16667 3.35556 6.52222 1 9.41667 1C12.3111 1 14.6667 3.35556 14.6667 6.25V8.75M10 13.75V15.8333M4.16667 19H14.6667C16.6 19 18.1667 17.4333 18.1667 15.5V12.25C18.1667 10.3167 16.6 8.75 14.6667 8.75H4.16667C2.23333 8.75 0.666667 10.3167 0.666667 12.25V15.5C0.666667 17.4333 2.23333 19 4.16667 19Z"
-                                                stroke="#6C757D" stroke-width="1.5" stroke-linecap="round" />
-                                        </svg>
-                                    </div>
-                                </div>
-                                <div class="progress-box mt-0">
-                                    <div class="d-flex justify-content-between">
-                                        <p class="mb-0">Enabled: {{ $stats['two_factor_adoption'] }}%</p>
-                                        <p class="mb-0">{{ $stats['two_factor_adoption'] }}%</p>
-                                    </div>
-                                    <div class="progress">
-                                        <div class="progress-bar bg-primary"
-                                            style="width:{{ $stats['two_factor_adoption'] }}%; height:5px; border-radius:4px;"
-                                            role="progressbar"></div>
-                                    </div>
-                                </div>
+            <!-- ─── Bounce Rate ─── -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card chart-grd same-card">
+                    <div class="card-body depostit-card p-0">
+                        <div class="depostit-card-media d-flex justify-content-between pb-0">
+                            <div>
+                                <h6>Bounce Rate</h6>
+                                <h3>{{ $overview['bounce_rate'] }}%</h3>
+                            </div>
+                            <div class="icon-box bg-danger-light">
+                                <i class="fas fa-sign-out-alt text-danger"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <small class="text-muted">Engagement rate: {{ $overview['engagement_rate'] }}%</small>
+                            <div class="kpi-meter mt-2">
+                                <span style="width: {{ min(100, (float) $overview['engagement_rate']) }}%"></span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ─── RIGHT SIDEBAR: Quick Stats & Spotlight ─── -->
-            <div class="col-xl-3 t-earn">
-                <div class="card">
-                    <div class="card-header border-0 pb-0">
-                        <h4 class="heading mb-0">Quick Stats</h4>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-group list-group-flush">
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>New Users (Week)</span>
-                                <span class="badge bg-primary rounded-pill">{{ $stats['new_users_week'] }}</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Unread Notifications</span>
-                                <span class="badge bg-danger rounded-pill">{{ $stats['unread_notifications'] }}</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>Spotlight Team</span>
-                                <span class="badge bg-success rounded-pill">{{ $stats['spotlight_count'] }} / 3</span>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center">
-                                <span>System Status</span>
-                                <span
-                                    class="badge bg-{{ $stats['system_status'] === 'healthy' ? 'success' : 'warning' }} rounded-pill">{{ ucfirst($stats['system_status']) }}</span>
-                            </li>
-                        </ul>
-
-                        <!-- Quick Actions -->
-                        <div class="mt-3">
-                            <h6>Quick Actions</h6>
-                            <div class="d-grid gap-2">
-                                <a href="{{ route('users') }}" wire:navigate.hover class="btn btn-primary btn-sm"><i
-                                        class="fas fa-user-plus"></i> Manage Users</a>
-                                <a href="{{ route('admin.projects.create') }}" wire:navigate.hover
-                                    class="btn btn-success btn-sm"><i class="fas fa-folder-plus"></i> New Project</a>
-                                <a href="{{ route('admin.services.create') }}" wire:navigate.hover
-                                    class="btn btn-info btn-sm"><i class="fas fa-cog"></i> Add Service</a>
-                                <button wire:click="$emit('openInviteModal')" class="btn btn-secondary btn-sm"><i
-                                        class="fas fa-envelope"></i> Invite</button>
+            <!-- ─── Avg Session Duration / Conversions ─── -->
+            <div class="col-xl-3 col-sm-6">
+                <div class="card chart-grd same-card">
+                    <div class="card-body depostit-card p-0">
+                        <div class="depostit-card-media d-flex justify-content-between pb-0">
+                            <div>
+                                <h6>Avg. Session</h6>
+                                <h3>{{ $overview['avg_session_duration'] }}</h3>
                             </div>
+                            <div class="icon-box bg-info-light">
+                                <i class="fas fa-clock text-info"></i>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge bg-primary">Conversions:
+                                {{ number_format($overview['conversions']) }}</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ─── PROJECT OVERVIEW CHART ─── -->
+            <!-- ─── TRAFFIC OVER TIME ─── -->
             <div class="col-xl-8">
                 <div class="card overflow-hidden">
-                    <div class="card-header border-0 pb-0 flex-wrap">
-                        <h4 class="heading mb-0">Projects Overview</h4>
-                        <ul class="nav nav-pills mix-chart-tab" id="pills-tab" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link {{ $projectChartPeriod === 'week' ? 'active' : '' }}"
-                                    wire:click="$set('projectChartPeriod', 'week')" type="button">Week</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link {{ $projectChartPeriod === 'month' ? 'active' : '' }}"
-                                    wire:click="$set('projectChartPeriod', 'month')" type="button">Month</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link {{ $projectChartPeriod === 'year' ? 'active' : '' }}"
-                                    wire:click="$set('projectChartPeriod', 'year')" type="button">Year</button>
-                            </li>
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link {{ $projectChartPeriod === 'all' ? 'active' : '' }}"
-                                    wire:click="$set('projectChartPeriod', 'all')" type="button">All</button>
-                            </li>
-                        </ul>
+                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-start">
+                        <h4 class="heading mb-0">Traffic Over Time</h4>
+                        <div class="chart-legend">
+                            <span><i style="background:#0D99FF"></i> Sessions</span>
+                            <span><i style="background:#3AC977"></i> Users</span>
+                            <span><i style="background:#FF9F00"></i> Pageviews</span>
+                        </div>
                     </div>
                     <div class="card-body p-0">
-                        <!-- Fixed height container with wire:ignore -->
-                        <div wire:ignore style="height:200px;">
-                            <canvas id="dashboardProjectsChart" style="width:100%; height:100%;"></canvas>
-                        </div>
-                        <div class="ttl-project">
-                            <div class="pr-data">
-                                <h5>{{ $stats['total_projects'] }}</h5>
-                                <span>Total Projects</span>
-                            </div>
-                            <div class="pr-data">
-                                <h5 class="text-primary">{{ $stats['published_projects'] }}</h5>
-                                <span>Published</span>
-                            </div>
-                            <div class="pr-data">
-                                <h5 class="text-success">{{ $stats['active_users'] }}</h5>
-                                <span>Active Users</span>
-                            </div>
-                            <div class="pr-data">
-                                <h5 class="text-warning">{{ $stats['two_factor_adoption'] }}%</h5>
-                                <span>2FA Adoption</span>
-                            </div>
+                        <div wire:ignore style="height:260px;">
+                            <canvas id="analyticsTrafficChart" style="width:100%; height:100%;"></canvas>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ─── PROJECT STATUS (DONUT) ─── -->
+            <!-- ─── TRAFFIC SOURCES ─── -->
             <div class="col-xl-4">
                 <div class="card">
                     <div class="card-header border-0">
-                        <h4 class="heading mb-0">Project Status</h4>
-                        <div>
-                            <a href="{{ route('admin.projects.index') }}" wire:navigate.hover
-                                class="text-primary me-2">View All</a>
-                        </div>
+                        <h4 class="heading mb-0">Traffic Sources</h4>
                     </div>
                     <div class="card-body">
                         <div wire:ignore style="height:200px;">
-                            <canvas id="dashboardStatusChart" style="width:100%; height:100%;"></canvas>
+                            <canvas id="analyticsSourcesChart" style="width:100%; height:100%;"></canvas>
                         </div>
                         <div class="project-date mt-3">
-                            @foreach($projectStatusData['labels'] as $index => $label)
+                            @foreach($trafficSources['labels'] as $index => $label)
                                 <div class="project-media">
                                     <p class="mb-0">
                                         <svg class="me-2" width="12" height="13" viewBox="0 0 12 13" fill="none"
                                             xmlns="http://www.w3.org/2000/svg">
                                             <rect y="0.5" width="12" height="12" rx="3"
-                                                fill="{{ $projectStatusData['bgColors'][$index] }}" />
+                                                fill="{{ $trafficSources['colors'][$index] }}" />
                                         </svg>
                                         {{ $label }}
                                     </p>
-                                    <span>{{ $projectStatusData['data'][$index] }} Projects</span>
+                                    <span>{{ number_format($trafficSources['data'][$index]) }}</span>
                                 </div>
                             @endforeach
                         </div>
@@ -280,176 +227,93 @@
                 </div>
             </div>
 
-            <!-- ─── ACTIVITY FEED ─── -->
-            <div class="col-xl-6 active-p">
+            <!-- ─── DEVICE BREAKDOWN ─── -->
+            <div class="col-xl-4 col-md-6">
                 <div class="card">
                     <div class="card-header border-0">
-                        <h4 class="heading mb-0">Recent Activity</h4>
-                        <div>
-                            <a href="{{ route('admin.logs') }}" wire:navigate.hover class="text-primary me-2">View
-                                All</a>
+                        <h4 class="heading mb-0">Devices</h4>
+                    </div>
+                    <div class="card-body">
+                        <div wire:ignore style="height:180px;">
+                            <canvas id="analyticsDeviceChart" style="width:100%; height:100%;"></canvas>
                         </div>
                     </div>
-                    <div class="card-body p-0 dz-scroll" style="max-height: 400px;">
+                </div>
+            </div>
+
+            <!-- ─── BROWSER BREAKDOWN ─── -->
+            <div class="col-xl-4 col-md-6">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h4 class="heading mb-0">Browsers</h4>
+                    </div>
+                    <div class="card-body">
+                        <div wire:ignore style="height:180px;">
+                            <canvas id="analyticsBrowserChart" style="width:100%; height:100%;"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ─── TOP COUNTRIES ─── -->
+            <div class="col-xl-4">
+                <div class="card">
+                    <div class="card-header border-0">
+                        <h4 class="heading mb-0">Top Countries</h4>
+                    </div>
+                    <div class="card-body p-0 dz-scroll" style="max-height: 320px;">
                         <ul class="list-group list-group-flush">
-                            @forelse($recentActivities as $activity)
-                                <li class="list-group-item d-flex align-items-start">
-                                    <div class="me-3">
-                                        <i class="fas {{ $activity['icon'] }} text-{{ $activity['color'] }}"></i>
+                            @forelse($topCountries as $country)
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between">
+                                        <span>{{ $country['country'] }}</span>
+                                        <span>{{ number_format($country['users']) }} <small
+                                                class="text-muted">({{ $country['share'] }}%)</small></span>
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <strong>{{ $activity['causer_name'] }}</strong>
-                                        <span>{{ $activity['description'] }}</span>
-                                        @if($activity['entity_name'])
-                                            <span class="badge bg-secondary">{{ $activity['entity_name'] }}</span>
-                                        @endif
-                                        <div class="text-muted small">{{ $activity['created_at'] }}</div>
+                                    <div class="progress mt-1" style="height:4px;">
+                                        <div class="progress-bar bg-primary" style="width:{{ $country['share'] }}%"></div>
                                     </div>
                                 </li>
                             @empty
-                                <li class="list-group-item text-center">No recent activity</li>
+                                <li class="list-group-item text-center text-muted">No data for this period</li>
                             @endforelse
                         </ul>
                     </div>
                 </div>
             </div>
 
-            <!-- ─── SPOTLIGHT TEAM ─── -->
-            <div class="col-xl-3 col-md-6 up-shd">
+            <!-- ─── TOP PAGES ─── -->
+            <div class="col-xl-8">
                 <div class="card">
                     <div class="card-header border-0">
-                        <h4 class="heading mb-0">Spotlight Team</h4>
-                        <a href="{{ route('users') }}" wire:navigate.hover class="text-primary">Manage</a>
+                        <h4 class="heading mb-0">Top Pages</h4>
                     </div>
-                    <div class="card-body">
-                        @forelse($spotlightTeam as $member)
-                            <div class="d-flex align-items-center mb-3">
-                                <img src="{{ $member['avatar'] }}" class="avatar rounded-circle me-2" width="40" height="40"
-                                    alt="">
-                                <div>
-                                    <h6 class="mb-0">{{ $member['name'] }}</h6>
-                                    <small class="text-muted">{{ $member['position'] }}</small>
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-muted">No spotlight members.</p>
-                        @endforelse
-                        @if($stats['spotlight_count'] < 3)
-                            <a href="{{ route('users') }}" wire:navigate.hover
-                                class="btn btn-outline-primary btn-sm w-100">Add to Spotlight</a>
-                        @endif
-                    </div>
-                </div>
-            </div>
-
-            <!-- ─── NOTIFICATIONS ─── -->
-            <div class="col-xl-3 col-md-6 up-shd">
-                <div class="card">
-                    <div class="card-header pb-0 border-0">
-                        <h4 class="heading mb-0">Notifications</h4>
-                        <span class="badge bg-danger">{{ $stats['unread_notifications'] }}</span>
-                    </div>
-                    <div class="card-body dz-scroll" style="max-height: 250px;">
-                        <h6>Unread</h6>
-                        @forelse($notifications['unread'] as $notification)
-                            <div class="d-flex align-items-start mb-2">
-                                <i class="fas fa-circle text-primary mt-1 me-2" style="font-size: 8px;"></i>
-                                <div>
-                                    <p class="mb-0">{{ $notification->title }}</p>
-                                    <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-muted">No unread notifications</p>
-                        @endforelse
-                        <hr>
-                        <h6>Read</h6>
-                        @forelse($notifications['read'] as $notification)
-                            <div class="d-flex align-items-start mb-2">
-                                <i class="fas fa-circle text-secondary mt-1 me-2" style="font-size: 8px;"></i>
-                                <div>
-                                    <p class="mb-0">{{ $notification->title }}</p>
-                                    <small class="text-muted">{{ $notification->created_at->diffForHumans() }}</small>
-                                </div>
-                            </div>
-                        @empty
-                            <p class="text-muted">No read notifications</p>
-                        @endforelse
-                        <a href="{{ route('account', ['tab' => 'notifications']) }}" wire:navigate.hover
-                            class="text-primary">View All</a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ─── SYSTEM HEALTH ─── -->
-            <div class="col-xl-6 bst-seller">
-                <div class="card">
-                    <div class="card-header border-0">
-                        <h4 class="heading mb-0">System Health</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <h6>Queued Jobs</h6>
-                                    <h3>{{ $systemHealth['queued_jobs'] }}</h3>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <h6>Storage</h6>
-                                    <h5>{{ $systemHealth['storage_usage'] }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <h6>Cache</h6>
-                                    <h5>{{ $systemHealth['cache_usage'] }}</h5>
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="text-center">
-                                    <h6>Last Backup</h6>
-                                    <h5>{{ $systemHealth['last_backup'] }}</h5>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ─── USER REGISTRATIONS (EARNING CHART) ─── -->
-            <div class="col-xl-6 bst-seller">
-                <div class="card">
-                    <div class="card-header border-0">
-                        <h4 class="heading mb-0">User Registrations</h4>
-                        <ul class="nav nav-underline earning-tab" id="pills-tab1" role="tablist">
-                            <li class="nav-item px-2">
-                                <button
-                                    class="nav-link py-2 px-0 border-3 m-0 {{ $earningChartPeriod === 'day' ? 'active' : '' }}"
-                                    wire:click="$set('earningChartPeriod', 'day')">Day</button>
-                            </li>
-                            <li class="nav-item px-2">
-                                <button
-                                    class="nav-link py-2 px-0 border-3 m-0 {{ $earningChartPeriod === 'week' ? 'active' : '' }}"
-                                    wire:click="$set('earningChartPeriod', 'week')">Week</button>
-                            </li>
-                            <li class="nav-item px-2">
-                                <button
-                                    class="nav-link py-2 px-0 border-3 m-0 {{ $earningChartPeriod === 'month' ? 'active' : '' }}"
-                                    wire:click="$set('earningChartPeriod', 'month')">Month</button>
-                            </li>
-                            <li class="nav-item px-2">
-                                <button
-                                    class="nav-link py-2 px-0 border-3 m-0 {{ $earningChartPeriod === 'year' ? 'active' : '' }}"
-                                    wire:click="$set('earningChartPeriod', 'year')">Year</button>
-                            </li>
-                        </ul>
-                    </div>
-                    <div class="card-body">
-                        <div wire:ignore style="height:150px;">
-                            <canvas id="dashboardRegistrationsChart" style="width:100%; height:100%;"></canvas>
-                        </div>
+                    <div class="card-body p-0 dz-scroll" style="max-height: 320px;">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Page</th>
+                                    <th class="text-end">Views</th>
+                                    <th class="text-end">Avg. Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($topPages as $page)
+                                    <tr>
+                                        <td>
+                                            <div class="fw-semibold">{{ $page['title'] }}</div>
+                                            <small class="text-muted">{{ $page['path'] }}</small>
+                                        </td>
+                                        <td class="text-end">{{ number_format($page['views']) }}</td>
+                                        <td class="text-end">{{ $page['avg_duration'] }}</td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="3" class="text-center text-muted">No data for this period</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -458,32 +322,457 @@
     </div>
 </div>
 
+<style>
+    /* ═══════════════════════════════════════════════════════════════
+       Scoped polish — everything under .analytics-page. Layout, grid,
+       breadcrumbs and container-fluid are UNTOUCHED. Only surfaces,
+       colors and the Live hero treatment are added.
+       ═══════════════════════════════════════════════════════════════ */
+    .analytics-page .card {
+        border: 1px solid #e8eef5;
+        border-radius: 14px;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px -14px rgba(15, 23, 42, .14);
+        transition: transform .18s ease, box-shadow .18s ease;
+    }
+
+    .analytics-page .card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(15, 23, 42, .06), 0 20px 40px -20px rgba(15, 23, 42, .22);
+    }
+
+    .analytics-page .depostit-card-media h3 {
+        font-variant-numeric: tabular-nums;
+        letter-spacing: -.02em;
+    }
+
+    .analytics-page .depostit-card-media h6 {
+        color: #64748b;
+        font-weight: 600;
+        letter-spacing: .01em;
+    }
+
+    .analytics-page .icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Bounce-rate meter */
+    .analytics-page .kpi-meter {
+        height: 5px;
+        border-radius: 999px;
+        background: #eef2f7;
+        overflow: hidden;
+    }
+
+    .analytics-page .kpi-meter>span {
+        display: block;
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #3AC977, #7ee2a8);
+        transition: width .4s ease;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       LIVE HERO
+       ═══════════════════════════════════════════════════════════════ */
+    .analytics-page .live-hero {
+        position: relative;
+        isolation: isolate;
+        overflow: hidden;
+        height: 100%;
+        min-height: 260px;
+        padding: 0 !important;
+        border: 1px solid rgba(255, 255, 255, .06) !important;
+        background:
+            radial-gradient(120% 100% at 0% 0%, #16233c 0%, #0c1424 55%, #0a0f1c 100%) !important;
+        box-shadow:
+            0 1px 2px rgba(15, 23, 42, .15),
+            0 24px 48px -24px rgba(9, 13, 26, .75),
+            inset 0 1px 0 rgba(255, 255, 255, .05) !important;
+    }
+
+    .analytics-page .live-hero:hover {
+        transform: translateY(-2px);
+        box-shadow:
+            0 4px 8px rgba(15, 23, 42, .2),
+            0 28px 56px -24px rgba(9, 13, 26, .85),
+            inset 0 1px 0 rgba(255, 255, 255, .05) !important;
+    }
+
+    .analytics-page .live-hero-orb {
+        position: absolute;
+        pointer-events: none;
+        border-radius: 999px;
+        filter: blur(50px);
+        z-index: 0;
+    }
+
+    .analytics-page .live-hero-orb--1 {
+        top: -70px;
+        right: -60px;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(circle, #3AC977 0%, rgba(58, 201, 119, 0) 70%);
+        opacity: .55;
+        animation: live-orb-drift 8s ease-in-out infinite alternate;
+    }
+
+    .analytics-page .live-hero-orb--2 {
+        bottom: -60px;
+        left: -50px;
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle, #0D99FF 0%, rgba(13, 153, 255, 0) 70%);
+        opacity: .35;
+        animation: live-orb-drift 10s ease-in-out infinite alternate-reverse;
+    }
+
+    @keyframes live-orb-drift {
+        to {
+            transform: translate3d(12px, 8px, 0) scale(1.08);
+        }
+    }
+
+    .analytics-page .live-hero-body {
+        position: relative;
+        z-index: 1;
+        padding: 22px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 260px;
+        color: #e6edf7;
+    }
+
+    .analytics-page .live-hero-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 18px;
+        font-size: 11px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: rgba(230, 237, 247, .55);
+    }
+
+    .analytics-page .live-hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 4px 10px 4px 8px;
+        border-radius: 999px;
+        background: rgba(58, 201, 119, .12);
+        border: 1px solid rgba(58, 201, 119, .35);
+        color: #8bf0b3;
+        font-weight: 700;
+    }
+
+    .analytics-page .live-hero-updated {
+        text-transform: none;
+        letter-spacing: 0;
+        font-size: 11px;
+    }
+
+    .analytics-page .live-hero-main {
+        position: relative;
+        margin-bottom: 20px;
+    }
+
+    .analytics-page .live-hero-rings {
+        position: absolute;
+        top: -6px;
+        left: -4px;
+        width: 88px;
+        height: 88px;
+        pointer-events: none;
+    }
+
+    .analytics-page .live-hero-rings span {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 1px solid rgba(58, 201, 119, .35);
+        animation: live-ring 3s ease-out infinite;
+    }
+
+    .analytics-page .live-hero-rings span:nth-child(2) {
+        animation-delay: 1s;
+    }
+
+    .analytics-page .live-hero-rings span:nth-child(3) {
+        animation-delay: 2s;
+    }
+
+    @keyframes live-ring {
+        0% {
+            transform: scale(.6);
+            opacity: .9;
+        }
+
+        100% {
+            transform: scale(1.6);
+            opacity: 0;
+        }
+    }
+
+    .analytics-page .live-hero-count {
+        font-size: 56px;
+        font-weight: 800;
+        letter-spacing: -.04em;
+        line-height: 1;
+        color: #ffffff;
+        font-variant-numeric: tabular-nums;
+        text-shadow: 0 4px 24px rgba(58, 201, 119, .25);
+    }
+
+    .analytics-page .live-hero-label {
+        margin-top: 6px;
+        font-size: 12.5px;
+        color: rgba(230, 237, 247, .7);
+    }
+
+    .analytics-page .live-hero-pages {
+        margin-top: auto;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255, 255, 255, .08);
+    }
+
+    .analytics-page .live-hero-pages-head {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10.5px;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: rgba(230, 237, 247, .45);
+        margin-bottom: 10px;
+    }
+
+    .analytics-page .live-hero-page {
+        margin-bottom: 10px;
+    }
+
+    .analytics-page .live-hero-page:last-child {
+        margin-bottom: 0;
+    }
+
+    .analytics-page .live-hero-page-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        font-size: 12.5px;
+        color: rgba(230, 237, 247, .9);
+        margin-bottom: 5px;
+    }
+
+    .analytics-page .live-hero-page-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+    }
+
+    .analytics-page .live-hero-page-count {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+        color: #ffffff;
+        flex: none;
+    }
+
+    .analytics-page .live-hero-page-bar {
+        height: 4px;
+        background: rgba(255, 255, 255, .08);
+        border-radius: 999px;
+        overflow: hidden;
+    }
+
+    .analytics-page .live-hero-page-bar-fill {
+        height: 100%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, #3AC977, #7ee2a8);
+        box-shadow: 0 0 8px rgba(58, 201, 119, .6);
+        transition: width .4s ease;
+    }
+
+    .analytics-page .live-hero-empty {
+        font-size: 12.5px;
+        color: rgba(230, 237, 247, .55);
+        padding: 6px 0;
+    }
+
+    .analytics-page .live-dot {
+        display: inline-block;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #3AC977;
+        box-shadow: 0 0 0 0 rgba(58, 201, 119, .7);
+        animation: live-pulse 1.6s ease-out infinite;
+    }
+
+    @keyframes live-pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(58, 201, 119, .75);
+        }
+
+        70% {
+            box-shadow: 0 0 0 10px rgba(58, 201, 119, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(58, 201, 119, 0);
+        }
+    }
+
+    /* ─── Segmented-control restyle of the theme's pills ─────────── */
+    .analytics-page .nav-pills.mix-chart-tab {
+        gap: 4px;
+        padding: 4px;
+        border-radius: 12px;
+        background: #eef2f7;
+        border: 1px solid #e3e9f0;
+        display: inline-flex;
+        flex-wrap: wrap;
+    }
+
+    .analytics-page .nav-pills.mix-chart-tab .nav-item {
+        margin: 0;
+    }
+
+    .analytics-page .nav-pills.mix-chart-tab .nav-link {
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: #64748b;
+        background: transparent;
+        border: 0;
+        transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+    }
+
+    .analytics-page .nav-pills.mix-chart-tab .nav-link:hover {
+        color: #1e293b;
+    }
+
+    .analytics-page .nav-pills.mix-chart-tab .nav-link.active {
+        background: #ffffff;
+        color: #0b1220;
+        box-shadow: 0 1px 2px rgba(15, 23, 42, .06), 0 4px 12px -6px rgba(15, 23, 42, .15);
+    }
+
+    /* ─── Chart legend chips ─────────────────────────────────────── */
+    .analytics-page .chart-legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+    }
+
+    .analytics-page .chart-legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .analytics-page .chart-legend i {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 3px;
+    }
+
+    /* ─── Traffic sources rows ───────────────────────────────────── */
+    .analytics-page .project-date .project-media {
+        padding: 6px 0;
+        border-bottom: 1px dashed #eef2f7;
+    }
+
+    .analytics-page .project-date .project-media:last-child {
+        border-bottom: 0;
+    }
+
+    .analytics-page .project-date .project-media p {
+        color: #334155;
+        font-size: 12.5px;
+    }
+
+    .analytics-page .project-date .project-media span {
+        font-weight: 700;
+        color: #0b1220;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* ─── Top countries ──────────────────────────────────────────── */
+    .analytics-page .list-group-item {
+        border-color: #f1f5f9;
+        padding: 12px 20px;
+        transition: background .12s ease;
+    }
+
+    .analytics-page .list-group-item:hover {
+        background: #f8fbff;
+    }
+
+    .analytics-page .list-group-item>div>span:last-child {
+        font-weight: 700;
+        color: #0b1220;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* ─── Tables ─────────────────────────────────────────────────── */
+    .analytics-page .table {
+        font-size: 13px;
+        margin-bottom: 0;
+    }
+
+    .analytics-page .table thead th {
+        font-size: 11px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #64748b;
+        background: #f8fafc;
+        border-bottom: 1px solid #eef2f7;
+        padding: 12px 20px;
+        white-space: nowrap;
+        font-weight: 700;
+    }
+
+    .analytics-page .table tbody td {
+        padding: 14px 20px;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .analytics-page .table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .analytics-page .table-hover tbody tr:hover {
+        background: #f8fbff;
+    }
+
+    .analytics-page .table tbody td.text-end,
+    .analytics-page .table thead th.text-end {
+        font-variant-numeric: tabular-nums;
+    }
+</style>
+
 @push('scripts')
     <script>
-        // Defined once, registered from two places below — see why underneath.
-        function registerDashboardChartsComponent() {
-            Alpine.data('dashboardCharts', () => ({
-                projectChart: null,
-                statusChart: null,
-                registrationsChart: null,
-                ChartJS: null, // locally-scoped Chart.js v4 class — never touches window.Chart
-                _initInFlight: false, // guards against overlapping concurrent initCharts() runs
+        function registerAnalyticsChartsComponent() {
+            Alpine.data('analyticsCharts', () => ({
+                trafficChart: null,
+                sourcesChart: null,
+                deviceChart: null,
+                browserChart: null,
+                ChartJS: null,
 
-                // Waits for a canvas element to actually exist before handing
-                // it to the callback, instead of giving up after a single
-                // check. initCharts() awaits a dynamic import before it does
-                // anything else — by the time that resolves, Livewire's DOM
-                // swap and Alpine's tree-walk for this new page may still be
-                // finishing up in the background, so the very first canvas
-                // looked up right after that await can occasionally not be
-                // attached yet (this is what was making the Projects Overview
-                // chart intermittently render blank after wire:navigate, while
-                // Project Status — created a beat later in the same call —
-                // usually had just enough extra time to succeed). Retrying
-                // across a few animation frames costs nothing when the
-                // element is already there (resolves on the very first check)
-                // and makes the rare case unconditionally correct instead of
-                // silently failing.
                 waitForElement(id, maxTries = 20) {
                     return new Promise((resolve) => {
                         const tryFind = (attemptsLeft) => {
@@ -497,167 +786,139 @@
                 },
 
                 async initCharts() {
-                    // The theme's own head scripts load an OLD Chart.js v2 bundle
-                    // (Chart.bundle.min.js) with `defer`, which executes AFTER any
-                    // plain synchronous <script src="...chart.js"> tag and ends up
-                    // overwriting window.Chart back to v2 right before Alpine even
-                    // starts. Since this dashboard's config uses v3/v4-only option
-                    // syntax (plugins.legend, scales.y), that silently produced
-                    // blank canvases. Importing Chart.js as its own ES module here
-                    // sidesteps the global entirely — this reference can't be
-                    // overwritten by anything else on the page, regardless of
-                    // script load order.
                     if (!this.ChartJS) {
                         const mod = await import('https://cdn.jsdelivr.net/npm/chart.js@4/+esm');
                         mod.Chart.register(...mod.registerables);
                         this.ChartJS = mod.Chart;
                     }
 
-                    const projectData = @json($initialProjectChartData);
-                    const statusData = @json($initialProjectStatusData);
-                    const registrationsData = @json($initialUserRegistrationsData);
+                    const timeSeries = @json($timeSeries);
+                    const trafficSources = @json($trafficSources);
+                    const deviceBreakdown = @json($deviceBreakdown);
+                    const browserBreakdown = @json($browserBreakdown);
 
-                    await this.initProjectChart(projectData);
-                    await this.initStatusChart(statusData);
-                    await this.initRegistrationsChart(registrationsData);
+                    await this.initTrafficChart(timeSeries);
+                    await this.initSourcesChart(trafficSources);
+                    await this.initDeviceChart(deviceBreakdown);
+                    await this.initBrowserChart(browserBreakdown);
                 },
 
-                async initProjectChart(data) {
-                    const ctx = await this.waitForElement('dashboardProjectsChart');
+                async initTrafficChart(data) {
+                    const ctx = await this.waitForElement('analyticsTrafficChart');
                     if (!ctx || !this.ChartJS) return;
-                    // Ask Chart.js itself if a chart is already attached to this
-                    // exact canvas, rather than trusting our own component's
-                    // `this.projectChart` — that resets to null on every fresh
-                    // Alpine mount, even on a navigation where Livewire reused
-                    // this same physical canvas node. Without this, Chart.js's
-                    // own "canvas already in use" safeguard silently blocks
-                    // creating a new chart on it, which is what was making the
-                    // chart work the first time then go blank on later visits.
                     const existing = this.ChartJS.getChart(ctx);
                     if (existing) existing.destroy();
-                    this.projectChart = new this.ChartJS(ctx, {
+                    this.trafficChart = new this.ChartJS(ctx, {
                         type: 'line',
                         data: {
                             labels: data.labels,
-                            datasets: [{
-                                label: 'Projects Created',
-                                data: data.data,
-                                borderColor: '#0D99FF',
-                                backgroundColor: 'rgba(13, 153, 255, 0.1)',
-                                tension: 0.2,
-                                fill: true,
-                            }]
+                            datasets: [
+                                { label: 'Sessions', data: data.sessions, borderColor: '#0D99FF', backgroundColor: 'rgba(13,153,255,0.08)', tension: 0.35, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4 },
+                                { label: 'Users', data: data.users, borderColor: '#3AC977', backgroundColor: 'rgba(58,201,119,0.08)', tension: 0.35, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4 },
+                                { label: 'Pageviews', data: data.pageviews, borderColor: '#FF9F00', backgroundColor: 'rgba(255,159,0,0.06)', tension: 0.35, fill: true, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4 },
+                            ],
                         },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true } }
-                        }
+                            responsive: true, maintainAspectRatio: false,
+                            interaction: { mode: 'index', intersect: false },
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { backgroundColor: '#0b1220', padding: 10, cornerRadius: 8, titleFont: { size: 12, weight: '600' }, bodyFont: { size: 12 } },
+                            },
+                            scales: {
+                                x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 }, maxRotation: 0, autoSkipPadding: 24 } },
+                                y: { beginAtZero: true, grid: { color: '#eef2f7' }, ticks: { color: '#94a3b8', font: { size: 11 } }, border: { display: false } },
+                            },
+                        },
                     });
                 },
 
-                async initStatusChart(data) {
-                    const ctx = await this.waitForElement('dashboardStatusChart');
+                async initSourcesChart(data) {
+                    const ctx = await this.waitForElement('analyticsSourcesChart');
                     if (!ctx || !this.ChartJS) return;
                     const existing = this.ChartJS.getChart(ctx);
                     if (existing) existing.destroy();
-                    this.statusChart = new this.ChartJS(ctx, {
+                    this.sourcesChart = new this.ChartJS(ctx, {
                         type: 'doughnut',
-                        data: {
-                            labels: data.labels,
-                            datasets: [{
-                                data: data.data,
-                                backgroundColor: data.bgColors,
-                                borderWidth: 0,
-                            }]
-                        },
+                        data: { labels: data.labels, datasets: [{ data: data.data, backgroundColor: data.colors, borderWidth: 0, hoverOffset: 6 }] },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { position: 'bottom' } }
-                        }
+                            responsive: true, maintainAspectRatio: false, cutout: '68%',
+                            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0b1220', padding: 10, cornerRadius: 8 } },
+                        },
                     });
                 },
 
-                async initRegistrationsChart(data) {
-                    const ctx = await this.waitForElement('dashboardRegistrationsChart');
+                async initDeviceChart(data) {
+                    const ctx = await this.waitForElement('analyticsDeviceChart');
                     if (!ctx || !this.ChartJS) return;
                     const existing = this.ChartJS.getChart(ctx);
                     if (existing) existing.destroy();
-                    this.registrationsChart = new this.ChartJS(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: data.labels,
-                            datasets: [{
-                                label: 'New Users',
-                                data: data.data,
-                                backgroundColor: '#3AC977',
-                                borderColor: '#2e9e5e',
-                                borderWidth: 1,
-                            }]
-                        },
+                    this.deviceChart = new this.ChartJS(ctx, {
+                        type: 'pie',
+                        data: { labels: data.labels, datasets: [{ data: data.data, backgroundColor: data.colors, borderWidth: 0, hoverOffset: 6 }] },
                         options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: { legend: { display: false } },
-                            scales: { y: { beginAtZero: true } }
-                        }
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom', labels: { boxWidth: 8, boxHeight: 8, padding: 12, font: { size: 11 }, color: '#475569', usePointStyle: true, pointStyle: 'rectRounded' } },
+                                tooltip: { backgroundColor: '#0b1220', padding: 10, cornerRadius: 8 },
+                            },
+                        },
+                    });
+                },
+
+                async initBrowserChart(data) {
+                    const ctx = await this.waitForElement('analyticsBrowserChart');
+                    if (!ctx || !this.ChartJS) return;
+                    const existing = this.ChartJS.getChart(ctx);
+                    if (existing) existing.destroy();
+                    this.browserChart = new this.ChartJS(ctx, {
+                        type: 'bar',
+                        data: { labels: data.labels, datasets: [{ label: 'Sessions', data: data.data, backgroundColor: data.colors, borderRadius: 6, borderSkipped: false }] },
+                        options: {
+                            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#0b1220', padding: 10, cornerRadius: 8 } },
+                            scales: {
+                                x: { beginAtZero: true, grid: { color: '#eef2f7' }, ticks: { color: '#94a3b8', font: { size: 11 } }, border: { display: false } },
+                                y: { grid: { display: false }, ticks: { color: '#475569', font: { size: 11 } }, border: { display: false } },
+                            },
+                        },
                     });
                 },
 
                 updateCharts(payload) {
                     const data = payload || {};
-                    if (data.projectChartData && this.projectChart) {
-                        this.projectChart.data.labels = data.projectChartData.labels;
-                        this.projectChart.data.datasets[0].data = data.projectChartData.data;
-                        this.projectChart.update();
+                    if (data.timeSeries && this.trafficChart) {
+                        this.trafficChart.data.labels = data.timeSeries.labels;
+                        this.trafficChart.data.datasets[0].data = data.timeSeries.sessions;
+                        this.trafficChart.data.datasets[1].data = data.timeSeries.users;
+                        this.trafficChart.data.datasets[2].data = data.timeSeries.pageviews;
+                        this.trafficChart.update();
                     }
-                    if (data.projectStatusData && this.statusChart) {
-                        this.statusChart.data.labels = data.projectStatusData.labels;
-                        this.statusChart.data.datasets[0].data = data.projectStatusData.data;
-                        this.statusChart.data.datasets[0].backgroundColor = data.projectStatusData.bgColors;
-                        this.statusChart.update();
+                    if (data.trafficSources && this.sourcesChart) {
+                        this.sourcesChart.data.labels = data.trafficSources.labels;
+                        this.sourcesChart.data.datasets[0].data = data.trafficSources.data;
+                        this.sourcesChart.data.datasets[0].backgroundColor = data.trafficSources.colors;
+                        this.sourcesChart.update();
                     }
-                    if (data.userRegistrationsData && this.registrationsChart) {
-                        this.registrationsChart.data.labels = data.userRegistrationsData.labels;
-                        this.registrationsChart.data.datasets[0].data = data.userRegistrationsData.data;
-                        this.registrationsChart.update();
+                    if (data.deviceBreakdown && this.deviceChart) {
+                        this.deviceChart.data.labels = data.deviceBreakdown.labels;
+                        this.deviceChart.data.datasets[0].data = data.deviceBreakdown.data;
+                        this.deviceChart.data.datasets[0].backgroundColor = data.deviceBreakdown.colors;
+                        this.deviceChart.update();
                     }
-                }
+                    if (data.browserBreakdown && this.browserChart) {
+                        this.browserChart.data.labels = data.browserBreakdown.labels;
+                        this.browserChart.data.datasets[0].data = data.browserBreakdown.data;
+                        this.browserChart.data.datasets[0].backgroundColor = data.browserBreakdown.colors;
+                        this.browserChart.update();
+                    }
+                },
             }));
         }
 
-        // `alpine:init` fires exactly ONCE per browser tab — the very first
-        // time Alpine starts, on whatever page happens to load first in the
-        // session. This script only exists on THIS page's own pushed scripts,
-        // so it only loads/runs when this page's HTML arrives. If this page
-        // is the first one visited, this listener is in place in time and
-        // everything works. But if some OTHER page loaded first (Alpine
-        // already started there), this listener registers for an event that
-        // has already fired and will never fire again — so `dashboardCharts`
-        // never gets defined, x-data silently fails to initialize, and
-        // nothing on this page renders. That's exactly what "works on direct
-        // load, doesn't show via wire:navigate" means.
-        // Fix: register immediately if Alpine has already started, in
-        // addition to the alpine:init listener for the genuine first-load
-        // case where it hasn't started yet.
-        document.addEventListener('alpine:init', registerDashboardChartsComponent);
+        document.addEventListener('alpine:init', registerAnalyticsChartsComponent);
         if (window.Alpine) {
-            registerDashboardChartsComponent();
+            registerAnalyticsChartsComponent();
         }
-
-        // No manual livewire:navigated listener needed anymore. That used to
-        // be a workaround for the OLD bug where Alpine.data('dashboardCharts')
-        // sometimes never registered in time (see the alpine:init/window.Alpine
-        // dual registration above, which actually fixes that). Now that
-        // registration is reliable, Alpine's own x-init="initCharts()" on the
-        // component root fires correctly every time this component mounts —
-        // including every wire:navigate arrival, not just the first load. A
-        // second manual trigger on the same event was calling initCharts()
-        // twice per navigation; since it's async, those two calls interleaved
-        // and corrupted whichever chart got caught mid-recreation (Projects
-        // Overview rendering blank while Project Status happened to survive).
-        // One trigger, fired natively by Alpine, is the correct fix.
     </script>
 @endpush

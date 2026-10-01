@@ -62,6 +62,7 @@ class Footer extends Component
             'instagram' => 'https://www.instagram.com/polyspheretech',
             'x'         => 'https://x.com/polyspheretech',
             'youtube'   => 'https://www.youtube.com/@polyspheretech',
+            'tiktok' => 'https://www.tiktok.com/@polyspheretech'
         ];
 
         return view('livewire.main.partials.footer', [

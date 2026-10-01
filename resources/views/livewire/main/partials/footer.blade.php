@@ -25,6 +25,8 @@
                                             class="fab fa-twitter"></i></a></span>
                                 <span><a href="{{ $socials['youtube'] }}" target="_blank" rel="noopener noreferrer"><i
                                             class="fab fa-youtube"></i></a></span>
+                                <span><a href="{{ $socials['tiktok'] }}" target="_blank" rel="noopener noreferrer"><i
+                                            class="fab fa-tiktok"></i></a></span>
                             </div>
 
                             {{-- WhatsApp card block --}}

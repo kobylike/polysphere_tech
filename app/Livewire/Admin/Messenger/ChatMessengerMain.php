@@ -152,7 +152,16 @@ class ChatMessengerMain extends Component
 
         $this->friends = $users->sortByDesc(fn($u) => $u->last_message_time?->timestamp ?? 0)->values();
         $this->totalReceivedMessages = $unreadTotal;
-        $this->friendIds             = $this->friends->pluck('id')->toArray();
+
+        // Scoped to users we actually have a conversation with — matches
+        // routes/channels.php's authorization rule for App.Models.User.{id}
+        // exactly. The full contact list for the sidebar is still
+        // $this->friends (unchanged); this only controls which channels get
+        // subscribed to, same fix as ChatMessengerComponent.
+        $this->friendIds = $this->friends
+            ->filter(fn($u) => $u->last_message_time !== null)
+            ->pluck('id')
+            ->toArray();
 
         $this->dispatch('update-profile-subscriptions', friendIds: $this->friendIds);
         $this->dispatch('unread-count-updated', count: $this->totalReceivedMessages);
