@@ -1,7 +1,13 @@
 <div>
+    <x-seo.breadcrumbs :crumbs="[
+        ['name' => 'Home', 'url' => route('index')],
+        ['name' => 'Projects', 'url' => route('projects')],
+        ['name' => $project->title, 'url' => route('project.details', $project->slug)],
+    ]" />
     <!-- Breadcrumb area start -->
     <div class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">
-        <div class="breadcrumb__thumb" style="background-image: url('{{ asset('assets/main/imgs/resources/project.jpg') }}');"></div>
+        <div class="breadcrumb__thumb"
+            style="background-image: url('{{ asset('assets/main/imgs/resources/project.jpg') }}');"></div>
         <div class="breadcrumb__thumb_2"
             style="background-image: url('{{ asset('assets/main/imgs/resources/page-title-bg-2.png') }}');"></div>
         <div class="small-container">

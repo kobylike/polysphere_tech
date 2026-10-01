@@ -47,6 +47,23 @@
     <meta property="og:site_name" content="{{ $siteName }}">
     <meta property="og:locale" content="{{ str_replace('-', '_', app()->getLocale()) }}">
 
+    @if($ogType === 'article')
+        {{--
+        Only meaningful for article-type pages (blog posts, projects).
+        $publishedTime / $modifiedTime are passed via layoutData() from
+        PostDetails / ProjectDetails — see their render() methods below.
+        Falls back silently (just omits the tag) if a page sets
+        ogType => 'article' without providing these, so nothing breaks.
+        --}}
+        @isset($publishedTime)
+            <meta property="article:published_time" content="{{ $publishedTime }}">
+        @endisset
+        @isset($modifiedTime)
+            <meta property="article:modified_time" content="{{ $modifiedTime }}">
+        @endisset
+        <meta property="article:author" content="{{ $articleAuthor ?? $siteName }}">
+    @endif
+
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:site" content="{{ $twitterHandle }}">

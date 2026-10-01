@@ -117,11 +117,14 @@ class ProjectDetails extends Component
     {
         return view('livewire.main.projects.project-details')
             ->layoutData([
-                'description' => $this->metaDescription(),
-                'keywords'    => $this->project->seo_keywords,
-                'canonical'   => route('project.details', $this->project->slug),
-                'ogImage'     => $this->ogImage(),
-                'ogType'      => 'article',
+                'description'   => $this->metaDescription(),
+                'keywords'      => $this->project->seo_keywords,
+                'canonical'     => route('project.details', $this->project->slug),
+                'ogImage'       => $this->ogImage(),
+                'ogType'        => 'article',
+                'publishedTime' => optional($this->project->published_at ?? $this->project->created_at)->toIso8601String(),
+                'modifiedTime'  => optional($this->project->updated_at)->toIso8601String(),
+                'articleAuthor' => $this->project->author?->name,
             ])
             ->title($this->project->seo_title ?: $this->project->title . ' | Polysphere Tech');
     }

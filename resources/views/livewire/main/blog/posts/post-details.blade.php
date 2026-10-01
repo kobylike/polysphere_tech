@@ -5,6 +5,11 @@ $seo_keywords = $post->seo_keywords ?? '';
 @endphp --}}
 
 <div>
+    <x-seo.breadcrumbs :crumbs="[
+        ['name' => 'Home', 'url' => route('index')],
+        ['name' => 'Blog', 'url' => route('posts')],
+        ['name' => $post->title, 'url' => route('blog.details', $post->slug)],
+    ]" />
     <x-seo.blog-posting :post="$post" />
     <!-- Breadcrumb area start -->
     <div class="breadcrumb__area theme-bg-1 p-relative pt-160 pb-160">

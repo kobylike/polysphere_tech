@@ -91,11 +91,14 @@ class PostDetails extends Component
     {
         return view('livewire.main.blog.posts.post-details')
             ->layoutData([
-                'description' => $this->metaDescription(),
-                'keywords'    => $this->post->seo_keywords,
-                'canonical'   => route('blog.details', $this->post->slug),
-                'ogImage'     => $this->ogImage(),
-                'ogType'      => 'article',
+                'description'   => $this->metaDescription(),
+                'keywords'      => $this->post->seo_keywords,
+                'canonical'     => route('blog.details', $this->post->slug),
+                'ogImage'       => $this->ogImage(),
+                'ogType'        => 'article',
+                'publishedTime' => optional($this->post->published_at ?? $this->post->created_at)->toIso8601String(),
+                'modifiedTime'  => optional($this->post->updated_at)->toIso8601String(),
+                'articleAuthor' => $this->post->author?->name,
             ])
             ->title($this->post->seo_title ?: $this->post->title . ' | Polysphere Tech');
     }
