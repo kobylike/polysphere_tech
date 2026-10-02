@@ -5,6 +5,7 @@
     toasts.push({ id: Date.now(), type: $event.detail.type, message: $event.detail.message });
     setTimeout(() => { toasts = toasts.filter(t => t.id !== $event.detail.id); }, 5000);
 "
+wire:poll.visible.30s="refreshComments"
 x-cloak
 >
     {{-- TOASTS --}}
@@ -39,10 +40,16 @@ x-cloak
         </div>
     @endif
 
-    {{-- COMMENT COUNT --}}
-    <h4 class="postbox__comment-form-title mb-30" style="font-size: 1.4rem;">
-        {{ $comments->total() }} Comment{{ $comments->total() > 1 ? 's' : '' }}
-    </h4>
+    {{-- COMMENT COUNT + LIVE INDICATOR --}}
+    <div class="d-flex align-items-center justify-content-between flex-wrap mb-30">
+        <h4 class="postbox__comment-form-title mb-0" style="font-size: 1.4rem;">
+            {{ $comments->total() }} Comment{{ $comments->total() > 1 ? 's' : '' }}
+        </h4>
+        <small class="text-muted d-flex align-items-center gap-2">
+            <span class="live-dot"></span>
+            <span>Live — updates every 30s</span>
+        </small>
+    </div>
 
     {{-- COMMENT LIST --}}
     @if($comments->count() > 0)
@@ -57,7 +64,8 @@ x-cloak
 
         @if($comments->hasMorePages())
             <div class="text-center mt-4">
-                <button class="btn btn-outline-primary rounded-pill px-4 load-more-btn" wire:click="loadMore" wire:loading.attr="disabled" style="font-size: 1rem;">
+                <button class="btn btn-outline-primary rounded-pill px-4 load-more-btn"
+                    wire:click="loadMore" wire:loading.attr="disabled" style="font-size: 1rem;">
                     <span wire:loading.remove>Load More</span>
                     <span wire:loading><i class="fas fa-spinner fa-spin"></i> Loading…</span>
                 </button>
@@ -71,7 +79,9 @@ x-cloak
     @if($post->allow_comments)
         @auth
             <div class="postbox__comment-form mt-50">
-                <h5 class="mb-20" style="font-size: 1.2rem;">{{ $editingCommentId ? 'Edit Comment' : 'Leave a Comment' }}</h5>
+                <h5 class="mb-20" style="font-size: 1.2rem;">
+                    {{ $editingCommentId ? 'Edit Comment' : 'Leave a Comment' }}
+                </h5>
                 <form wire:submit.prevent="submit">
                     <div class="row">
                         <div class="col-xxl-12">
@@ -85,12 +95,14 @@ x-cloak
                         </div>
                         <div class="col-xxl-12 mt-3">
                             <div class="postbox__comment-btn">
-                                <button type="submit" class="primary-btn-1 btn-hover" style="font-size: 1rem; padding: 10px 28px;">
+                                <button type="submit" class="primary-btn-1 btn-hover"
+                                    style="font-size: 1rem; padding: 10px 28px;">
                                     {{ $editingCommentId ? 'Update Comment' : 'Post Comment' }}
                                     <span style="top: 147.172px; left: 108.5px;"></span>
                                 </button>
                                 @if($editingCommentId)
-                                    <button type="button" class="btn btn-secondary ms-2" wire:click="cancelEdit" style="font-size: 1rem;">Cancel</button>
+                                    <button type="button" class="btn btn-secondary ms-2"
+                                        wire:click="cancelEdit" style="font-size: 1rem;">Cancel</button>
                                 @endif
                             </div>
                         </div>
@@ -104,24 +116,27 @@ x-cloak
                     <form wire:submit.prevent="submit">
                         <div style="position:absolute;left:-9999px;">
                             <label for="honeypot">Leave empty</label>
-                            <input type="text" id="honeypot" wire:model="honeypot" tabindex="-1" autocomplete="off">
+                            <input type="text" id="honeypot" wire:model="honeypot"
+                                tabindex="-1" autocomplete="off">
                         </div>
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="postbox__comment-input">
                                     <label style="font-weight: 600; font-size: 1rem;">Your Name *</label>
-                                    <input type="text" class="form-control @error('guestName') is-invalid @enderror"
-                                           wire:model.defer="guestName" placeholder="Your name"
-                                           style="font-size: 16px; padding: 12px; border-radius: 8px;">
+                                    <input type="text"
+                                        class="form-control @error('guestName') is-invalid @enderror"
+                                        wire:model.defer="guestName" placeholder="Your name"
+                                        style="font-size: 16px; padding: 12px; border-radius: 8px;">
                                     @error('guestName') <div class="invalid-feedback" style="font-size: 0.9rem;">{{ $message }}</div> @enderror
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="postbox__comment-input">
                                     <label style="font-weight: 600; font-size: 1rem;">Your Email *</label>
-                                    <input type="email" class="form-control @error('guestEmail') is-invalid @enderror"
-                                           wire:model.defer="guestEmail" placeholder="your@email.com"
-                                           style="font-size: 16px; padding: 12px; border-radius: 8px;">
+                                    <input type="email"
+                                        class="form-control @error('guestEmail') is-invalid @enderror"
+                                        wire:model.defer="guestEmail" placeholder="your@email.com"
+                                        style="font-size: 16px; padding: 12px; border-radius: 8px;">
                                     @error('guestEmail') <div class="invalid-feedback" style="font-size: 0.9rem;">{{ $message }}</div> @enderror
                                 </div>
                             </div>
@@ -129,24 +144,30 @@ x-cloak
                                 <div class="postbox__comment-input">
                                     <label style="font-weight: 600; font-size: 1rem;">Comment *</label>
                                     <textarea class="form-control @error('body') is-invalid @enderror"
-                                              wire:model.defer="body" rows="4" placeholder="Write your comment..."
+                                              wire:model.defer="body" rows="4"
+                                              placeholder="Write your comment..."
                                               style="font-size: 16px; padding: 12px; border-radius: 8px;"></textarea>
                                     @error('body') <div class="invalid-feedback" style="font-size: 0.9rem;">{{ $message }}</div> @enderror
                                 </div>
                             </div>
                             <div class="col-xxl-12 mt-3">
                                 <div class="postbox__comment-btn">
-                                    <button type="submit" class="primary-btn-1 btn-hover" style="font-size: 1rem; padding: 10px 28px;">Post Comment</button>
+                                    <button type="submit" class="primary-btn-1 btn-hover"
+                                        style="font-size: 1rem; padding: 10px 28px;">Post Comment</button>
                                 </div>
                             </div>
                         </div>
                     </form>
-                    <p class="text-muted small mt-3" style="font-size: 0.9rem;"><i class="fal fa-info-circle"></i> You'll receive a verification email to confirm your comment.</p>
+                    <p class="text-muted small mt-3" style="font-size: 0.9rem;">
+                        <i class="fal fa-info-circle"></i> You'll receive a verification email to confirm your comment.
+                    </p>
                 </div>
             @else
                 <div class="alert alert-success mt-4" style="font-size: 1rem;">
-                    <i class="fas fa-check-circle"></i> Please check your email to verify your comment. It will appear once confirmed.
-                    <button class="btn btn-link p-0 ms-3" wire:click="$set('submitted', false)" style="font-size: 1rem;">Post another comment</button>
+                    <i class="fas fa-check-circle"></i> Please check your email to verify your comment.
+                    It will appear once confirmed.
+                    <button class="btn btn-link p-0 ms-3" wire:click="$set('submitted', false)"
+                        style="font-size: 1rem;">Post another comment</button>
                 </div>
             @endif
         @endauth
@@ -165,5 +186,21 @@ x-cloak
     .comment-body textarea.form-control {
         font-size: 16px !important;
         line-height: 1.6 !important;
+    }
+
+    /* Live indicator */
+    .live-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #10b981;
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, .7);
+        animation: live-pulse 2s infinite;
+    }
+    @keyframes live-pulse {
+        0%   { box-shadow: 0 0 0 0 rgba(16, 185, 129, .7); }
+        70%  { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
 </style>

@@ -33,7 +33,7 @@ class CommentComponent extends Component
     // ─── Edit top-level comment ────────────────────────────────────
     public $editingCommentId = null;
 
-    // ─── Honeypot & timing ────────────────────────────────────────
+    // ─── Honeypot & timing ─────────────────────────────────────────
     public $honeypot = '';
     public $renderedAt = '';
 
@@ -43,11 +43,7 @@ class CommentComponent extends Component
     // ─── State ──────────────────────────────────────────────────────
     public $submitted = false;
 
-    /**
-     * Guest rate limit: max comments (top-level + replies) per IP per hour.
-     */
     protected int $guestCommentLimit = 3;
-
     protected int $guestCommentWindowSeconds = 3600;
 
     protected $rules = [
@@ -89,6 +85,38 @@ class CommentComponent extends Component
     }
 
     // ────────────────────────────────────────────────────────────
+    //  Live refresh (called by wire:poll)
+    // ────────────────────────────────────────────────────────────
+
+    /**
+     * Called every 30s by wire:poll.visible.30s on the root <div>.
+     *
+     * We skip the refresh if the visitor is actively composing something,
+     * so their draft never gets wiped mid-typing and the edit-form
+     * doesn't flicker while it's open.
+     */
+    public function refreshComments()
+    {
+        // Skip while user is typing a new comment or reply
+        if (trim((string) $this->body) !== '' || trim((string) $this->replyBody) !== '') {
+            return;
+        }
+
+        // Skip while user is editing an existing comment / reply
+        if ($this->editingCommentId !== null || $this->editingReplyId !== null) {
+            return;
+        }
+
+        // Skip while a reply form is open
+        if ($this->replyingTo !== null) {
+            return;
+        }
+
+        // Nothing to do explicitly — the mere fact that Livewire re-renders
+        // causes getComments() to re-run and pick up any new rows.
+    }
+
+    // ────────────────────────────────────────────────────────────
     //  Submit top-level comment
     // ────────────────────────────────────────────────────────────
 
@@ -123,17 +151,17 @@ class CommentComponent extends Component
         }
 
         $data = [
-            'post_id' => $this->post->id,
-            'body' => $this->body,
-            'parent_id' => null,
+            'post_id'    => $this->post->id,
+            'body'       => $this->body,
+            'parent_id'  => null,
             'ip_address' => request()->ip(),
         ];
 
         if (Auth::check()) {
             $data['user_id'] = Auth::id();
         } else {
-            $data['guest_name'] = $this->guestName;
-            $data['guest_email'] = $this->guestEmail;
+            $data['guest_name']         = $this->guestName;
+            $data['guest_email']        = $this->guestEmail;
             $data['verification_token'] = Str::random(64);
         }
 
@@ -146,12 +174,12 @@ class CommentComponent extends Component
 
             if ($trusted) {
                 $comment->update([
-                    'verified_at' => now(),
+                    'verified_at'        => now(),
                     'verification_token' => null,
                 ]);
                 $this->submitted = false;
                 session()->put('verified_guest', [
-                    'name' => $this->guestName,
+                    'name'  => $this->guestName,
                     'email' => $this->guestEmail,
                 ]);
             } else {
@@ -190,23 +218,22 @@ class CommentComponent extends Component
             return;
         }
 
-        // Rate limit replies too — previously they were unrestricted
         if (!$this->enforceGuestRateLimit('replyBody')) {
             return;
         }
 
         $data = [
-            'post_id' => $this->post->id,
-            'body' => $this->replyBody,
-            'parent_id' => $parentId,
+            'post_id'    => $this->post->id,
+            'body'       => $this->replyBody,
+            'parent_id'  => $parentId,
             'ip_address' => request()->ip(),
         ];
 
         if (Auth::check()) {
             $data['user_id'] = Auth::id();
         } else {
-            $data['guest_name'] = $this->replyGuestName;
-            $data['guest_email'] = $this->replyGuestEmail;
+            $data['guest_name']         = $this->replyGuestName;
+            $data['guest_email']        = $this->replyGuestEmail;
             $data['verification_token'] = Str::random(64);
         }
 
@@ -219,11 +246,11 @@ class CommentComponent extends Component
 
             if ($trusted) {
                 $reply->update([
-                    'verified_at' => now(),
+                    'verified_at'        => now(),
                     'verification_token' => null,
                 ]);
                 session()->put('verified_guest', [
-                    'name' => $this->replyGuestName,
+                    'name'  => $this->replyGuestName,
                     'email' => $this->replyGuestEmail,
                 ]);
             } else {
@@ -257,11 +284,7 @@ class CommentComponent extends Component
         $comment = Comment::findOrFail($id);
 
         if (!$this->canModifyComment($comment)) {
-            $this->dispatch(
-                'notify',
-                type: 'error',
-                message: 'You cannot edit this comment.'
-            );
+            $this->dispatch('notify', type: 'error', message: 'You cannot edit this comment.');
             return;
         }
 
@@ -282,11 +305,7 @@ class CommentComponent extends Component
         $comment = Comment::findOrFail($this->editingCommentId);
 
         if (!$this->canModifyComment($comment)) {
-            $this->dispatch(
-                'notify',
-                type: 'error',
-                message: 'Permission denied.'
-            );
+            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
             return;
         }
 
@@ -305,11 +324,7 @@ class CommentComponent extends Component
         $comment = Comment::findOrFail($id);
 
         if (!$this->canModifyComment($comment)) {
-            $this->dispatch(
-                'notify',
-                type: 'error',
-                message: 'Permission denied.'
-            );
+            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
             return;
         }
 
@@ -326,11 +341,7 @@ class CommentComponent extends Component
         $reply = Comment::findOrFail($id);
 
         if (!$this->canModifyComment($reply)) {
-            $this->dispatch(
-                'notify',
-                type: 'error',
-                message: 'Permission denied.'
-            );
+            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
             return;
         }
 
@@ -353,11 +364,7 @@ class CommentComponent extends Component
         $reply = Comment::findOrFail($id);
 
         if (!$this->canModifyComment($reply)) {
-            $this->dispatch(
-                'notify',
-                type: 'error',
-                message: 'Permission denied.'
-            );
+            $this->dispatch('notify', type: 'error', message: 'Permission denied.');
             return;
         }
 
@@ -396,22 +403,12 @@ class CommentComponent extends Component
     //  Ownership & rate-limiting helpers
     // ────────────────────────────────────────────────────────────
 
-    /**
-     * Determine whether the current visitor may edit or delete the comment.
-     *
-     * - Logged-in users may only modify comments they own.
-     * - Guests may only modify guest comments whose `guest_email` matches
-     *   the email they verified in this session. This closes the previous
-     *   hole where `Auth::id() === $comment->user_id` was true for both
-     *   null values, letting guests edit each other's comments.
-     */
     protected function canModifyComment(Comment $comment): bool
     {
         if (Auth::check()) {
             return (int) Auth::id() === (int) $comment->user_id;
         }
 
-        // Comment belongs to a registered user — guests can never touch it
         if ($comment->user_id !== null) {
             return false;
         }
@@ -424,13 +421,6 @@ class CommentComponent extends Component
         return strcasecmp($comment->guest_email, $verified['email']) === 0;
     }
 
-    /**
-     * Enforce an hourly comment/reply budget for guests, keyed by IP.
-     * Logged-in users are exempt.
-     *
-     * @param  string  $errorField  Which Livewire field to attach the error to
-     *                              ('body' for comments, 'replyBody' for replies).
-     */
     protected function enforceGuestRateLimit(string $errorField): bool
     {
         if (Auth::check()) {
@@ -441,10 +431,7 @@ class CommentComponent extends Component
 
         if (RateLimiter::tooManyAttempts($key, $this->guestCommentLimit)) {
             $seconds = RateLimiter::availableIn($key);
-            $this->addError(
-                $errorField,
-                "Too many attempts. Please wait {$seconds} seconds."
-            );
+            $this->addError($errorField, "Too many attempts. Please wait {$seconds} seconds.");
             return false;
         }
 
@@ -456,11 +443,6 @@ class CommentComponent extends Component
     //  Profanity filter
     // ────────────────────────────────────────────────────────────
 
-    /**
-     * Block only unambiguous profanity/slurs. Borderline words like
-     * "suck", "damn", "cock", "cum", "piss", "balls" were removed because
-     * they trigger on legitimate uses ("damn near", "cocktail", "cum laude").
-     */
     protected function containsProfanity($text): bool
     {
         $badWords = [
@@ -503,15 +485,11 @@ class CommentComponent extends Component
             'replyGuestName',
             'replyGuestEmail',
         ]);
-
-        // Reset the timing baseline so subsequent legit-looking submissions
-        // don't accidentally trip the "too fast" trap again.
         $this->renderedAt = now()->valueOf();
     }
 
     // ────────────────────────────────────────────────────────────
-    //  Render — no layoutData needed, this component is embedded in
-    //  PostDetails (which owns the page-level SEO metadata).
+    //  Render
     // ────────────────────────────────────────────────────────────
 
     public function render()
