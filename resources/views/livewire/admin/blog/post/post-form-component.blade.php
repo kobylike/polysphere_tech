@@ -623,11 +623,14 @@
 </div>
 
 @push('scripts')
-    {{-- EasyMDE CSS + JS via CDN --}}
-    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+    {{-- ═══════════════════════════════════════════════════════════════════
+    EasyMDE — CSS (jsDelivr primary, unpkg fallback)
+    ═══════════════════════════════════════════════════════════════════ --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css"
+        onerror="this.onerror=null;this.href='https://unpkg.com/easymde/dist/easymde.min.css';">
 
     <style>
-        /* ─── God-tier EasyMDE theme ────────────────────────────── */
+        /* ─── EasyMDE theme ────────────────────────────────────── */
         .EasyMDEContainer {
             border-radius: 8px;
             overflow: hidden;
@@ -673,7 +676,6 @@
             border-right-color: transparent;
         }
 
-        /* Preview side uses .editor-preview / .editor-preview-side */
         .EasyMDEContainer .editor-preview,
         .EasyMDEContainer .editor-preview-side {
             background: #fff;
@@ -732,15 +734,41 @@
             font-size: 12px;
         }
 
-        /* Fullscreen tweak */
-        .EasyMDEContainer .CodeMirror-fullscreen,
-        .EasyMDEContainer .editor-preview-side.editor-preview-active-side,
-        .EasyMDEContainer .editor-toolbar.fullscreen {
-            z-index: 1050;
+        /* ─── Comments table: prevent long strings breaking layout ─── */
+        .comments-table {
+            table-layout: fixed;
+            width: 100%;
+        }
+
+        .comments-table td,
+        .comments-table th {
+            vertical-align: top;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+
+        .comments-table .comment-text {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .comments-table .min-w-0 {
+            min-width: 0;
         }
     </style>
 
-    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+    {{-- ═══════════════════════════════════════════════════════════════════
+    EasyMDE — JS (jsDelivr primary, unpkg fallback)
+    ═══════════════════════════════════════════════════════════════════ --}}
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"
+        onerror="(function(){var s=document.createElement('script');s.src='https://unpkg.com/easymde/dist/easymde.min.js';document.head.appendChild(s);})();"></script>
+
     <script>
         // ─── Toggle Screen Options ─────────────────────────────────────
         function toggleScreenOptions() {
@@ -749,7 +777,7 @@
         }
 
         // ═══════════════════════════════════════════════════════════════
-        //  EasyMDE — one instance, one Livewire binding, always.
+        //  EasyMDE init — bulletproof against Livewire 3/4 timing
         // ═══════════════════════════════════════════════════════════════
 
         let markdownEditorInstance = null;
@@ -757,7 +785,6 @@
         function destroyMarkdownEditor() {
             const el = document.getElementById('markdown-editor');
             if (!el) return;
-
             if (el.__easyMDE) {
                 try { el.__easyMDE.toTextArea(); } catch (e) { }
                 delete el.__easyMDE;
@@ -767,111 +794,89 @@
 
         function initMarkdownEditor() {
             const el = document.getElementById('markdown-editor');
-            if (!el) return;
+            if (!el) return; // textarea not on page yet
 
-            // EasyMDE may not be loaded yet
             if (typeof EasyMDE === 'undefined') {
-                setTimeout(initMarkdownEditor, 50);
+                // CDN not ready or failed — retry shortly
+                setTimeout(initMarkdownEditor, 100);
                 return;
             }
 
-            // Already initialised → do nothing
-            if (el.__easyMDE) return;
+            if (el.__easyMDE) return; // already initialised
 
-            // The textarea's current value is the source of truth on first render
-            const initialValue = el.value || '';
+            try {
+                markdownEditorInstance = new EasyMDE({
+                    element: el,
+                    initialValue: el.value || '',
+                    spellChecker: false,
+                    autofocus: false,
+                    autoDownloadFontAwesome: false,
+                    placeholder: 'Write your post here… Markdown is supported.',
+                    minHeight: '420px',
+                    autoRefresh: { delay: 300 },
+                    toolbar: [
+                        'bold', 'italic', 'heading-1', 'heading-2', 'heading-3', '|',
+                        'quote', 'unordered-list', 'ordered-list', '|',
+                        'link', 'image', 'code', 'horizontal-rule', 'table', '|',
+                        'preview', 'side-by-side', 'fullscreen', '|',
+                        'undo', 'redo', '|', 'guide'
+                    ],
+                    renderingConfig: { singleLineBreaks: false, codeSyntaxHighlighting: true },
+                    status: ['lines', 'words', 'cursor'],
+                    autosave: {
+                        enabled: true,
+                        uniqueId: 'post-editor-' + @json($postSlug ?? 'new'),
+                        delay: 3000,
+                        text: 'Autosaved: ',
+                    },
+                    promptURLs: true,
+                    parsingConfig: { allowAtxHeaderWithoutSpace: true },
+                });
 
-            markdownEditorInstance = new EasyMDE({
-                element: el,
-                initialValue: initialValue,
+                el.__easyMDE = markdownEditorInstance;
 
-                // Behaviour
-                spellChecker: false,
-                autofocus: false,
-                autoDownloadFontAwesome: false,
-                placeholder: 'Write your post here… Markdown is supported.',
+                // ─── Sync → Livewire on every change ────────────────
+                markdownEditorInstance.codemirror.on('change', () => {
+                    @this.set('content', markdownEditorInstance.value());
+                });
 
-                // Sizes
-                minHeight: '420px',
-                maxHeight: null,
-                autoRefresh: { delay: 300 },
+                // ─── Cmd/Ctrl+S → save the post ─────────────────────
+                markdownEditorInstance.codemirror.setOption('extraKeys', {
+                    'Cmd-S': () => { @this.call('save'); return false; },
+                    'Ctrl-S': () => { @this.call('save'); return false; },
+                });
 
-                // Toolbar — curated, god-tier defaults
-                toolbar: [
-                    'bold', 'italic', 'heading-1', 'heading-2', 'heading-3', '|',
-                    'quote', 'unordered-list', 'ordered-list', '|',
-                    'link', 'image', 'code', 'horizontal-rule', 'table', '|',
-                    'preview', 'side-by-side', 'fullscreen', '|',
-                    'undo', 'redo', '|',
-                    'guide'
-                ],
-                shortcuts: {
-                    toggleBold: 'Cmd-B',
-                    toggleItalic: 'Cmd-I',
-                    toggleHeadingSmaller: 'Cmd-H',
-                    drawLink: 'Cmd-K',
-                    togglePreview: 'Cmd-P',
-                    toggleFullScreen: 'F11',
-                },
-
-                // Rendering
-                renderingConfig: {
-                    singleLineBreaks: false,
-                    codeSyntaxHighlighting: true,
-                },
-
-                // Live word/line/cursor counter at the bottom
-                status: ['lines', 'words', 'cursor'],
-
-                // Autosave to localStorage so a browser crash never loses work
-                autosave: {
-                    enabled: true,
-                    uniqueId: 'post-editor-' + {{ $postSlug ? "'{$postSlug}'" : "'new'" }},
-                    delay: 3000,
-                    timeFormat: { locale: 'en-US' },
-                    text: 'Autosaved: ',
-                },
-
-                // Upload images — send them to your existing CKEditor endpoint
-                // and insert the returned URL as Markdown
-                uploadImage: false, // set to true if you wire an upload handler below
-
-                // Nice touches
-                promptURLs: true,
-                parsingConfig: { allowAtxHeaderWithoutSpace: true },
-                insertTexts: {
-                    horizontalRule: ['', '\n\n---\n\n'],
-                    table: ['', '\n\n| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n| Text     | Text     | Text     |\n\n'],
-                },
-            });
-
-            el.__easyMDE = markdownEditorInstance;
-
-            // ─── Sync content → Livewire on every change ────────────────
-            markdownEditorInstance.codemirror.on('change', () => {
-                @this.set('content', markdownEditorInstance.value());
-            });
-
-            // ─── Optional: intercept Cmd+S / Ctrl+S to trigger post save ───
-            markdownEditorInstance.codemirror.setOption('extraKeys', {
-                'Cmd-S': () => { @this.call('save'); },
-                'Ctrl-S': () => { @this.call('save'); },
-            });
+                console.log('[EasyMDE] initialised ✓');
+            } catch (err) {
+                console.error('[EasyMDE] init failed:', err);
+                el.style.display = 'block'; // reveal raw textarea as fallback
+            }
         }
 
-        // ─── Lifecycle hooks ────────────────────────────────────────────
-        document.addEventListener('livewire:initialized', initMarkdownEditor);
-        document.addEventListener('livewire:navigated', initMarkdownEditor);
+        // Fire on every lifecycle event we can think of
+        ['DOMContentLoaded', 'load', 'livewire:init', 'livewire:initialized', 'livewire:navigated']
+            .forEach(evt => document.addEventListener(evt, () => setTimeout(initMarkdownEditor, 50)));
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMarkdownEditor);
-        } else {
-            initMarkdownEditor();
+        // Already past DOMContentLoaded?
+        if (document.readyState !== 'loading') {
+            setTimeout(initMarkdownEditor, 50);
         }
+
+        // MutationObserver fallback: watch for the textarea appearing
+        (function watchForEditor() {
+            if (document.getElementById('markdown-editor')) { initMarkdownEditor(); return; }
+            const mo = new MutationObserver(() => {
+                if (document.getElementById('markdown-editor')) {
+                    mo.disconnect();
+                    initMarkdownEditor();
+                }
+            });
+            mo.observe(document.body, { childList: true, subtree: true });
+            setTimeout(() => mo.disconnect(), 30000);
+        })();
 
         document.addEventListener('livewire:navigating', destroyMarkdownEditor);
 
-        // Expose for manual debug
         window.initMarkdownEditor = initMarkdownEditor;
         window.destroyMarkdownEditor = destroyMarkdownEditor;
     </script>

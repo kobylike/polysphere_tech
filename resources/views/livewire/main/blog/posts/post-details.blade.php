@@ -78,9 +78,15 @@ $seo_keywords = $post->seo_keywords ?? '';
 
                     <!-- ─── DYNAMIC CONTENT ─── -->
                     <div class="blog-content-body">
-                        {!! $post->content !!}
+                        @php
+                            // Detect HTML vs Markdown so old CKEditor posts keep working
+                            // while new Markdown posts render properly.
+                            $raw = (string) $post->content;
+                            $looksLikeHtml = $raw !== strip_tags($raw);
+                            $rendered = $looksLikeHtml ? $raw : \Illuminate\Support\Str::markdown($raw);
+                        @endphp
+                        {!! $rendered !!}
                     </div>
-
                     <!-- Tags & Share -->
                     <div class="postbox__share-wrapper mb-60">
                         <div class="row g-4 align-items-center">
