@@ -80,15 +80,24 @@
                                     @error('title') <span class="text-danger">{{ $message }}</span> @enderror
                                 </div>
 
-                                <!-- CKEditor Content -->
+                                <!-- ═══════════ MARKDOWN EDITOR ═══════════ -->
                                 <div class="card h-auto">
                                     <div class="card-body pt-3">
-                                        <div wire:ignore>
-                                            <textarea id="ckeditor" wire:model.live.debounce.1000ms="content"
-                                                style="display:none;"></textarea>
+                                        <label class="form-label">
+                                            Content
+                                            <small class="text-muted ms-2">
+                                                Markdown supported — use the toolbar or type syntax directly
+                                            </small>
+                                        </label>
+
+                                        {{-- wire:ignore keeps Livewire from clobbering the editor DOM --}}
+                                        <div wire:ignore wire:key="editor-{{ $postSlug ?? 'new' }}">
+                                            <textarea id="markdown-editor"
+                                                placeholder="Write your post content here...">{{ $content }}</textarea>
                                         </div>
                                     </div>
                                 </div>
+                                <!-- ═══════════ END MARKDOWN EDITOR ═══════════ -->
 
                                 <!-- Excerpt -->
                                 <div class="filter cm-content-box box-primary">
@@ -402,8 +411,8 @@
                 @endcanany
 
                 {{-- ══════════════════════════════════════════════════════════════════
-                     COMMENT MODERATION — inline, only on edit + only with Edit Posts
-                     ══════════════════════════════════════════════════════════════════ --}}
+                COMMENT MODERATION — inline, only on edit + only with Edit Posts
+                ══════════════════════════════════════════════════════════════════ --}}
                 @if($postSlug && Auth::user()->can('Edit Posts'))
                     <div class="row mt-4">
                         <div class="col-xl-12">
@@ -433,7 +442,15 @@
                                             </div>
                                         @else
                                             <div class="table-responsive">
-                                                <table class="table table-bordered table-striped align-middle">
+                                                <table class="table table-bordered table-striped align-middle comments-table"
+                                                    style="table-layout: fixed; width: 100%;">
+                                                    <colgroup>
+                                                        <col style="width: 24%;">
+                                                        <col style="width: 36%;">
+                                                        <col style="width: 10%;">
+                                                        <col style="width: 15%;">
+                                                        <col style="width: 15%;">
+                                                    </colgroup>
                                                     <thead>
                                                         <tr>
                                                             <th>Author</th>
@@ -446,40 +463,81 @@
                                                     <tbody>
                                                         @foreach($this->comments as $comment)
                                                             <tr wire:key="inline-comment-{{ $comment->id }}">
-                                                                <td>
-                                                                    <div class="fw-semibold">{{ $comment->author_name }}</div>
-                                                                    <small class="text-muted">{{ $comment->author_email }}</small>
+                                                                <td class="align-top">
+                                                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                                                        <img src="{{ $comment->gravatar }}"
+                                                                            alt="{{ $comment->author_name }}"
+                                                                            class="rounded-circle flex-shrink-0" width="32"
+                                                                            height="32">
+                                                                        <div class="min-w-0 flex-grow-1">
+                                                                            <div class="d-flex align-items-center gap-1 flex-wrap">
+                                                                                <span class="fw-semibold text-truncate"
+                                                                                    title="{{ $comment->author_name }}">
+                                                                                    {{ $comment->author_name }}
+                                                                                </span>
+                                                                                @if($comment->is_guest)
+                                                                                    <span class="badge bg-secondary"
+                                                                                        title="Anonymous visitor">
+                                                                                        <i
+                                                                                            class="fa-solid fa-user-secret me-1"></i>Guest
+                                                                                    </span>
+                                                                                @else
+                                                                                    <span class="badge bg-primary"
+                                                                                        title="Registered user">
+                                                                                        <i
+                                                                                            class="fa-solid fa-circle-check me-1"></i>Registered
+                                                                                    </span>
+                                                                                @endif
+                                                                            </div>
+                                                                            <small class="text-muted d-block text-truncate"
+                                                                                title="{{ $comment->author_email }}">
+                                                                                {{ $comment->author_email ?? '—' }}
+                                                                            </small>
+                                                                        </div>
+                                                                    </div>
                                                                     @if($comment->ip_address)
                                                                         <small class="text-muted d-block">
-                                                                            IP: {{ $comment->ip_address }}
+                                                                            <i class="fa-solid fa-network-wired me-1"></i>IP:
+                                                                            {{ $comment->ip_address }}
                                                                         </small>
                                                                     @endif
+                                                                    @if($comment->user_id && $comment->user)
+                                                                        <a href="{{ route('users.profile', $comment->user->id) }}"
+                                                                            target="_blank" class="small text-decoration-none">
+                                                                            <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>
+                                                                            View profile
+                                                                        </a>
+                                                                    @endif
                                                                 </td>
-                                                                <td style="max-width:420px;">
+
+                                                                <td class="align-top comment-cell">
                                                                     @if($comment->parent_id)
                                                                         <span class="badge bg-light text-dark mb-1">
                                                                             <i class="fa-solid fa-reply me-1"></i>Reply
                                                                         </span>
                                                                     @endif
-                                                                    <div class="text-break">
-                                                                        {{ \Illuminate\Support\Str::limit(strip_tags($comment->body), 160) }}
+                                                                    <div class="comment-text"
+                                                                        title="{{ strip_tags($comment->body) }}">
+                                                                        {{ \Illuminate\Support\Str::limit(strip_tags($comment->body), 200) }}
                                                                     </div>
                                                                 </td>
-                                                                <td>
+
+                                                                <td class="align-top">
                                                                     @if($comment->is_verified)
                                                                         <span class="badge bg-success">Approved</span>
                                                                     @else
                                                                         <span class="badge bg-warning">Pending</span>
                                                                     @endif
                                                                 </td>
-                                                                <td class="text-nowrap">
+
+                                                                <td class="align-top text-nowrap">
                                                                     {{ $comment->created_at->format('d M, Y') }}
                                                                     <small class="text-muted d-block">
                                                                         {{ $comment->created_at->diffForHumans() }}
                                                                     </small>
                                                                 </td>
-                                                                <td class="text-end text-nowrap">
-                                                                    {{-- Approve / Unapprove --}}
+
+                                                                <td class="align-top text-end text-nowrap">
                                                                     @if($comment->is_verified)
                                                                         <button type="button"
                                                                             class="btn btn-outline-secondary btn-sm content-icon"
@@ -496,7 +554,6 @@
                                                                         </button>
                                                                     @endif
 
-                                                                    {{-- Edit --}}
                                                                     <button type="button"
                                                                         class="btn btn-warning btn-sm content-icon"
                                                                         wire:click="openCommentEdit({{ $comment->id }})"
@@ -504,9 +561,7 @@
                                                                         <i class="fa-solid fa-pen-to-square"></i>
                                                                     </button>
 
-                                                                    {{-- Delete --}}
-                                                                    <button type="button"
-                                                                        class="btn btn-danger btn-sm content-icon"
+                                                                    <button type="button" class="btn btn-danger btn-sm content-icon"
                                                                         wire:click="deleteComment({{ $comment->id }})"
                                                                         wire:confirm="Delete this comment? Replies will also be deleted."
                                                                         title="Delete">
@@ -568,135 +623,256 @@
 </div>
 
 @push('scripts')
+    {{-- EasyMDE CSS + JS via CDN --}}
+    <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css">
+
+    <style>
+        /* ─── God-tier EasyMDE theme ────────────────────────────── */
+        .EasyMDEContainer {
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .EasyMDEContainer .CodeMirror {
+            border: 1px solid #ced4da;
+            border-radius: 0 0 8px 8px;
+            font-family: 'JetBrains Mono', 'Fira Code', Consolas, Monaco, monospace;
+            font-size: 14px;
+            line-height: 1.65;
+            min-height: 420px;
+            padding: 12px 14px;
+            background: #fdfdfd;
+        }
+
+        .EasyMDEContainer .CodeMirror-focused {
+            border-color: #86b7fe;
+            box-shadow: 0 0 0 .25rem rgba(13, 110, 253, .15);
+        }
+
+        .EasyMDEContainer .editor-toolbar {
+            background: #f8f9fa;
+            border: 1px solid #ced4da;
+            border-bottom: 0;
+            border-radius: 8px 8px 0 0;
+            padding: 4px 8px;
+        }
+
+        .EasyMDEContainer .editor-toolbar button {
+            color: #495057;
+            border-radius: 4px;
+        }
+
+        .EasyMDEContainer .editor-toolbar button:hover,
+        .EasyMDEContainer .editor-toolbar button.active {
+            background: #e9ecef;
+            border-color: transparent;
+        }
+
+        .EasyMDEContainer .editor-toolbar i.separator {
+            border-left-color: #ced4da;
+            border-right-color: transparent;
+        }
+
+        /* Preview side uses .editor-preview / .editor-preview-side */
+        .EasyMDEContainer .editor-preview,
+        .EasyMDEContainer .editor-preview-side {
+            background: #fff;
+            padding: 18px 22px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            color: #212529;
+        }
+
+        .EasyMDEContainer .editor-preview h1,
+        .EasyMDEContainer .editor-preview-side h1 {
+            font-size: 1.9rem;
+            margin-top: 1.4rem;
+        }
+
+        .EasyMDEContainer .editor-preview h2,
+        .EasyMDEContainer .editor-preview-side h2 {
+            font-size: 1.5rem;
+            margin-top: 1.2rem;
+        }
+
+        .EasyMDEContainer .editor-preview h3,
+        .EasyMDEContainer .editor-preview-side h3 {
+            font-size: 1.25rem;
+            margin-top: 1rem;
+        }
+
+        .EasyMDEContainer .editor-preview pre,
+        .EasyMDEContainer .editor-preview-side pre {
+            background: #f4f4f6;
+            padding: 12px 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .EasyMDEContainer .editor-preview blockquote,
+        .EasyMDEContainer .editor-preview-side blockquote {
+            border-left: 4px solid #0d6efd;
+            padding-left: 14px;
+            color: #495057;
+            margin: 1rem 0;
+        }
+
+        .EasyMDEContainer .editor-preview img,
+        .EasyMDEContainer .editor-preview-side img {
+            max-width: 100%;
+            border-radius: 6px;
+        }
+
+        .EasyMDEContainer .editor-statusbar {
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            padding: 6px 12px;
+            color: #6c757d;
+            font-size: 12px;
+        }
+
+        /* Fullscreen tweak */
+        .EasyMDEContainer .CodeMirror-fullscreen,
+        .EasyMDEContainer .editor-preview-side.editor-preview-active-side,
+        .EasyMDEContainer .editor-toolbar.fullscreen {
+            z-index: 1050;
+        }
+    </style>
+
+    <script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
     <script>
+        // ─── Toggle Screen Options ─────────────────────────────────────
         function toggleScreenOptions() {
             const el = document.getElementById('screenOptions');
             el.style.display = el.style.display === 'none' ? 'block' : 'none';
         }
 
-        // ═══════════════════════════════════════════════════════════════════
-        // CKEDITOR — one instance, one Livewire binding, guaranteed.
-        // ═══════════════════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════════════════
+        //  EasyMDE — one instance, one Livewire binding, always.
+        // ═══════════════════════════════════════════════════════════════
 
-        (function installCKEditorDuplicateGuard() {
-            function patch() {
-                if (!window.ClassicEditor) return false;
-                if (window.ClassicEditor.__duplicateGuardInstalled) return true;
+        let markdownEditorInstance = null;
 
-                const originalCreate = window.ClassicEditor.create.bind(window.ClassicEditor);
-
-                window.ClassicEditor.create = function (element, config) {
-                    const isTarget = element instanceof HTMLElement && element.id === 'ckeditor';
-
-                    if (isTarget && element.ckeditorInstance) {
-                        return Promise.resolve(element.ckeditorInstance);
-                    }
-
-                    if (isTarget) {
-                        const sib = element.nextElementSibling;
-                        if (sib && sib.classList && sib.classList.contains('ck-editor')) {
-                            sib.remove();
-                        }
-                    }
-
-                    return originalCreate(element, config).then(editor => {
-                        if (isTarget) element.ckeditorInstance = editor;
-                        return editor;
-                    });
-                };
-
-                window.ClassicEditor.__duplicateGuardInstalled = true;
-                return true;
-            }
-
-            if (!patch()) {
-                const iv = setInterval(() => {
-                    if (patch()) clearInterval(iv);
-                }, 10);
-                setTimeout(() => clearInterval(iv), 10000);
-            }
-        })();
-
-        const ckConfig = {
-            toolbar: [
-                'heading', '|',
-                'bold', 'italic', 'link', '|',
-                'bulletedList', 'numberedList', 'blockQuote', '|',
-                'imageUpload', '|',
-                'undo', 'redo'
-            ],
-            image: {
-                toolbar: [
-                    'imageTextAlternative',
-                    'imageStyle:alignLeft',
-                    'imageStyle:alignCenter',
-                    'imageStyle:alignRight'
-                ],
-                styles: ['alignLeft', 'alignCenter', 'alignRight']
-            },
-            simpleUpload: {
-                uploadUrl: '{{ route('ckeditor.upload') }}',
-                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
-            }
-        };
-
-        function attachLivewireContentSync(editor) {
-            if (editor.__lwContentSynced) return;
-            editor.__lwContentSynced = true;
-
-            editor.model.document.on('change:data', () => {
-                @this.set('content', editor.getData());
-            });
-
-            if (@this.content) {
-                editor.setData(@this.content);
-            }
-        }
-
-        function initCKEditor() {
-            const el = document.querySelector('#ckeditor');
+        function destroyMarkdownEditor() {
+            const el = document.getElementById('markdown-editor');
             if (!el) return;
 
-            if (typeof ClassicEditor === 'undefined') {
-                setTimeout(initCKEditor, 50);
+            if (el.__easyMDE) {
+                try { el.__easyMDE.toTextArea(); } catch (e) { }
+                delete el.__easyMDE;
+            }
+            markdownEditorInstance = null;
+        }
+
+        function initMarkdownEditor() {
+            const el = document.getElementById('markdown-editor');
+            if (!el) return;
+
+            // EasyMDE may not be loaded yet
+            if (typeof EasyMDE === 'undefined') {
+                setTimeout(initMarkdownEditor, 50);
                 return;
             }
 
-            ClassicEditor.create(el, ckConfig)
-                .then(editor => {
-                    el.ckeditorInstance = editor;
-                    attachLivewireContentSync(editor);
-                })
-                .catch(err => console.error('CKEditor init error:', err));
+            // Already initialised → do nothing
+            if (el.__easyMDE) return;
+
+            // The textarea's current value is the source of truth on first render
+            const initialValue = el.value || '';
+
+            markdownEditorInstance = new EasyMDE({
+                element: el,
+                initialValue: initialValue,
+
+                // Behaviour
+                spellChecker: false,
+                autofocus: false,
+                autoDownloadFontAwesome: false,
+                placeholder: 'Write your post here… Markdown is supported.',
+
+                // Sizes
+                minHeight: '420px',
+                maxHeight: null,
+                autoRefresh: { delay: 300 },
+
+                // Toolbar — curated, god-tier defaults
+                toolbar: [
+                    'bold', 'italic', 'heading-1', 'heading-2', 'heading-3', '|',
+                    'quote', 'unordered-list', 'ordered-list', '|',
+                    'link', 'image', 'code', 'horizontal-rule', 'table', '|',
+                    'preview', 'side-by-side', 'fullscreen', '|',
+                    'undo', 'redo', '|',
+                    'guide'
+                ],
+                shortcuts: {
+                    toggleBold: 'Cmd-B',
+                    toggleItalic: 'Cmd-I',
+                    toggleHeadingSmaller: 'Cmd-H',
+                    drawLink: 'Cmd-K',
+                    togglePreview: 'Cmd-P',
+                    toggleFullScreen: 'F11',
+                },
+
+                // Rendering
+                renderingConfig: {
+                    singleLineBreaks: false,
+                    codeSyntaxHighlighting: true,
+                },
+
+                // Live word/line/cursor counter at the bottom
+                status: ['lines', 'words', 'cursor'],
+
+                // Autosave to localStorage so a browser crash never loses work
+                autosave: {
+                    enabled: true,
+                    uniqueId: 'post-editor-' + {{ $postSlug ? "'{$postSlug}'" : "'new'" }},
+                    delay: 3000,
+                    timeFormat: { locale: 'en-US' },
+                    text: 'Autosaved: ',
+                },
+
+                // Upload images — send them to your existing CKEditor endpoint
+                // and insert the returned URL as Markdown
+                uploadImage: false, // set to true if you wire an upload handler below
+
+                // Nice touches
+                promptURLs: true,
+                parsingConfig: { allowAtxHeaderWithoutSpace: true },
+                insertTexts: {
+                    horizontalRule: ['', '\n\n---\n\n'],
+                    table: ['', '\n\n| Column 1 | Column 2 | Column 3 |\n| -------- | -------- | -------- |\n| Text     | Text     | Text     |\n\n'],
+                },
+            });
+
+            el.__easyMDE = markdownEditorInstance;
+
+            // ─── Sync content → Livewire on every change ────────────────
+            markdownEditorInstance.codemirror.on('change', () => {
+                @this.set('content', markdownEditorInstance.value());
+            });
+
+            // ─── Optional: intercept Cmd+S / Ctrl+S to trigger post save ───
+            markdownEditorInstance.codemirror.setOption('extraKeys', {
+                'Cmd-S': () => { @this.call('save'); },
+                'Ctrl-S': () => { @this.call('save'); },
+            });
         }
 
-        document.addEventListener('livewire:initialized', initCKEditor);
-        document.addEventListener('livewire:navigated', initCKEditor);
+        // ─── Lifecycle hooks ────────────────────────────────────────────
+        document.addEventListener('livewire:initialized', initMarkdownEditor);
+        document.addEventListener('livewire:navigated', initMarkdownEditor);
 
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initCKEditor);
+            document.addEventListener('DOMContentLoaded', initMarkdownEditor);
         } else {
-            initCKEditor();
+            initMarkdownEditor();
         }
 
-        document.addEventListener('livewire:navigating', () => {
-            const el = document.querySelector('#ckeditor');
-            if (!el) return;
+        document.addEventListener('livewire:navigating', destroyMarkdownEditor);
 
-            const inst = el.ckeditorInstance;
-            try { delete el.ckeditorInstance; } catch (e) { el.ckeditorInstance = null; }
-
-            if (inst && typeof inst.destroy === 'function') {
-                try { inst.destroy(); } catch (e) { }
-            }
-
-            let sib = el.nextElementSibling;
-            while (sib && sib.classList && sib.classList.contains('ck-editor')) {
-                const next = sib.nextElementSibling;
-                sib.remove();
-                sib = next;
-            }
-            el.style.display = 'none';
-        });
+        // Expose for manual debug
+        window.initMarkdownEditor = initMarkdownEditor;
+        window.destroyMarkdownEditor = destroyMarkdownEditor;
     </script>
 @endpush
