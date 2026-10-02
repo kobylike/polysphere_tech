@@ -4,13 +4,13 @@ namespace App\Livewire\Admin\Blog\Post;
 
 use App\Helpers\ActivityLogger;
 use App\Models\Category;
+use App\Models\Comment;
 use App\Models\Post;
 use App\Models\Tag;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Validate;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -21,6 +21,7 @@ class PostFormComponent extends Component
     use WithFileUploads;
 
     public $postSlug = null;
+    public $editingPostId = null;      // ← NEW: cached post ID for comment lookups
     public $title = '';
     public $slug = '';
     public $content = '';
@@ -41,11 +42,16 @@ class PostFormComponent extends Component
     public $newCategoryName = '';
     public $newTagName = '';
 
+    // ─── Comment moderation state ──────────────────────────────────────
+    public $showCommentEditModal = false;
+    public $editingCommentId = null;
+    public $editCommentBody = '';
+
     protected function rules()
     {
         $uniqueRule = 'unique:posts,slug';
         if ($this->postSlug) {
-            $uniqueRule .= ',' . $this->postSlug . ',slug';
+            $uniqueRule .= ',' . $this->editingPostId . ',id';
         }
 
         return [
@@ -83,6 +89,8 @@ class PostFormComponent extends Component
             $post = Post::with('categories', 'tags')->where('slug', $slug)->firstOrFail();
             $this->authorize('update', $post);
 
+            $this->editingPostId = $post->id;   // ← NEW
+
             $this->title = $post->title;
             $this->slug = $post->slug;
             $this->content = $post->content;
@@ -112,8 +120,8 @@ class PostFormComponent extends Component
     {
         $slug = $baseSlug;
         $counter = 1;
-        while (Post::where('slug', $slug)->when($this->postSlug, function ($query) {
-            return $query->where('slug', '!=', $this->postSlug);
+        while (Post::where('slug', $slug)->when($this->editingPostId, function ($query) {
+            return $query->where('id', '!=', $this->editingPostId);
         })->exists()) {
             $slug = $baseSlug . '-' . $counter++;
         }
@@ -146,7 +154,6 @@ class PostFormComponent extends Component
             'name'        => $category->name,
         ], 'category');
 
-        // session()->flash('message', 'Category added successfully!');
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Category created successfully!']);
     }
 
@@ -168,7 +175,6 @@ class PostFormComponent extends Component
             'name'   => $tag->name,
         ], 'tag');
 
-        // session()->flash('message', 'Tag added successfully!');
         $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Tag added successfully!']);
     }
 
@@ -199,13 +205,13 @@ class PostFormComponent extends Component
 
         if ($featuredImagePath) {
             $data['featured_image'] = $featuredImagePath;
-            if ($this->postSlug && $this->existing_featured_image) {
+            if ($this->editingPostId && $this->existing_featured_image) {
                 Storage::disk('public')->delete($this->existing_featured_image);
             }
         }
 
-        if ($this->postSlug) {
-            $post = Post::where('slug', $this->postSlug)->firstOrFail();
+        if ($this->editingPostId) {
+            $post = Post::findOrFail($this->editingPostId);
             $this->authorize('update', $post);
             $post->update($data);
             $post->categories()->sync($this->selectedCategories);
@@ -217,7 +223,6 @@ class PostFormComponent extends Component
                 'status'  => $post->status,
             ], 'post');
 
-            // session()->flash('success', 'Post updated successfully!');
             $this->dispatch('notify', ['type' => 'success', 'title' => 'Updated', 'message' => 'Post updated successfully!']);
         } else {
             $this->authorize('create', Post::class);
@@ -231,12 +236,137 @@ class PostFormComponent extends Component
                 'status'  => $post->status,
             ], 'post');
 
-            // session()->flash('success', 'Post created successfully!');
             $this->dispatch('notify', ['type' => 'success', 'title' => 'Created', 'message' => 'Post created successfully!']);
         }
 
-
         $this->redirectRoute('manage.posts', navigate: true);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    //  COMMENT MODERATION (inline, uses Edit Posts permission)
+    // ═══════════════════════════════════════════════════════════════════
+
+    protected function guardCommentModeration(): void
+    {
+        if (! Auth::user()->can('Edit Posts')) {
+            throw new AuthorizationException('You do not have permission to moderate comments.');
+        }
+        if (! $this->editingPostId) {
+            throw new AuthorizationException('Comments can only be moderated on an existing post.');
+        }
+    }
+
+    protected function findCommentForThisPost(int $id): Comment
+    {
+        return Comment::where('post_id', $this->editingPostId)->findOrFail($id);
+    }
+
+    public function approveComment(int $id): void
+    {
+        $this->guardCommentModeration();
+        $comment = $this->findCommentForThisPost($id);
+
+        $comment->update([
+            'verified_at'        => now(),
+            'verification_token' => null,
+        ]);
+
+        ActivityLogger::log('Comment approved from post edit', [
+            'comment_id' => $comment->id,
+            'post_id'    => $this->editingPostId,
+        ], 'comment');
+
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Approved', 'message' => 'Comment approved.']);
+    }
+
+    public function unapproveComment(int $id): void
+    {
+        $this->guardCommentModeration();
+        $comment = $this->findCommentForThisPost($id);
+
+        $comment->update(['verified_at' => null]);
+
+        ActivityLogger::log('Comment unapproved from post edit', [
+            'comment_id' => $comment->id,
+            'post_id'    => $this->editingPostId,
+        ], 'comment');
+
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Unapproved', 'message' => 'Comment moved back to pending.']);
+    }
+
+    public function deleteComment(int $id): void
+    {
+        $this->guardCommentModeration();
+        $comment = $this->findCommentForThisPost($id);
+
+        $comment->delete(); // FK cascade removes replies
+
+        ActivityLogger::log('Comment deleted from post edit', [
+            'comment_id' => $id,
+            'post_id'    => $this->editingPostId,
+        ], 'comment');
+
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Deleted', 'message' => 'Comment deleted.']);
+    }
+
+    public function openCommentEdit(int $id): void
+    {
+        $this->guardCommentModeration();
+        $comment = $this->findCommentForThisPost($id);
+
+        $this->editingCommentId     = $comment->id;
+        $this->editCommentBody      = $comment->body;
+        $this->showCommentEditModal = true;
+        $this->resetErrorBag();
+    }
+
+    public function saveCommentEdit(): void
+    {
+        $this->guardCommentModeration();
+
+        $this->validate([
+            'editCommentBody' => 'required|string|min:2|max:5000',
+        ]);
+
+        $comment = $this->findCommentForThisPost($this->editingCommentId);
+
+        $comment->update(['body' => $this->editCommentBody]);
+
+        ActivityLogger::log('Comment edited from post edit', [
+            'comment_id' => $comment->id,
+            'post_id'    => $this->editingPostId,
+            'editor_id'  => Auth::id(),
+        ], 'comment');
+
+        $this->showCommentEditModal = false;
+        $this->editingCommentId     = null;
+        $this->editCommentBody      = '';
+
+        $this->dispatch('notify', ['type' => 'success', 'title' => 'Updated', 'message' => 'Comment updated.']);
+    }
+
+    public function getCommentsProperty()
+    {
+        if (! $this->editingPostId) {
+            return collect();
+        }
+
+        return Comment::with(['user:id,name'])
+            ->where('post_id', $this->editingPostId)
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    public function getPendingCommentsCountProperty(): int
+    {
+        if (! $this->editingPostId) {
+            return 0;
+        }
+
+        return Comment::where('post_id', $this->editingPostId)
+            ->whereNull('verified_at')
+            ->whereNull('user_id') // guest comments only (logged-in users are visible per your scope)
+            ->count();
     }
 
     public function getCategoriesProperty()

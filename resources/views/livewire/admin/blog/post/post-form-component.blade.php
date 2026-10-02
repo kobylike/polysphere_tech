@@ -400,6 +400,168 @@
                         </div>
                     </form>
                 @endcanany
+
+                {{-- ══════════════════════════════════════════════════════════════════
+                     COMMENT MODERATION — inline, only on edit + only with Edit Posts
+                     ══════════════════════════════════════════════════════════════════ --}}
+                @if($postSlug && Auth::user()->can('Edit Posts'))
+                    <div class="row mt-4">
+                        <div class="col-xl-12">
+                            <div class="filter cm-content-box box-primary">
+                                <div class="content-title">
+                                    <div class="cpa">
+                                        <i class="fa-solid fa-comments me-1"></i>Comments
+                                        <span class="badge bg-primary ms-2">{{ $this->comments->count() }}</span>
+                                        @if($this->pendingCommentsCount > 0)
+                                            <span class="badge bg-warning ms-1">
+                                                {{ $this->pendingCommentsCount }} pending
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="tools">
+                                        <a href="javascript:void(0);" class="expand SlideToolHeader">
+                                            <i class="fal fa-angle-down"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="cm-content-body form excerpt">
+                                    <div class="card-body">
+                                        @if($this->comments->isEmpty())
+                                            <div class="text-center text-muted py-4">
+                                                <i class="fa-solid fa-comments fa-2x d-block mb-2"></i>
+                                                No comments on this post yet.
+                                            </div>
+                                        @else
+                                            <div class="table-responsive">
+                                                <table class="table table-bordered table-striped align-middle">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Author</th>
+                                                            <th>Comment</th>
+                                                            <th>Status</th>
+                                                            <th>Submitted</th>
+                                                            <th class="text-end">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        @foreach($this->comments as $comment)
+                                                            <tr wire:key="inline-comment-{{ $comment->id }}">
+                                                                <td>
+                                                                    <div class="fw-semibold">{{ $comment->author_name }}</div>
+                                                                    <small class="text-muted">{{ $comment->author_email }}</small>
+                                                                    @if($comment->ip_address)
+                                                                        <small class="text-muted d-block">
+                                                                            IP: {{ $comment->ip_address }}
+                                                                        </small>
+                                                                    @endif
+                                                                </td>
+                                                                <td style="max-width:420px;">
+                                                                    @if($comment->parent_id)
+                                                                        <span class="badge bg-light text-dark mb-1">
+                                                                            <i class="fa-solid fa-reply me-1"></i>Reply
+                                                                        </span>
+                                                                    @endif
+                                                                    <div class="text-break">
+                                                                        {{ \Illuminate\Support\Str::limit(strip_tags($comment->body), 160) }}
+                                                                    </div>
+                                                                </td>
+                                                                <td>
+                                                                    @if($comment->is_verified)
+                                                                        <span class="badge bg-success">Approved</span>
+                                                                    @else
+                                                                        <span class="badge bg-warning">Pending</span>
+                                                                    @endif
+                                                                </td>
+                                                                <td class="text-nowrap">
+                                                                    {{ $comment->created_at->format('d M, Y') }}
+                                                                    <small class="text-muted d-block">
+                                                                        {{ $comment->created_at->diffForHumans() }}
+                                                                    </small>
+                                                                </td>
+                                                                <td class="text-end text-nowrap">
+                                                                    {{-- Approve / Unapprove --}}
+                                                                    @if($comment->is_verified)
+                                                                        <button type="button"
+                                                                            class="btn btn-outline-secondary btn-sm content-icon"
+                                                                            wire:click="unapproveComment({{ $comment->id }})"
+                                                                            title="Unapprove">
+                                                                            <i class="fa-solid fa-circle-xmark"></i>
+                                                                        </button>
+                                                                    @else
+                                                                        <button type="button"
+                                                                            class="btn btn-success btn-sm content-icon"
+                                                                            wire:click="approveComment({{ $comment->id }})"
+                                                                            title="Approve">
+                                                                            <i class="fa-solid fa-check"></i>
+                                                                        </button>
+                                                                    @endif
+
+                                                                    {{-- Edit --}}
+                                                                    <button type="button"
+                                                                        class="btn btn-warning btn-sm content-icon"
+                                                                        wire:click="openCommentEdit({{ $comment->id }})"
+                                                                        title="Edit">
+                                                                        <i class="fa-solid fa-pen-to-square"></i>
+                                                                    </button>
+
+                                                                    {{-- Delete --}}
+                                                                    <button type="button"
+                                                                        class="btn btn-danger btn-sm content-icon"
+                                                                        wire:click="deleteComment({{ $comment->id }})"
+                                                                        wire:confirm="Delete this comment? Replies will also be deleted."
+                                                                        title="Delete">
+                                                                        <i class="fa-solid fa-trash"></i>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- ══════════════════ EDIT COMMENT MODAL ══════════════════ --}}
+                    @if($showCommentEditModal)
+                        <div class="modal fade show d-block" tabindex="-1" style="background:rgba(0,0,0,.5);">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">
+                                            <i class="fa-solid fa-pen-to-square me-2"></i>Edit Comment
+                                        </h5>
+                                        <button type="button" class="btn-close"
+                                            wire:click="$set('showCommentEditModal', false)"></button>
+                                    </div>
+                                    <form wire:submit.prevent="saveCommentEdit">
+                                        <div class="modal-body">
+                                            <label class="form-label">Comment Body</label>
+                                            <textarea class="form-control @error('editCommentBody') is-invalid @enderror"
+                                                rows="8" wire:model.defer="editCommentBody"></textarea>
+                                            @error('editCommentBody')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                wire:click="$set('showCommentEditModal', false)">Cancel</button>
+                                            <button type="submit" class="btn btn-primary" wire:loading.attr="disabled">
+                                                <span wire:loading.remove>Save Changes</span>
+                                                <span wire:loading><i class="fa fa-spinner fa-spin"></i></span>
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                @endif
+                {{-- ══════════════════ END COMMENT MODERATION ══════════════════ --}}
+
             </div>
         </div>
     </div>
@@ -414,20 +576,6 @@
 
         // ═══════════════════════════════════════════════════════════════════
         // CKEDITOR — one instance, one Livewire binding, guaranteed.
-        //
-        // Duplicates came from THREE callers hitting ClassicEditor.create()
-        // on #ckeditor: cms.js, livewire:initialized, and livewire:navigated.
-        // We patch ClassicEditor.create() so any second call returns the
-        // already-existing instance — making duplicates structurally
-        // impossible. Then we ALWAYS call create() ourselves, so we're
-        // guaranteed a handle on the instance (whether we made it or cms.js
-        // did), and we attach the Livewire content-sync listener to it.
-        //
-        // The previous version bailed out early if el.ckeditorInstance was
-        // already set — which is exactly what happened when cms.js won the
-        // race — so no change:data listener was ever attached and content
-        // never reached the Livewire component. That's fixed here: we never
-        // bail, we just get handed the same instance back.
         // ═══════════════════════════════════════════════════════════════════
 
         (function installCKEditorDuplicateGuard() {
@@ -444,9 +592,6 @@
                         return Promise.resolve(element.ckeditorInstance);
                     }
 
-                    // cms.js-created editor that never tagged the textarea:
-                    // detect the wrapper and tear it down so we end up with
-                    // exactly one editor we actually have a handle on.
                     if (isTarget) {
                         const sib = element.nextElementSibling;
                         if (sib && sib.classList && sib.classList.contains('ck-editor')) {
@@ -471,8 +616,6 @@
                 setTimeout(() => clearInterval(iv), 10000);
             }
         })();
-
-        // ─── Our own init ──────────────────────────────────────────────────
 
         const ckConfig = {
             toolbar: [
@@ -501,12 +644,10 @@
             if (editor.__lwContentSynced) return;
             editor.__lwContentSynced = true;
 
-            // Push editor content → Livewire on every change.
             editor.model.document.on('change:data', () => {
                 @this.set('content', editor.getData());
             });
 
-            // Seed editor with whatever content Livewire already has.
             if (@this.content) {
                 editor.setData(@this.content);
             }
@@ -516,16 +657,11 @@
             const el = document.querySelector('#ckeditor');
             if (!el) return;
 
-            // ClassicEditor may not have loaded yet. Poll briefly until it is.
             if (typeof ClassicEditor === 'undefined') {
                 setTimeout(initCKEditor, 50);
                 return;
             }
 
-            // Thanks to the patch, this returns the existing instance if one
-            // exists — either ours from a prior call, or cms.js's. We always
-            // end up with the real instance in .then(), so we can always
-            // attach the Livewire content-sync listener to it. No early bail.
             ClassicEditor.create(el, ckConfig)
                 .then(editor => {
                     el.ckeditorInstance = editor;
@@ -534,21 +670,15 @@
                 .catch(err => console.error('CKEditor init error:', err));
         }
 
-        // ─── Listen to Livewire events ─────────────────────────────────────
-
         document.addEventListener('livewire:initialized', initCKEditor);
         document.addEventListener('livewire:navigated', initCKEditor);
 
-        // Kick off immediately too, in case Livewire's events already fired
-        // before this script was parsed (both load near each other).
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', initCKEditor);
         } else {
             initCKEditor();
         }
 
-        // Tear down on navigation away: destroy the instance AND strip any
-        // wrapper nodes, so the guard's create-patch starts fresh next page.
         document.addEventListener('livewire:navigating', () => {
             const el = document.querySelector('#ckeditor');
             if (!el) return;
@@ -560,8 +690,6 @@
                 try { inst.destroy(); } catch (e) { }
             }
 
-            // Safety net: remove any stray .ck-editor wrappers next to the
-            // textarea so nothing lingers into the next page.
             let sib = el.nextElementSibling;
             while (sib && sib.classList && sib.classList.contains('ck-editor')) {
                 const next = sib.nextElementSibling;

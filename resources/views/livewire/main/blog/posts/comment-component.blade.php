@@ -120,7 +120,7 @@ x-cloak
                                 <div class="postbox__comment-input">
                                     <label style="font-weight: 600; font-size: 1rem;">Your Email *</label>
                                     <input type="email" class="form-control @error('guestEmail') is-invalid @enderror"
-                                           wire:model.defer="guestEmail" placeholder="you@example.com"
+                                           wire:model.defer="guestEmail" placeholder="your@email.com"
                                            style="font-size: 16px; padding: 12px; border-radius: 8px;">
                                     @error('guestEmail') <div class="invalid-feedback" style="font-size: 0.9rem;">{{ $message }}</div> @enderror
                                 </div>

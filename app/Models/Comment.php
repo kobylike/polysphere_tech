@@ -1,5 +1,4 @@
 <?php
-// app/Models/Comment.php
 
 namespace App\Models;
 
@@ -13,6 +12,7 @@ use Spatie\Activitylog\Support\LogOptions;
 class Comment extends Model
 {
     use HasFactory, LogsActivity;
+
     protected $fillable = [
         'post_id',
         'user_id',
@@ -22,19 +22,21 @@ class Comment extends Model
         'guest_email',
         'verification_token',
         'verified_at',
-        'ip_address'
+        'ip_address',
     ];
 
     protected $casts = [
         'verified_at' => 'datetime',
     ];
 
+    // ─── Activity Log ───────────────────────────────────────────────
     public function getActivitylogOptions(): LogOptions
     {
         $author = $this->user?->name ?? $this->guest_name ?? 'Anonymous';
-        $post = $this->post?->title ?? 'unknown post';
+        $post   = $this->post?->title ?? 'unknown post';
+
         return LogOptions::defaults()
-            ->logAll()
+            ->logOnly(['body', 'verified_at', 'parent_id', 'post_id'])
             ->logOnlyDirty()
             ->dontLogEmptyChanges()
             ->setDescriptionForEvent(fn(string $eventName) => match ($eventName) {
@@ -45,8 +47,8 @@ class Comment extends Model
             })
             ->useLogName('comment');
     }
-    // ─── Relationships ──────────────────────────────────────────────
 
+    // ─── Relationships ──────────────────────────────────────────────
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
@@ -64,7 +66,9 @@ class Comment extends Model
 
     public function replies(): HasMany
     {
-        return $this->hasMany(Comment::class, 'parent_id')->with('user')->orderBy('created_at', 'asc');
+        return $this->hasMany(Comment::class, 'parent_id')
+            ->with('user')
+            ->orderBy('created_at', 'asc');
     }
 
     public function repliesRecursive(): HasMany
@@ -72,8 +76,7 @@ class Comment extends Model
         return $this->replies()->with('repliesRecursive');
     }
 
-    // ─── Scopes ──────────────────────────────────────────────────────
-
+    // ─── Scopes ─────────────────────────────────────────────────────
     public function scopeVerified($query)
     {
         return $query->whereNotNull('verified_at');
@@ -86,26 +89,38 @@ class Comment extends Model
 
     public function scopeVisible($query)
     {
-        return $query->where(function ($q) {
-            $q->whereNotNull('user_id')      // logged-in users are always visible
-                ->orWhereNotNull('verified_at');
-        });
+        return $query->whereNotNull('verified_at');
     }
 
     // ─── Accessors ──────────────────────────────────────────────────
-
     public function getAuthorNameAttribute(): string
     {
-        return $this->user_id ? $this->user->name : ($this->guest_name ?? 'Guest');
+        return $this->user_id
+            ? ($this->user?->name ?? 'User')
+            : ($this->guest_name ?? 'Guest');
     }
 
     public function getAuthorEmailAttribute(): ?string
     {
-        return $this->user_id ? $this->user->email : $this->guest_email;
+        return $this->user_id
+            ? $this->user?->email
+            : $this->guest_email;
     }
 
     public function getIsVerifiedAttribute(): bool
     {
         return $this->user_id !== null || $this->verified_at !== null;
+    }
+
+    public function getIsReplyAttribute(): bool
+    {
+        return ! is_null($this->parent_id);
+    }
+
+    public function getGravatarAttribute(): string
+    {
+        $email = $this->author_email ?? '';
+        $hash  = md5(strtolower(trim($email)));
+        return "https://www.gravatar.com/avatar/{$hash}?d=mp&s=64";
     }
 }

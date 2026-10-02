@@ -50,7 +50,7 @@
                 </div>
                 <input id="email" type="email" wire:model.live.debounce.400ms="email" autocomplete="email"
                     class="form-input w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-polysphere-500 focus:border-polysphere-500 transition-colors @error('email') border-red-300 @enderror"
-                    placeholder="you@example.com">
+                    placeholder="your@email.com">
             </div>
             @error('email')
                 <p class="mt-1 text-sm text-red-600 flex items-center">
