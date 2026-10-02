@@ -659,7 +659,7 @@
                 @forelse($posts as $post)
                     <div class="col-xxl-4 col-xl-4 col-lg-6">
                         <div class="blog-style-one">
-                            <a class="blog-image w-img" href="{{ route('blog.details', $post->slug) }}">
+                            <a class="blog-image w-img" wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
                                 @if($post->featured_image)
                                     <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}">
                                 @else
