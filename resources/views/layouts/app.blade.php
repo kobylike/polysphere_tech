@@ -374,7 +374,7 @@
                                 <div class="offcanvas__contact-text">
                                     <a href="mailto:contact@@polyspheretech.com"
                                         style="color: rgba(255,255,255,0.7); text-decoration: none;">
-                                        <span>contact@@polyspheretech.com</span>
+                                        <span>contact@polyspheretech.com</span>
                                     </a>
                                 </div>
                             </li>
