@@ -57,7 +57,9 @@ $seo_keywords = $post->seo_keywords ?? '';
                     <!-- Meta info -->
                     <ul class="blog-post-meta mb-20 mt-40">
                         <li>
-                            <a href="#"><i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }}</a>
+                            {{-- <a href="#"><i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }}</a>
+                            --}}
+                            <a href="#"><i class="fal fa-user"></i> By Admin</a>
                         </li>
                         <li>
                             <a href="#"><i class="fal fa-calendar-days"></i>

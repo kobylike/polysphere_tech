@@ -74,7 +74,8 @@
                                 <div class="post-meta">
                                     <span class="p-relative">
                                         <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
-                                            <i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }}
+                                            {{-- <i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }} --}}
+                                            <i class="fal fa-user"></i> By Admin
                                         </a>
                                     </span>
                                     <span class="p-relative">
