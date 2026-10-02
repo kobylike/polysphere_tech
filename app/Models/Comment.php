@@ -86,12 +86,15 @@ class Comment extends Model
     {
         return $query->whereNull('verified_at');
     }
-
     public function scopeVisible($query)
     {
-        return $query->whereNotNull('verified_at');
+        return $query->where(function ($q) {
+            // Registered users are trusted — show immediately
+            $q->whereNotNull('user_id')
+                // Guests must verify their email first
+                ->orWhereNotNull('verified_at');
+        });
     }
-
     public function scopeFromGuests($query)
     {
         return $query->whereNull('user_id');
