@@ -502,8 +502,9 @@
                                                                         </small>
                                                                     @endif
                                                                     @if($comment->user_id && $comment->user)
-                                                                        <a href="{{ route('users.profile', $comment->user->id) }}"
-                                                                            target="_blank" class="small text-decoration-none">
+                                                                        <a wire:navigate.hover
+                                                                            href="{{ route('users.profile', $comment->user->id) }}"
+                                                                            class="small text-decoration-none">
                                                                             <i class="fa-solid fa-arrow-up-right-from-square me-1"></i>
                                                                             View profile
                                                                         </a>
