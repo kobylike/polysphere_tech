@@ -11,7 +11,7 @@
     id="comment-{{ $comment->id }}">
     <!-- Avatar -->
     @if($isGuest)
-        <img src="{{ asset('storage/profiles/default-profile.jpg') }}" alt="Guest" class="comment-avatar">
+        <img src="{{ asset('assets/main/imgs/default-profile.jpg') }} alt=" Guest" class="comment-avatar">
     @elseif($avatarUrl)
         <img src="{{ $avatarUrl }}" alt="{{ $user->name }}" class="comment-avatar">
     @else
