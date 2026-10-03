@@ -133,9 +133,9 @@
                         <!-- Mobile hamburger -->
                         <div class="header__hamburger d-xl-none my-auto">
                             <div class="sidebar__toggle">
-                                <a class="bar-icon" href="javascript:void(0)">
+                                <button type="button" class="bar-icon" aria-label="Open menu">
                                     <i class="fa-light fa-bars-sort"></i>
-                                </a>
+                                </button>
                             </div>
                         </div>
                     </div>

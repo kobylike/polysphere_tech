@@ -282,10 +282,9 @@
                                     <p class="mb-25">
                                         {{ Str::limit($service->description ?? 'We deliver expert solutions tailored to your needs.', 120) }}
                                     </p>
-                                    <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}"
-                                        class="service-btn" aria-label="Read more about {{ $service->name }}">
+                                    <span class="service-btn">
                                         Read More <i class="icon-arrow-right-double"></i>
-                                    </a>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -684,12 +683,10 @@
                                         href="{{ route('blog.details', $post->slug) }}">{{ $post->title }}</a>
                                 </h5>
                                 <div class="blog-link">
-                                    <a class="primary-btn-5 btn-hover" wire:navigate.hover
-                                        href="{{ route('blog.details', $post->slug) }}"
-                                        aria-label="Read more about {{ $post->title }}">
+                                    <span class="primary-btn-5 btn-hover">
                                         Read More &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
-                                    </a>
+                                    </span>
                                 </div>
                             </div>
                         </div>

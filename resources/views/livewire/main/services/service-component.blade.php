@@ -48,9 +48,9 @@
                                     </div>
                                     <h4 class="mb-15"><a wire:navigate.hover href="{{ route('service.details', $service->slug) }}">{{ $service->name }}</a></h4>
                                     <p class="mb-25">{{ Str::limit($service->description ?? 'Lorem ipsum dolor sit amet, is consectetur adipisci elit. Integer feugiat tortor non there are many other nullam.', 120) }}</p>
-                                    <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}" class="service-btn" aria-label="Read more about {{ $service->name }}">
+                                    <span class="service-btn">
                                         Read More <i class="icon-arrow-right-double"></i>
-                                    </a>
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -94,7 +94,7 @@
                             <i class="icon-roof-4"></i>
                         </div>
                         <div class="content">
-                            <h5><a wire:navigate.hover href="{{route('services')}}">Agile & Transparent</a></h5>
+                            <h5><a href="services.html">Agile & Transparent</a></h5>
                             <p>We work in short, iterative cycles with regular demos and clear communication – so you’re
                                 never in the dark.</p>
                         </div>
@@ -106,7 +106,7 @@
                             <i class="icon-target"></i>
                         </div>
                         <div class="content">
-                            <h5><a wire:navigate.hover href="{{route('services')}}">End‑to‑End Ownership</a></h5>
+                            <h5><a href="services.html">End‑to‑End Ownership</a></h5>
                             <p>We take full responsibility – from ideation and design to deployment, support, and
                                 continuous improvement.</p>
                         </div>
@@ -118,7 +118,7 @@
                             <i class="icon-help"></i>
                         </div>
                         <div class="content">
-                            <h5><a wire:navigate.hover href="{{route('services')}}">Future‑Proof Engineering</a></h5>
+                            <h5><a href="services.html">Future‑Proof Engineering</a></h5>
                             <p>We build with scalability, security, and maintainability in mind – so your technology
                                 evolves with your business.</p>
                         </div>
@@ -144,7 +144,7 @@
                             <img src="{{ asset('assets/main/imgs/icon/icon-7.png') }}" alt="img">
                         </div>
                         <div class="content">
-                            <h3><span class="counter">50</span>+</h3>
+                            <h3><span class="counter">300</span>+</h3>
                             <span class="text-1">Successfully Projects</span>
                         </div>
                     </div>
@@ -155,7 +155,7 @@
                             <img src="{{ asset('assets/main/imgs/icon/icon-4.png') }}" alt="img">
                         </div>
                         <div class="content">
-                            <h3><span class="counter">10</span>+</h3>
+                            <h3><span class="counter">450</span>+</h3>
                             <span class="text-1">Company Staffs</span>
                         </div>
                     </div>
@@ -166,7 +166,7 @@
                             <img src="{{ asset('assets/main/imgs/icon/icon-5.png') }}" alt="img">
                         </div>
                         <div class="content">
-                            <h3><span class="counter">30</span></h3>
+                            <h3><span class="counter">3,150</span></h3>
                             <span class="text-1">Tons of Products</span>
                         </div>
                     </div>
@@ -177,7 +177,7 @@
                             <img src="{{ asset('assets/main/imgs/icon/icon-6.png') }}" alt="img">
                         </div>
                         <div class="content">
-                            <h3><span class="counter">300</span></h3>
+                            <h3><span class="counter">6,561</span></h3>
                             <span class="text-1">Satisfied Clients</span>
                         </div>
                     </div>
