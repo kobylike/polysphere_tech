@@ -15,18 +15,18 @@
                                 transformation solutions that drive business growth.
                             </p>
                             <div class="footer-socials">
-                                <span><a href="{{ $socials['linkedin'] }}" target="_blank" rel="noopener noreferrer"><i
-                                            class="fab fa-linkedin-in"></i></a></span>
-                                <span><a href="{{ $socials['facebook'] }}" target="_blank" rel="noopener noreferrer"><i
-                                            class="fab fa-facebook-f"></i></a></span>
-                                <span><a href="{{ $socials['instagram'] }}" target="_blank" rel="noopener noreferrer"><i
-                                            class="fab fa-instagram"></i></a></span>
-                                <span><a href="{{ $socials['x'] }}" target="_blank" rel="noopener noreferrer"><i
-                                            class="fab fa-twitter"></i></a></span>
-                                <span><a href="{{ $socials['youtube'] }}" target="_blank" rel="noopener noreferrer"><i
-                                            class="fab fa-youtube"></i></a></span>
-                                <span><a href="{{ $socials['tiktok'] }}" target="_blank" rel="noopener noreferrer"><i
-                                            class="fab fa-tiktok"></i></a></span>
+                                <span><a href="{{ $socials['linkedin'] }}" target="_blank" rel="noopener noreferrer"
+                                        aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></span>
+                                <span><a href="{{ $socials['facebook'] }}" target="_blank" rel="noopener noreferrer"
+                                        aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></span>
+                                <span><a href="{{ $socials['instagram'] }}" target="_blank" rel="noopener noreferrer"
+                                        aria-label="Instagram"><i class="fab fa-instagram"></i></a></span>
+                                <span><a href="{{ $socials['x'] }}" target="_blank" rel="noopener noreferrer"
+                                        aria-label="X (Twitter)"><i class="fab fa-twitter"></i></a></span>
+                                <span><a href="{{ $socials['youtube'] }}" target="_blank" rel="noopener noreferrer"
+                                        aria-label="YouTube"><i class="fab fa-youtube"></i></a></span>
+                                <span><a href="{{ $socials['tiktok'] }}" target="_blank" rel="noopener noreferrer"
+                                        aria-label="TikTok"><i class="fab fa-tiktok"></i></a></span>
                             </div>
 
                             {{-- WhatsApp card block --}}
@@ -74,11 +74,11 @@
                                                         {{ $post->published_at?->format('d M, Y') }}
                                                     </a>
                                                 </span>
-                                                <h6>
+                                                <h5>
                                                     <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
                                                         {{ Str::limit($post->title, 40) }}
                                                     </a>
-                                                </h6>
+                                                </h5>
                                             </div>
                                         </div>
                                     </li>
@@ -221,7 +221,7 @@
             gap: 12px !important;
         }
 
-        .footer-blog-post-box .content h6 {
+        .footer-blog-post-box .content h5 {
             font-size: 13px !important;
             line-height: 1.4 !important;
             margin-bottom: 2px !important;
@@ -339,7 +339,7 @@
             height: 64px !important;
         }
 
-        .footer-blog-post-box .content h6 {
+        .footer-blog-post-box .content h5 {
             font-size: 13px !important;
             line-height: 1.4 !important;
         }
@@ -362,7 +362,7 @@
 
     /* Hover effect for footer links */
     .service-list li a:hover,
-    .footer-blog-post-box .content h6 a:hover,
+    .footer-blog-post-box .content h5 a:hover,
     .footer-bottom .right-area span a:hover,
     .footer-bottom .left-area span a:hover {
         color: #fff !important;
@@ -396,19 +396,19 @@
         transform: scale(1.05);
     }
 
-    .footer-blog-post-box .content h6 {
+    .footer-blog-post-box .content h5 {
         font-size: 14px;
         line-height: 1.5;
         margin-bottom: 2px;
     }
 
-    .footer-blog-post-box .content h6 a {
+    .footer-blog-post-box .content h5 a {
         color: rgba(255, 255, 255, 0.85);
         text-decoration: none;
         transition: color 0.3s ease;
     }
 
-    .footer-blog-post-box .content h6 a:hover {
+    .footer-blog-post-box .content h5 a:hover {
         color: #fff;
     }
 
