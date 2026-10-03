@@ -207,7 +207,8 @@
                                     alt="Consultancy icon">
                             </div>
                             <div class="content">
-                                <h5><a href="{{ route('services') }}">End‑to‑End Consultancy</a></h5>
+                                <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Consultancy</a>
+                                </h5>
                                 <p>From discovery and architecture to deployment and maintenance – we’re with you at
                                     every stage of your journey.</p>
                             </div>
@@ -282,7 +283,7 @@
                                         {{ Str::limit($service->description ?? 'We deliver expert solutions tailored to your needs.', 120) }}
                                     </p>
                                     <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}"
-                                        class="service-btn">
+                                        class="service-btn" aria-label="Read more about {{ $service->name }}">
                                         Read More <i class="icon-arrow-right-double"></i>
                                     </a>
                                 </div>
@@ -298,9 +299,8 @@
                                     <div class="icon-box">
                                         <img src="{{ asset('assets/main/imgs/icon/icon.png') }}" alt="Service">
                                     </div>
-                                    <h4 class="mb-15"><a href="#">Service Coming Soon</a></h4>
+                                    <h4 class="mb-15"><span>Service Coming Soon</span></h4>
                                     <p class="mb-25">We are constantly adding new services. Check back later.</p>
-                                    <a href="#" class="service-btn">Read More <i class="icon-arrow-right-double"></i></a>
                                 </div>
                             </div>
                         </div>
@@ -330,8 +330,9 @@
                         </div>
                         <h3 class="mb-15">Need a Custom Solution?</h3>
                         <h5><a href="tel:+233597563427">+233 (59) 756‑3427</a></h5>
-                        <p class="mt-3" style="font-size:14px; color:#666;">Call us or <a href="contact.html"
-                                style="color:#0056b3;">schedule a free consultation</a></p>
+                        <p class="mt-3" style="font-size:14px; color:#666;">Call us or <a wire:navigate.hover
+                                href="{{ route('contact') }}" style="color:#0056b3;">schedule a free consultation</a>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -402,10 +403,7 @@
                             <div class="content-area">
                                 <div class="title-area">
                                     <h6 class="mb-5">Coming Soon</h6>
-                                    <h5><a href="#">New Projects</a></h5>
-                                </div>
-                                <div class="icon-area">
-                                    <a href="#"><i class="icon-arrow-up"></i></a>
+                                    <h5><span>New Projects</span></h5>
                                 </div>
                             </div>
                         </div>
@@ -434,7 +432,7 @@
                             <i class="icon-roof-4"></i>
                         </div>
                         <div class="content">
-                            <h5><a href="services.html">Agile & Transparent</a></h5>
+                            <h5><a wire:navigate.hover href="{{ route('services') }}">Agile & Transparent</a></h5>
                             <p>We work in short, iterative cycles with regular demos and clear communication – so you’re
                                 never in the dark.</p>
                         </div>
@@ -446,7 +444,7 @@
                             <i class="icon-target"></i>
                         </div>
                         <div class="content">
-                            <h5><a href="services.html">End‑to‑End Ownership</a></h5>
+                            <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Ownership</a></h5>
                             <p>We take full responsibility – from ideation and design to deployment, support, and
                                 continuous improvement.</p>
                         </div>
@@ -458,7 +456,7 @@
                             <i class="icon-help"></i>
                         </div>
                         <div class="content">
-                            <h5><a href="services.html">Future‑Proof Engineering</a></h5>
+                            <h5><a wire:navigate.hover href="{{ route('services') }}">Future‑Proof Engineering</a></h5>
                             <p>We build with scalability, security, and maintainability in mind – so your technology
                                 evolves with your business.</p>
                         </div>
@@ -686,7 +684,9 @@
                                         href="{{ route('blog.details', $post->slug) }}">{{ $post->title }}</a>
                                 </h5>
                                 <div class="blog-link">
-                                    <a class="primary-btn-5 btn-hover" href="{{ route('blog.details', $post->slug) }}">
+                                    <a class="primary-btn-5 btn-hover" wire:navigate.hover
+                                        href="{{ route('blog.details', $post->slug) }}"
+                                        aria-label="Read more about {{ $post->title }}">
                                         Read More &nbsp; | <i class="icon-right-arrow"></i>
                                         <span style="top: 147.172px; left: 108.5px;"></span>
                                     </a>
@@ -711,24 +711,19 @@
             <div class="swiper brand-active">
                 <div class="swiper-wrapper">
                     <div class="swiper-slide">
-                        <span><a href="#"><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}"
-                                    alt="Brand"></a></span>
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
                     </div>
                     <div class="swiper-slide">
-                        <span><a href="#"><img src="{{ asset('assets/main/imgs/resources/brand-2.png') }}"
-                                    alt="Brand"></a></span>
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-2.png') }}" alt="Brand"></span>
                     </div>
                     <div class="swiper-slide">
-                        <span><a href="#"><img src="{{ asset('assets/main/imgs/resources/brand-3.png') }}"
-                                    alt="Brand"></a></span>
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-3.png') }}" alt="Brand"></span>
                     </div>
                     <div class="swiper-slide">
-                        <span><a href="#"><img src="{{ asset('assets/main/imgs/resources/brand-4.png') }}"
-                                    alt="Brand"></a></span>
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-4.png') }}" alt="Brand"></span>
                     </div>
                     <div class="swiper-slide">
-                        <span><a href="#"><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}"
-                                    alt="Brand"></a></span>
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
                     </div>
                 </div>
             </div>
