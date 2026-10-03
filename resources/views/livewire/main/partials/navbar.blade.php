@@ -13,19 +13,18 @@
                 @livewire('main.partials.whatsapp-button', ['variant' => 'topbar'])
             </div>
             <div class="header-top-socials">
-                <span><a href="https://web.facebook.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
-                            class="fab fa-facebook-f"></i></a></span>
-                <span><a href="https://x.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
-                            class="fab fa-twitter"></i></a></span>
+                <span><a href="https://web.facebook.com/polyspheretech" target="_blank" rel="noopener noreferrer"
+                        aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></span>
+                <span><a href="https://x.com/polyspheretech" target="_blank" rel="noopener noreferrer"
+                        aria-label="X (Twitter)"><i class="fab fa-twitter"></i></a></span>
                 <span><a href="https://www.linkedin.com/company/polysphere-tech/" target="_blank"
-                        rel="noopener noreferrer"><i class="fab fa-linkedin-in"></i></a></span>
-                <span><a href="https://www.instagram.com/polyspheretech" target="_blank" rel="noopener noreferrer"><i
-                            class="fab fa-instagram"></i></a></span>
-                <span><a href="https://www.youtube.com/@polyspheretech" target="_blank" rel="noopener noreferrer"><i
-                            class="fab fa-youtube"></i></a></span>
-                <span><a href=" https://www.tiktok.com/@polyspheretech" target="_blank" rel="noopener noreferrer"><i
-                            class="fab fa-tiktok\+"></i></a></span>
-
+                        rel="noopener noreferrer" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></span>
+                <span><a href="https://www.instagram.com/polyspheretech" target="_blank" rel="noopener noreferrer"
+                        aria-label="Instagram"><i class="fab fa-instagram"></i></a></span>
+                <span><a href="https://www.youtube.com/@polyspheretech" target="_blank" rel="noopener noreferrer"
+                        aria-label="YouTube"><i class="fab fa-youtube"></i></a></span>
+                <span><a href=" https://www.tiktok.com/@polyspheretech" target="_blank" rel="noopener noreferrer"
+                        aria-label="TikTok"><i class="fab fa-tiktok\+"></i></a></span>
             </div>
         </div>
     </div>

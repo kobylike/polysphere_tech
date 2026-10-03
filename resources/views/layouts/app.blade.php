@@ -333,7 +333,7 @@
                             </a>
                         </div>
                         <div class="offcanvas__close">
-                            <button>
+                            <button aria-label="Close menu">
                                 <i class="fal fa-times"></i>
                             </button>
                         </div>
@@ -372,7 +372,7 @@
                                     <i class="fal fa-envelope"></i>
                                 </div>
                                 <div class="offcanvas__contact-text">
-                                    <a href="mailto:contact@@polyspheretech.com"
+                                    <a href="mailto:contact@polyspheretech.com"
                                         style="color: rgba(255,255,255,0.7); text-decoration: none;">
                                         <span>contact@polyspheretech.com</span>
                                     </a>
