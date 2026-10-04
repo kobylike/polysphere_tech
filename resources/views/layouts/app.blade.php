@@ -303,6 +303,14 @@
             opacity: 1;
             transition: opacity 0.25s ease;
         }
+
+        /* Accessibility fix: original background (rgb(60,114,252), ~4.2:1
+           against white text) was just under WCAG AA's 4.5:1 minimum for
+           normal-size text. This darkens it slightly to ~4.75:1 while
+           staying visually close to the original brand blue. */
+        .primary-btn-1 {
+            background-color: #386AEA !important;
+        }
     </style>
 </head>
 
@@ -333,7 +341,7 @@
                             </a>
                         </div>
                         <div class="offcanvas__close">
-                            <button aria-label="Close menu">
+                            <button>
                                 <i class="fal fa-times"></i>
                             </button>
                         </div>
@@ -372,9 +380,9 @@
                                     <i class="fal fa-envelope"></i>
                                 </div>
                                 <div class="offcanvas__contact-text">
-                                    <a href="mailto:contact@polyspheretech.com"
+                                    <a href="mailto:contact@@polyspheretech.com"
                                         style="color: rgba(255,255,255,0.7); text-decoration: none;">
-                                        <span>contact@polyspheretech.com</span>
+                                        <span>contact@@polyspheretech.com</span>
                                     </a>
                                 </div>
                             </li>
