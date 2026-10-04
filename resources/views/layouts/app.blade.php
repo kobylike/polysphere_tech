@@ -311,11 +311,6 @@
         .primary-btn-1 {
             background-color: #386AEA !important;
         }
-
-        .main-menu nav#mobile-menu li.active>a,
-        .main-menu nav:not(#mobile-menu) li.active>a {
-            color: #ffffff !important;
-        }
     </style>
 </head>
 
@@ -346,7 +341,7 @@
                             </a>
                         </div>
                         <div class="offcanvas__close">
-                            <button>
+                            <button aria-label="Close menu">
                                 <i class="fal fa-times"></i>
                             </button>
                         </div>

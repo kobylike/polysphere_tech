@@ -159,7 +159,8 @@
                                     alt="Polysphere Tech workspace">
                                 <div class="play-btn">
                                     <div class="video_player_btn">
-                                        <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"><i
+                                        <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"
+                                            aria-label="Watch video: Polysphere Tech overview"><i
                                                 class="icon-play"></i></a>
                                     </div>
                                 </div>
@@ -386,7 +387,8 @@
                                     </h5>
                                 </div>
                                 <div class="icon-area">
-                                    <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}">
+                                    <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}"
+                                        aria-label="View {{ $project->title }} project details">
                                         <i class="icon-arrow-up"></i>
                                     </a>
                                 </div>
@@ -546,8 +548,8 @@
                         </figure>
                         <div class="play-btn">
                             <div class="video_player_btn">
-                                <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"><i
-                                        class="icon-play"></i></a>
+                                <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"
+                                    aria-label="Watch client testimonial video"><i class="icon-play"></i></a>
                             </div>
                         </div>
                     </div>
