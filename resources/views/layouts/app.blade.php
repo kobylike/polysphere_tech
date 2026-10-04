@@ -311,6 +311,11 @@
         .primary-btn-1 {
             background-color: #386AEA !important;
         }
+
+        .main-menu nav#mobile-menu li.active>a,
+        .main-menu nav:not(#mobile-menu) li.active>a {
+            color: #ffffff !important;
+        }
     </style>
 </head>
 
