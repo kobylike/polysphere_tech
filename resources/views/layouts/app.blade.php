@@ -460,6 +460,21 @@
         }
     </script>
 
+    <script>
+        // Accessibility fix: meanmenu.js generates ".mean-expand" dropdown
+        // toggle arrows at runtime (not present in our source HTML), so
+        // they can't be given an aria-label via Blade directly. This labels
+        // any we find, re-checking after navigation since Livewire swaps
+        // the page and meanmenu may rebuild the menu.
+        function labelMeanExpandButtons() {
+            document.querySelectorAll('.mean-expand:not([aria-label])').forEach((el) => {
+                el.setAttribute('aria-label', 'Toggle submenu');
+            });
+        }
+        document.addEventListener('DOMContentLoaded', () => setTimeout(labelMeanExpandButtons, 500));
+        document.addEventListener('livewire:navigated', () => setTimeout(labelMeanExpandButtons, 500));
+    </script>
+
     <!-- JAVASCRIPT -->
     <script src="{{ asset('assets/main/js/jquery-3.7.1.min.js') }}"></script>
     <script src="{{ asset('assets/main/js/waypoints.min.js') }}"></script>
