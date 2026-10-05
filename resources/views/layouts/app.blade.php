@@ -329,6 +329,23 @@
         .project-slider-area .title-area h4 {
             font-size: 18px;
         }
+
+        /* Accessibility fix: service card description text was rgb(120,120,120)
+           on white, ~4.46:1 — just under WCAG AA's 4.5:1 minimum. This is a
+           barely-perceptible darkening with real margin above the threshold.
+           Shared class/structure between the homepage slider and the
+           /services listing page, so this one rule covers both. */
+        .service-slider-area .content p.mb-25 {
+            color: #666666;
+        }
+
+        /* Accessibility fix: testimonial role text and quote text were the
+           same rgb(120,120,120)-on-white combination as the service cards
+           above (~4.46:1, just under AA's 4.5:1). Same fix. */
+        .testimonials-two-box span,
+        .testimonials-two-box p {
+            color: #666666;
+        }
     </style>
 </head>
 
