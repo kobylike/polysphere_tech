@@ -257,208 +257,210 @@
             <div wire:ignore class="swiper service-active-1" data-count="{{ $services->count() }}">
                 <div class="swiper-wrapper">
                     @forelse($services as $service)
-                                    <div class="swiper-slide">
-                                <div class="service-slider-area p-relative">
-                                    <figure class="image w-img">
-                                        @if($service->featured_image)
-                                                <img src="{{ asset('storage/' . $service->featured_image) }}"
+                        <div class="swiper-slide">
+                            <div class="service-slider-area p-relative">
+                                <figure class="image w-img">
+                                    @if($service->featured_image)
+                                        <img src="{{ asset('storage/' . $service->featured_image) }}"
                                             alt="{{ $service->name }}">
-                                        @else
-                                            <img src="{{ asset('assets/main/imgs/service/service-' . ($loop->iteration % 3 + 1) . '.jpg') }}"
-                                                alt="{{ $service->name }}">
-                                        @endif
-                                            </figure>
-                                            <div class=" content">
-                                        <div class="icon-box">
-                                            {{-- You can add an 'icon' field to Service model and use $service->icon --}}
-                                            <img src="{{ asset('assets/main/imgs/icon/icon-' . ($loop->iteration % 3 + 1) . '.png') }}"
-                                                alt="{{ $service->name }}"
-                                                        onerror="this.onerror=null; this.src='{{ asset('assets/main/imgs/icon/icon.png') }}';">
-                                        </div>
-                                        <h4 class="mb-15">
-                                            <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}">
-                                                {{ $service->name }}
-                                            </a>
-                                        </h4>
-                                        <p class="mb-25">
-                                            {{ Str::limit($service->description ?? 'We deliver expert solutions tailored to your needs.', 120) }}
-                                        </p>
-                                        <span class="service-btn">
-                                            Read More <i class="icon-arrow-right-double"></i>
-                                        </span>
+                                    @else
+                                        <img src="{{ asset('assets/main/imgs/service/service-' . ($loop->iteration % 3 + 1) . '.jpg') }}"
+                                            alt="{{ $service->name }}">
+                                    @endif
+                                </figure>
+                                <div class="content">
+                                    <div class="icon-box">
+                                        {{-- You can add an 'icon' field to Service model and use $service->icon --}}
+                                        <img src="{{ asset('assets/main/imgs/icon/icon-' . ($loop->iteration % 3 + 1) . '.png') }}"
+                                            alt="{{ $service->name }}"
+                                            onerror="this.onerror=null; this.src='{{ asset('assets/main/imgs/icon/icon.png') }}';">
+                                    </div>
+                                    <h4 class="mb-15">
+                                        <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}">
+                                            {{ $service->name }}
+                                        </a>
+                                    </h4>
+                                    <p class="mb-25">
+                                        {{ Str::limit($service->description ?? 'We deliver expert solutions tailored to your needs.', 120) }}
+                                    </p>
+                                    <span class="service-btn">
+                                        Read More <i class="icon-arrow-right-double"></i>
+                                    </span>
                                 </div>
                             </div>
                         </div>
                     @empty
-                <div class="swiper-slide">
-                    <div class="service-slider-area p-relative">
-                        <figure class="image w-img">
-                            <img src="{{ asset('assets/main/imgs/service/service-1.jpg') }}" alt="Service">
-                        </figure>
-                        <div class="content">
-                            <div class="icon-box">
-                                <img src="{{ asset('assets/main/imgs/icon/icon.png') }}" alt="Service">
+                        <div class="swiper-slide">
+                            <div class="service-slider-area p-relative">
+                                <figure class="image w-img">
+                                    <img src="{{ asset('assets/main/imgs/service/service-1.jpg') }}" alt="Service">
+                                </figure>
+                                <div class="content">
+                                    <div class="icon-box">
+                                        <img src="{{ asset('assets/main/imgs/icon/icon.png') }}" alt="Service">
+                                    </div>
+                                    <h4 class="mb-15"><span>Service Coming Soon</span></h4>
+                                    <p class="mb-25">We are constantly adding new services. Check back later.</p>
+                                </div>
                             </div>
-                            <h4 class="mb-15"><span>Service Coming Soon</span></h4>
-                            <p class="mb-25">We are constantly adding new services. Check back later.</p>
                         </div>
-                    </div>
-                </div>
-            @endforelse
-        </div>
-</div>
-</div>
-</section>
-<!-- Service Slider area end -->
-
-<!-- Cta-1 area start -->
-<section class="cta-1-section bg-color-1 p-relative wow fadeInDown" data-wow-delay=".5s">
-    <div class="small-container">
-        <div class="row g-0 box-shadow-1 fix">
-            <div class="col-xxl-6 col-lg-6 bg-white">
-                <figure class="image w-img">
-                    <img src="{{ asset('assets/main/imgs/resources/cta-1.jpg') }}" alt="Get in touch">
-                </figure>
-            </div>
-            <div class="col-xxl-6 col-lg-6">
-                <div class="content p-relative">
-                    <div class="shape-1"
-                        style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-12.png') }}');">
-                    </div>
-                    <div class="icon-box">
-                        <i class="fal fa-phone-volume"></i>
-                    </div>
-                    <h3 class="mb-15">Need a Custom Solution?</h3>
-                    <h5><a href="tel:+233597563427">+233 (59) 756‑3427</a></h5>
-                    <p class="mt-3" style="font-size:14px; color:#666;">Call us or <a wire:navigate.hover
-                            href="{{ route('contact') }}" style="color:#0056b3;">schedule a free consultation</a></p>
+                    @endforelse
                 </div>
             </div>
         </div>
-    </div>
-</section>
-<!-- Cta-1 area end -->
+    </section>
+    <!-- Service Slider area end -->
 
-<!-- ════════════════════════════════════════════════════════════════════════
+    <!-- Cta-1 area start -->
+    <section class="cta-1-section bg-color-1 p-relative wow fadeInDown" data-wow-delay=".5s">
+        <div class="small-container">
+            <div class="row g-0 box-shadow-1 fix">
+                <div class="col-xxl-6 col-lg-6 bg-white">
+                    <figure class="image w-img">
+                        <img src="{{ asset('assets/main/imgs/resources/cta-1.jpg') }}" alt="Get in touch">
+                    </figure>
+                </div>
+                <div class="col-xxl-6 col-lg-6">
+                    <div class="content p-relative">
+                        <div class="shape-1"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-12.png') }}');">
+                        </div>
+                        <div class="icon-box">
+                            <i class="fal fa-phone-volume"></i>
+                        </div>
+                        <h3 class="mb-15">Need a Custom Solution?</h3>
+                        <h5><a href="tel:+233597563427">+233 (59) 756‑3427</a></h5>
+                        <p class="mt-3" style="font-size:14px; color:#666;">Call us or <a wire:navigate.hover
+                                href="{{ route('contact') }}" style="color:#0056b3;">schedule a free consultation</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Cta-1 area end -->
+
+    <!-- ════════════════════════════════════════════════════════════════════════
          Project Slider – DYNAMIC from DB
          ════════════════════════════════════════════════════════════════════════ -->
-<section class="project-slider-section section-space fix">
-    <div class="small-container">
-        <div class="row">
-            <div class="col-xxl-6">
-                <div class="title-box mb-50 wow fadeInLeft" data-wow-delay=".5s">
-                    <span class="section-sub-title"> Projects</span>
-                    <h3 class="section-title mt-10">Our Latest Projects</h3>
+    <section class="project-slider-section section-space fix">
+        <div class="small-container">
+            <div class="row">
+                <div class="col-xxl-6">
+                    <div class="title-box mb-50 wow fadeInLeft" data-wow-delay=".5s">
+                        <span class="section-sub-title"> Projects</span>
+                        <h3 class="section-title mt-10">Our Latest Projects</h3>
+                    </div>
                 </div>
-            </div>
-            <div class="col-xxl-6">
-                <div class="project_1_navigation__wrapprer position-relative z-1 text-end mt-30">
-                    <div class="common-slider-navigation">
-                        <button class="project-1-button-prev"><i class="icon-arrow-left-angle"></i></button>
-                        <button class="project-1-button-next"><i class="icon-arrow-right-angle"></i></button>
+                <div class="col-xxl-6">
+                    <div class="project_1_navigation__wrapprer position-relative z-1 text-end mt-30">
+                        <div class="common-slider-navigation">
+                            <button class="project-1-button-prev"><i class="icon-arrow-left-angle"></i></button>
+                            <button class="project-1-button-next"><i class="icon-arrow-right-angle"></i></button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    {{-- wire:ignore prevents Livewire from touching the slider after initial render --}}
-    <div wire:ignore class="swiper project-active-1" data-count="{{ $projects->count() }}">
-        <div class="swiper-wrapper">
-            @forelse($projects as $project)
+        {{-- wire:ignore prevents Livewire from touching the slider after initial render --}}
+        <div wire:ignore class="swiper project-active-1" data-count="{{ $projects->count() }}">
+            <div class="swiper-wrapper">
+                @forelse($projects as $project)
                     <div class="swiper-slide">
-                                <div class="project-slider-area p-relative">
-                        <figure class="image m-img">
-                            @if($project->featured_image)
-                                <img src="{{ asset('storage/' . $project->featured_image) }}" alt="{{ $project->title }}">
-                            @else
-                                <img src="{{ asset('assets/main/imgs/project/project-' . ($loop->iteration % 4 + 1) . '.jpg') }}"
-                                    alt="{{ $project->title }}">
-                            @endif
-                        </figure>
-                        <div class="content-area">
-                            <div class="title-area">
-                                <h4 class="mb-5 project-category-label">{{ $project->service?->name ?? 'General' }}</h4>
-                                <h5>
-                                    <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}">
-                                        {{ $project->title }}
+                        <div class="project-slider-area p-relative">
+                            <figure class="image m-img">
+                                @if($project->featured_image)
+                                    <img src="{{ asset('storage/' . $project->featured_image) }}" alt="{{ $project->title }}">
+                                @else
+                                    <img src="{{ asset('assets/main/imgs/project/project-' . ($loop->iteration % 4 + 1) . '.jpg') }}"
+                                        alt="{{ $project->title }}">
+                                @endif
+                            </figure>
+                            <div class="content-area">
+                                <div class="title-area">
+                                    <h4 class="mb-5 project-category-label">{{ $project->service?->name ?? 'General' }}</h4>
+                                    <h5>
+                                        <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}">
+                                            {{ $project->title }}
+                                        </a>
+                                    </h5>
+                                </div>
+                                <div class="icon-area">
+                                    <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}"
+                                        aria-label="View {{ $project->title }} project details">
+                                        <i class="icon-arrow-up"></i>
                                     </a>
-                                </h5>
-                            </div>
-                            <div class="icon-area">
-                                <a wire:navigate.hover href="{{ route('project.details', $project->slug) }}"
-                                    aria-label="View {{ $project->title }} project details">
-                                    <i class="icon-arrow-up"></i>
-                                </a>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            @empty
-                <div class="swiper-slide">
-                    <div class="project-slider-area p-relative">
-                        <figure class="image m-img">
-                            <img src="{{ asset('assets/main/imgs/project/project-1.jpg') }}" alt="Project">
-                        </figure>
-                        <div class="content-area">
-                                        <div class=" title-area">
-                            <h6 class="mb-5">Coming Soon</h6>
-                            <h5><span>New Projects</span></h5>
+                @empty
+                    <div class="swiper-slide">
+                        <div class="project-slider-area p-relative">
+                            <figure class="image m-img">
+                                <img src="{{ asset('assets/main/imgs/project/project-1.jpg') }}" alt="Project">
+                            </figure>
+                            <div class="content-area">
+                                <div class="title-area">
+                                    <h6 class="mb-5">Coming Soon</h6>
+                                    <h5><span>New Projects</span></h5>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
+                @endforelse
             </div>
-        @endforelse
-    </div>
-    </div>
-</section>
-<!-- Project area end -->
+        </div>
+    </section>
+    <!-- Project area end -->
 
-<!-- Choose area start -->
-<section class="choose-section bg-color-1 section-space-top p-relative">
-    <div class="bg-image" style="background-image: url('{{ asset('assets/main/imgs/bg/choose-bg.png') }}');"></div>
-    <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');">
-    </div>
-    <div class="small-container">
-        <div class="row g-4">
-            <div class="col-xxl-6 col-xl-6 col-lg-6 p-relative section-space-medium-bottom">
-                <div class="title-box mb-50 wow fadeInLeft" data-wow-delay=".5s">
-                    <span class="section-sub-title">Why Polysphere Tech</span>
-                    <h3 class="section-title mt-10">What Sets Us Apart</h3>
-                </div>
-                <!-- block -->
-                <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".5s">
-                    <div class="icon-box p-relative">
-                        <i class="icon-roof-4"></i>
+    <!-- Choose area start -->
+    <section class="choose-section bg-color-1 section-space-top p-relative">
+        <div class="bg-image" style="background-image: url('{{ asset('assets/main/imgs/bg/choose-bg.png') }}');"></div>
+        <div class="shape-image" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-15.png') }}');">
+        </div>
+        <div class="small-container">
+            <div class="row g-4">
+                <div class="col-xxl-6 col-xl-6 col-lg-6 p-relative section-space-medium-bottom">
+                    <div class="title-box mb-50 wow fadeInLeft" data-wow-delay=".5s">
+                        <span class="section-sub-title">Why Polysphere Tech</span>
+                        <h3 class="section-title mt-10">What Sets Us Apart</h3>
                     </div>
-                    <div class="content">
-                        <h5><a wire:navigate.hover href="{{ route('services') }}">Agile & Transparent</a></h5>
-                        <p>We work in short, iterative cycles with regular demos and clear communication – so you’re
-                            never in the dark.</p>
+                    <!-- block -->
+                    <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".5s">
+                        <div class="icon-box p-relative">
+                            <i class="icon-roof-4"></i>
+                        </div>
+                        <div class="content">
+                            <h5><a wire:navigate.hover href="{{ route('services') }}">Agile & Transparent</a></h5>
+                            <p>We work in short, iterative cycles with regular demos and clear communication – so you’re
+                                never in the dark.</p>
+                        </div>
                     </div>
-                </div>
-                <hr>
-                <!-- block -->
-                <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".7s">
-                    <div class="icon-box p-relative">
-                        <i class="icon-target"></i>
+                    <hr>
+                    <!-- block -->
+                    <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".7s">
+                        <div class="icon-box p-relative">
+                            <i class="icon-target"></i>
+                        </div>
+                        <div class="content">
+                            <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Ownership</a></h5>
+                            <p>We take full responsibility – from ideation and design to deployment, support, and
+                                continuous improvement.</p>
+                        </div>
                     </div>
-                    <div class="content">
-                        <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Ownership</a></h5>
-                        <p>We take full responsibility – from ideation and design to deployment, support, and
-                            continuous improvement.</p>
-                    </div>
-                </div>
-                <hr>
-                <!-- block -->
-                <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".9s">
-                    <div class="icon-box p-relative">
-                        <i class="icon-help"></i>
-                    </div>
-                    <div class="content">
-                        <h5><a wire:navigate.hover href="{{ route('services') }}">Future‑Proof Engineering</a></h5>
-                        <p>We build with scalability, security, and maintainability in mind – so your technology
-                            evolves with your business.</p> </div>
+                    <hr>
+                    <!-- block -->
+                    <div class="choose-area-icon-box mb-15 wow fadeInRight" data-wow-delay=".9s">
+                        <div class="icon-box p-relative">
+                            <i class="icon-help"></i>
+                        </div>
+                        <div class="content">
+                            <h5><a wire:navigate.hover href="{{ route('services') }}">Future‑Proof Engineering</a></h5>
+                            <p>We build with scalability, security, and maintainability in mind – so your technology
+                                evolves with your business.</p>
+                        </div>
                     </div>
                     <hr>
                 </div>
@@ -469,261 +471,262 @@
                 </div>
             </div>
         </div>
-</section>
-<!-- Choose area end -->
+    </section>
+    <!-- Choose area end -->
 
-<!-- Team area start -->
-<section class="team-section p-relative section-space">
-    <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-13.png') }}');">
-    </div>
-    <div class="shape-2 float-bob-y"
-        style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-14.png') }}');"></div>
-    <div class="small-container">
-        <div class="title-box text-center mb-50 wow fadeInLeft" data-wow-delay=".5s">
-                <span class=" section-sub-title">Our Leadership</span>
-            <h3 class="section-title mt-10">Meet the Team</h3>
+    <!-- Team area start -->
+    <section class="team-section p-relative section-space">
+        <div class="shape-1" style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-13.png') }}');">
         </div>
-        <div class="row g-4">
-            @forelse($teamMembers as $member)
+        <div class="shape-2 float-bob-y"
+            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-14.png') }}');"></div>
+        <div class="small-container">
+            <div class="title-box text-center mb-50 wow fadeInLeft" data-wow-delay=".5s">
+                <span class="section-sub-title">Our Leadership</span>
+                <h3 class="section-title mt-10">Meet the Team</h3>
+            </div>
+            <div class="row g-4">
+                @forelse($teamMembers as $member)
                     <div class="col-xxl-4 col-xl-4 col-lg-4 col-md-6 mb-15">
-                                <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
-                        <figure class="image w-img p-relative">
-                            <div class="team-image-wrapper">
-                                <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}" class="team-member-img">
-                            </div>
-                        </figure>
-                        <div class="content">
-                            <div class="author-info">
-                                <h5 class="mb-5">
-                                    <a wire:navigate href="{{ route('team.details', ['slug' => $member->username]) }}">
-                                        {{ $member->name }}
-                                    </a>
-                                </h5>
-                                <span>{{ $member->position ?? 'Team Member' }}</span>
-                            </div>
-                            <div class="social-links p-relative">
-                                <span><i class="icon-share"></i></span>
-                                <ul>
-                                    @if($member->social_links['linkedin'] ?? false)
-                                        <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"><i      class="fab
-                                                    fa-linkedin-in"></i></a></li>
-                                    @endif
-                                    @if($member->social_links['github'] ?? false)
-                                        <li><a href="{{ $member->social_links['github'] }}" target="_blank"><i      class="fab
-                                                    fa-github"></i></a></li>
-                                    @endif
-                                    @if($member->social_links['twitter'] ?? false)
-                                        <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"><i      class="fab
-                                                    fa-twitter"></i></a></li>
-                                    @endif
-                                    @if($member->social_links['youtube'] ?? false)
-                                        <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"><i      class="fab
-                                                    fa-youtube"></i></a></li>
-                                    @endif
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            @empty
-            <div class="col-12 text-center py-5">
-                <h4>No team members found.</h4>
-            </div>
-        @endforelse
-    </div>
-    </div>
-</section>
-<!-- Team area end -->
-
-<!-- testimonials two area start -->
-<section class="testimonials-two-section fix">
-    <div class="container-fluid g-0">
-        <div class="row g-0">
-            <div class="col-xxl-4 col-xl-4 col-lg-12">
-                <div class="testimonials-video-area p-relative">
-                    <figure class="image w-img">
-                        <img src="{{ asset('assets/main/imgs/resources/video-1.jpg') }}" alt="Client stories">
-                    </figure>
-                    <div class="play-btn">
-                            <div class=" video_player_btn">
-                        <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"
-                            aria-label="Watch client testimonial video"><i class="icon-play"></i></a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-xxl-8 col-xl-8 col-lg-12">
-            <div class="testimonials-two-area section-space-medium bg-color-1 p-relative">
-                <div class="shape-1"
-                    style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-36.png') }}');">
-                </div>
-                <div class="title-box wow fadeInLeft mb-60" data-wow-delay=".5s">
-                            <span class=" section-sub-title">Testimonials</span>
-                    <h3 class="section-title mt-10">What Our Clients Say</h3>
-                </div>
-                <div class="swiper testimonial-active-2">
-                    <div class="swiper-wrapper">
-                        <!-- Testimonial 1 -->
-                        <div class="swiper-slide">
-                            <div class="testimonials-two-box">
-                                <div class="author-image">
-                                    <img src="{{ asset('assets/main/imgs/resources/testimonials-1.png') }}"
-                                        alt="Client">
+                        <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
+                            <figure class="image w-img p-relative">
+                                <div class="team-image-wrapper">
+                                    <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}" class="team-member-img">
                                 </div>
-                                <div class="icon-1">
-                                    <i class="icon-comma-double"></i>
+                            </figure>
+                            <div class="content">
+                                <div class="author-info">
+                                    <h5 class="mb-5">
+                                        <a wire:navigate href="{{ route('team.details', ['slug' => $member->username]) }}">
+                                            {{ $member->name }}
+                                        </a>
+                                    </h5>
+                                    <span>{{ $member->position ?? 'Team Member' }}</span>
                                 </div>
-                                <h4>Gideon Mensah</h4>
-                                <span>CTO, FinVault</span>
-                                <ul class="ratings">
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                </ul>
-                                <p>“Polysphere Tech delivered our core banking platform on time and under
-                                    budget. Their architecture is rock‑solid, and their team is a true extension
-                                    of ours.”</p>
-                            </div>
-                        </div>
-                        <!-- Testimonial 2 -->
-                        <div class="swiper-slide">
-                            <div class="testimonials-two-box">
-                                <div class="author-image">
-                                    <img src="{{ asset('assets/main/imgs/resources/testimonials-2.png') }}"
-                                        alt="Client">
-                                </div>
-                                <div class="icon-1">
-                                    <i class="icon-comma-double"></i>
-                                </div>
-                                <h4>James Sarpong</h4>
-                                <span>Director, HealthBridge</span>
-                                <ul class="ratings">
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                </ul>
-                                <p>“They took our legacy system and transformed it into a modern,
-                                    HIPAA‑compliant SaaS. Our users love the new experience.”</p>
-                            </div>
-                        </div>
-                        <!-- Testimonial 3 -->
-                        <div class="swiper-slide">
-                            <div class="testimonials-two-box">
-                                <div class="author-image">
-                                    <img src="{{ asset('assets/main/imgs/resources/testimonials-3.png') }}"
-                                        alt="Client">
-                                </div>
-                                <div class="icon-1">
-                                    <i class="icon-comma-double"></i>
-                                </div>
-                                <h4>Elena Ansah</h4>
-                                <span>VP of Product, LogiMove</span>
-                                <ul class="ratings">
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                    <li><i class="fa fa-star"></i></li>
-                                </ul>
-                                <p>“The custom logistics platform they built reduced our dispatch time by 40%.
-                                    Their Agile approach kept us aligned throughout.”</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="testimonial-dot-inner text-center mt-60">
-                    <div class="testimonial-swiper-dot"></div>
-                </div>
-            </div>
-        </div>
-    </div>
-    </div>
-</section>
-<!-- testimonials two area end -->
-
-<!-- Blog area start -->
-<section class="blog-section-one section-space">
-    <div class="small-container">
-        <div class="title-box mb-40 wow fadeInLeft" data-wow-delay=".5s">
-            <span class="section-sub-title">Insights</span>
-            <h3 class="section-title mt-10">Latest from Our Blog</h3>
-        </div>
-        <div class="row g-4">
-            @forelse($posts as $post)
-                    <div class="col-xxl-4 col-xl-4 col-lg-6">
-                                <div class="blog-style-one">
-                        <a class="blog-image w-img" wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
-                            @if($post->featured_image)
-                                <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}">
-                            @else
-                                                        <img src=" {{ asset('assets/main/imgs/blog/blog-1.jpg') }}"
-                                            alt="{{ $post->title }}">
+                                <div class="social-links p-relative">
+                                    <span><i class="icon-share"></i></span>
+                                    <ul>
+                                        @if($member->social_links['linkedin'] ?? false)
+                                            <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"><i
+                                                        class="fab fa-linkedin-in"></i></a></li>
                                         @endif
-                        </a>
-                        <div class="blog-content">
-                            <div class="post-meta">
-                                <span class="p-relative">
-                                    <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
-                                        {{-- <i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }} --}}
-                                        <i class="fal fa-user"></i> By Admin </a>
-                                </span>
-                                <span class="p-relative">
-                                    <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
-                                        <i class="fal fa-calendar-alt"></i> {{ $post->published_at->format('d M, Y') }}
-                                    </a>
-                                </span>
+                                        @if($member->social_links['github'] ?? false)
+                                            <li><a href="{{ $member->social_links['github'] }}" target="_blank"><i
+                                                        class="fab fa-github"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['twitter'] ?? false)
+                                            <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"><i
+                                                        class="fab fa-twitter"></i></a></li>
+                                        @endif
+                                        @if($member->social_links['youtube'] ?? false)
+                                            <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"><i
+                                                        class="fab fa-youtube"></i></a></li>
+                                        @endif
+                                    </ul>
+                                </div>
                             </div>
-                            <hr>
-                            <h5 class="blog-title mb-30">
-                                <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">{{ $post->title }}</a>
-                            </h5>
-                            <div class="blog-link">
-                                            <span class=" primary-btn-5 btn-hover">
-                                Read More &nbsp; | <i class="icon-right-arrow"></i>
-                                <span style="top: 147.172px; left: 108.5px;"></span>
-                                </span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12 text-center py-5">
+                        <h4>No team members found.</h4>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+    <!-- Team area end -->
+
+    <!-- testimonials two area start -->
+    <section class="testimonials-two-section fix">
+        <div class="container-fluid g-0">
+            <div class="row g-0">
+                <div class="col-xxl-4 col-xl-4 col-lg-12">
+                    <div class="testimonials-video-area p-relative">
+                        <figure class="image w-img">
+                            <img src="{{ asset('assets/main/imgs/resources/video-1.jpg') }}" alt="Client stories">
+                        </figure>
+                        <div class="play-btn">
+                            <div class="video_player_btn">
+                                <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"
+                                    aria-label="Watch client testimonial video"><i class="icon-play"></i></a>
                             </div>
                         </div>
                     </div>
                 </div>
-            @empty
-            <div class="text-center py-5">
-                <h4>No blog posts found.</h4>
-                <p>Check back later for new content.</p>
+                <div class="col-xxl-8 col-xl-8 col-lg-12">
+                    <div class="testimonials-two-area section-space-medium bg-color-1 p-relative">
+                        <div class="shape-1"
+                            style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-36.png') }}');">
+                        </div>
+                        <div class="title-box wow fadeInLeft mb-60" data-wow-delay=".5s">
+                            <span class="section-sub-title">Testimonials</span>
+                            <h3 class="section-title mt-10">What Our Clients Say</h3>
+                        </div>
+                        <div class="swiper testimonial-active-2">
+                            <div class="swiper-wrapper">
+                                <!-- Testimonial 1 -->
+                                <div class="swiper-slide">
+                                    <div class="testimonials-two-box">
+                                        <div class="author-image">
+                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-1.png') }}"
+                                                alt="Client">
+                                        </div>
+                                        <div class="icon-1">
+                                            <i class="icon-comma-double"></i>
+                                        </div>
+                                        <h4>Gideon Mensah</h4>
+                                        <span>CTO, FinVault</span>
+                                        <ul class="ratings">
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                        </ul>
+                                        <p>“Polysphere Tech delivered our core banking platform on time and under
+                                            budget. Their architecture is rock‑solid, and their team is a true extension
+                                            of ours.”</p>
+                                    </div>
+                                </div>
+                                <!-- Testimonial 2 -->
+                                <div class="swiper-slide">
+                                    <div class="testimonials-two-box">
+                                        <div class="author-image">
+                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-2.png') }}"
+                                                alt="Client">
+                                        </div>
+                                        <div class="icon-1">
+                                            <i class="icon-comma-double"></i>
+                                        </div>
+                                        <h4>James Sarpong</h4>
+                                        <span>Director, HealthBridge</span>
+                                        <ul class="ratings">
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                        </ul>
+                                        <p>“They took our legacy system and transformed it into a modern,
+                                            HIPAA‑compliant SaaS. Our users love the new experience.”</p>
+                                    </div>
+                                </div>
+                                <!-- Testimonial 3 -->
+                                <div class="swiper-slide">
+                                    <div class="testimonials-two-box">
+                                        <div class="author-image">
+                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-3.png') }}"
+                                                alt="Client">
+                                        </div>
+                                        <div class="icon-1">
+                                            <i class="icon-comma-double"></i>
+                                        </div>
+                                        <h4>Elena Ansah</h4>
+                                        <span>VP of Product, LogiMove</span>
+                                        <ul class="ratings">
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                            <li><i class="fa fa-star"></i></li>
+                                        </ul>
+                                        <p>“The custom logistics platform they built reduced our dispatch time by 40%.
+                                            Their Agile approach kept us aligned throughout.”</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="testimonial-dot-inner text-center mt-60">
+                            <div class="testimonial-swiper-dot"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        @endforelse
-    </div>
-    </div>
-</section>
-<!-- Blog area end -->
+        </div>
+    </section>
+    <!-- testimonials two area end -->
 
-<!-- Brand area start -->
-<div class="brand-section section-space-bottom">
-    <div class="small-container">
-        <div class="swiper brand-active">
-            <div class="swiper-wrapper">
-                <div class="swiper-slide">
-                    <span><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
-                </div>
-                <div class="swiper-slide">
-                        <span><img src=" {{ asset('assets/main/imgs/resources/brand-2.png') }}" alt="Brand"></span>
-                </div>
-                <div class="swiper-slide">
-                        <span><img src=" {{ asset('assets/main/imgs/resources/brand-3.png') }}" alt="Brand"></span>
-                </div>
-                <div class="swiper-slide">
-                        <span><img src=" {{ asset('assets/main/imgs/resources/brand-4.png') }}" alt="Brand"></span>
-                </div>
-                <div class="swiper-slide">
-                        <span><img src=" {{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
+    <!-- Blog area start -->
+    <section class="blog-section-one section-space">
+        <div class="small-container">
+            <div class="title-box mb-40 wow fadeInLeft" data-wow-delay=".5s">
+                <span class="section-sub-title">Insights</span>
+                <h3 class="section-title mt-10">Latest from Our Blog</h3>
+            </div>
+            <div class="row g-4">
+                @forelse($posts as $post)
+                    <div class="col-xxl-4 col-xl-4 col-lg-6">
+                        <div class="blog-style-one">
+                            <a class="blog-image w-img" wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
+                                @if($post->featured_image)
+                                    <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}">
+                                @else
+                                    <img src="{{ asset('assets/main/imgs/blog/blog-1.jpg') }}" alt="{{ $post->title }}">
+                                @endif
+                            </a>
+                            <div class="blog-content">
+                                <div class="post-meta">
+                                    <span class="p-relative">
+                                        <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
+                                            {{-- <i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }} --}}
+                                            <i class="fal fa-user"></i> By Admin
+                                        </a>
+                                    </span>
+                                    <span class="p-relative">
+                                        <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
+                                            <i class="fal fa-calendar-alt"></i> {{ $post->published_at->format('d M, Y') }}
+                                        </a>
+                                    </span>
+                                </div>
+                                <hr>
+                                <h5 class="blog-title mb-30">
+                                    <a wire:navigate.hover
+                                        href="{{ route('blog.details', $post->slug) }}">{{ $post->title }}</a>
+                                </h5>
+                                <div class="blog-link">
+                                    <span class="primary-btn-5 btn-hover">
+                                        Read More &nbsp; | <i class="icon-right-arrow"></i>
+                                        <span style="top: 147.172px; left: 108.5px;"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="text-center py-5">
+                        <h4>No blog posts found.</h4>
+                        <p>Check back later for new content.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+    </section>
+    <!-- Blog area end -->
+
+    <!-- Brand area start -->
+    <div class="brand-section section-space-bottom">
+        <div class="small-container">
+            <div class="swiper brand-active">
+                <div class="swiper-wrapper">
+                    <div class="swiper-slide">
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
+                    </div>
+                    <div class="swiper-slide">
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-2.png') }}" alt="Brand"></span>
+                    </div>
+                    <div class="swiper-slide">
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-3.png') }}" alt="Brand"></span>
+                    </div>
+                    <div class="swiper-slide">
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-4.png') }}" alt="Brand"></span>
+                    </div>
+                    <div class="swiper-slide">
+                        <span><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
-<!-- Brand area end -->
+    <!-- Brand area end -->
 </div>

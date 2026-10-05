@@ -311,6 +311,24 @@
         .primary-btn-1 {
             background-color: #386AEA !important;
         }
+
+        /* Accessibility fix: the active nav link's blue text (rgb(60,114,252))
+           had very weak contrast against the dark hero banner behind it.
+           Switch to white to match the rest of the nav. */
+        .main-menu nav#mobile-menu li.active>a,
+        .main-menu nav:not(#mobile-menu) li.active>a {
+            color: #ffffff !important;
+        }
+
+        /* Accessibility fix: the project card's category label (e.g.
+           "SaaS Development") was an <h6>, causing a heading-order skip
+           (h3 "Our Latest Projects" -> h6, skipping h4/h5). Changed to
+           <h4> in the Blade view; this pins its font-size back to the
+           18px it was already rendering at, since <h4> would otherwise
+           inherit a larger default size used by real h4 titles elsewhere. */
+        .project-slider-area .title-area h4 {
+            font-size: 18px;
+        }
     </style>
 </head>
 
