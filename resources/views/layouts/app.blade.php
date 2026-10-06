@@ -87,17 +87,40 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 
-    <!-- CSS -->
+    <!-- CSS: bootstrap + main.css kept render-blocking since they likely
+         contain above-the-fold layout styles. Everything else below styles
+         things that are below the fold, behind JS interaction, or icons
+         not needed for first paint — deferred via the preload+onload
+         trick so they don't delay initial render. Falls back to a plain
+         <link rel="stylesheet"> inside <noscript> for non-JS clients. -->
     <link rel="stylesheet" href="{{ asset('assets/main/css/bootstrap.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/main/css/meanmenu.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/main/css/animate.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/main/css/swiper.min.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/main/css/slick.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/main/css/magnific-popup.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/main/css/fontawesome-pro.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/main/css/icomoon.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/main/css/spacing.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/main/css/main.css') }}">
+
+    <link rel="preload" href="{{ asset('assets/main/css/meanmenu.min.css') }}" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ asset('assets/main/css/animate.css') }}" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ asset('assets/main/css/swiper.min.css') }}" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ asset('assets/main/css/slick.css') }}" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ asset('assets/main/css/magnific-popup.css') }}" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ asset('assets/main/css/fontawesome-pro.css') }}" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+    <link rel="preload" href="{{ asset('assets/main/css/icomoon.css') }}" as="style"
+        onload="this.onload=null;this.rel='stylesheet'">
+
+    <noscript>
+        <link rel="stylesheet" href="{{ asset('assets/main/css/meanmenu.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('assets/main/css/animate.css') }}">
+        <link rel="stylesheet" href="{{ asset('assets/main/css/swiper.min.css') }}">
+        <link rel="stylesheet" href="{{ asset('assets/main/css/slick.css') }}">
+        <link rel="stylesheet" href="{{ asset('assets/main/css/magnific-popup.css') }}">
+        <link rel="stylesheet" href="{{ asset('assets/main/css/fontawesome-pro.css') }}">
+        <link rel="stylesheet" href="{{ asset('assets/main/css/icomoon.css') }}">
+    </noscript>
 
     {{-- Structured Data: Organization --}}
     <script type="application/ld+json">
