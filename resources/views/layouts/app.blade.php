@@ -346,6 +346,14 @@
         .testimonials-two-box p {
             color: #666666;
         }
+
+        /* Accessibility fix: cookie consent "Accept All" button was white
+           text on rgb(59,130,246), ~3.68:1 — a real fail against the 4.5:1
+           minimum. Same darkened blue already verified for .primary-btn-1
+           (~4.75:1), which also keeps both buttons visually consistent. */
+        .ps-cc-btn--primary {
+            background-color: #386AEA !important;
+        }
     </style>
 </head>
 
