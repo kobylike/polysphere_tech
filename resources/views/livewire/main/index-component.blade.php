@@ -151,11 +151,12 @@
                             style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
                         </div>
                         <figure class="image-1">
-                            <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}" alt="Polysphere Tech team">
+                            <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}" alt="Polysphere Tech team"
+                                width="270" height="360">
                         </figure>
                         <div class="image-2-area">
                             <div class="image-2 p-relative">
-                                <img src="{{ asset('assets/main/imgs/about/about-2.jpg') }}"
+                                <img src="{{ asset('assets/main/imgs/about/about-2.jpg') }}" width="235" height="300"
                                     alt="Polysphere Tech workspace">
                                 <div class="play-btn">
                                     <div class="video_player_btn">
@@ -208,8 +209,7 @@
                                     alt="Consultancy icon">
                             </div>
                             <div class="content">
-                                <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Consultancy</a>
-                                </h5>
+                                <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Consultancy</a></h5>
                                 <p>From discovery and architecture to deployment and maintenance – we’re with you at
                                     every stage of your journey.</p>
                             </div>
@@ -331,8 +331,7 @@
                         <h3 class="mb-15">Need a Custom Solution?</h3>
                         <h5><a href="tel:+233597563427">+233 (59) 756‑3427</a></h5>
                         <p class="mt-3" style="font-size:14px; color:#666;">Call us or <a wire:navigate.hover
-                                href="{{ route('contact') }}" style="color:#0056b3;">schedule a free consultation</a>
-                        </p>
+                                href="{{ route('contact') }}" style="color:#0056b3;">schedule a free consultation</a></p>
                     </div>
                 </div>
             </div>
