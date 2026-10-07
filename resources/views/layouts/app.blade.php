@@ -335,13 +335,22 @@
             background-color: #386AEA !important;
         }
 
-        /* Accessibility fix: the active nav link's blue text (rgb(60,114,252))
-           had very weak contrast against the dark hero banner behind it.
-           Switch to white to match the rest of the nav. */
-        .main-menu nav#mobile-menu li.active>a,
-        .main-menu nav:not(#mobile-menu) li.active>a {
-            color: #ffffff !important;
-        }
+        @if(request()->routeIs('index'))
+            /* Accessibility fix: the active nav link's blue text
+                   (rgb(60,114,252)) had very weak contrast against the dark
+                   hero banner behind it — but ONLY on the homepage, where the
+                   header sits transparently over that banner. Scoped to
+                   routeIs('index') only, since every other page has a solid
+                   white header background, where this same white-on-white
+                   override would make the active link invisible (confirmed
+                   bug: "About" link vanished on /about-us after this was
+                   applied sitewide). */
+            .main-menu nav#mobile-menu li.active>a,
+            .main-menu nav:not(#mobile-menu) li.active>a {
+                color: #ffffff !important;
+            }
+
+        @endif
 
         /* Accessibility fix: the project card's category label (e.g.
            "SaaS Development") was an <h6>, causing a heading-order skip
