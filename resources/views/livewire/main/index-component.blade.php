@@ -152,7 +152,7 @@
                         </div>
                         <figure class="image-1">
                             <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}" alt="Polysphere Tech team"
-                                width="270" height="360">
+                                width="270" height="351">
                         </figure>
                         <div class="image-2-area">
                             <div class="image-2 p-relative">
@@ -209,7 +209,8 @@
                                     alt="Consultancy icon">
                             </div>
                             <div class="content">
-                                <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Consultancy</a></h5>
+                                <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Consultancy</a>
+                                </h5>
                                 <p>From discovery and architecture to deployment and maintenance – we’re with you at
                                     every stage of your journey.</p>
                             </div>
@@ -331,7 +332,8 @@
                         <h3 class="mb-15">Need a Custom Solution?</h3>
                         <h5><a href="tel:+233597563427">+233 (59) 756‑3427</a></h5>
                         <p class="mt-3" style="font-size:14px; color:#666;">Call us or <a wire:navigate.hover
-                                href="{{ route('contact') }}" style="color:#0056b3;">schedule a free consultation</a></p>
+                                href="{{ route('contact') }}" style="color:#0056b3;">schedule a free consultation</a>
+                        </p>
                     </div>
                 </div>
             </div>
