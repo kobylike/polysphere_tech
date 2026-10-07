@@ -152,7 +152,7 @@
                         </div>
                         <figure class="image-1">
                             <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}" alt="Polysphere Tech team"
-                                width="270" height="360">
+                                width="270" height="351">
                         </figure>
                         <div class="image-2-area">
                             <div class="image-2 p-relative">
