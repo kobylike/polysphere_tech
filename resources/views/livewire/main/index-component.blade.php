@@ -146,22 +146,22 @@
         <div class="small-container">
             <div class="row g-4">
                 <div class="col-xxl-6 col-xl-6 col-lg-6">
+                    <!-- image area start -->
                     <div class="about-us-image-area p-relative wow fadeInRight" data-wow-delay=".5s">
                         <div class="border-shape"
                             style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
                         </div>
                         <figure class="image-1">
-                            <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}" alt="Polysphere Tech team"
-                                width="270" height="351">
+                            <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}"
+                                alt="Polysphere Tech team collaborating">
                         </figure>
                         <div class="image-2-area">
                             <div class="image-2 p-relative">
-                                <img src="{{ asset('assets/main/imgs/about/about-2.jpg') }}" width="235" height="300"
+                                <img src="{{ asset('assets/main/imgs/about/about-2.jpg') }}"
                                     alt="Polysphere Tech workspace">
                                 <div class="play-btn">
                                     <div class="video_player_btn">
-                                        <a href="https://www.youtube.com/watch?v=TWCkyLB5SHQ" class="popup-video"
-                                            aria-label="Watch video: Polysphere Tech overview"><i
+                                        <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="popup-video"><i
                                                 class="icon-play"></i></a>
                                     </div>
                                 </div>
@@ -176,10 +176,11 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
+                    <!-- image area end -->
                 </div>
                 <div class="col-xxl-6 col-xl-6 col-lg-6">
+                    <!-- .content start -->
                     <div class="about-us-content-area p-relative z-1 pl-30">
                         <div class="title-box mb-35 wow fadeInLeft" data-wow-delay=".5s">
                             <span class="section-sub-title">About Polysphere Tech</span>
@@ -196,9 +197,7 @@
                                     alt="Growth icon">
                             </div>
                             <div class="content">
-                                <h5>
-                                    <a wire:navigate.hover href="{{ route('about') }}">Business‑Driven Development</a>
-                                </h5>
+                                <h5><a href="about.html">Business‑Driven Development</a></h5>
                                 <p>We align every line of code with your strategic objectives, ensuring measurable ROI
                                     and faster time‑to‑market.</p>
                             </div>
@@ -209,19 +208,19 @@
                                     alt="Consultancy icon">
                             </div>
                             <div class="content">
-                                <h5><a wire:navigate.hover href="{{ route('services') }}">End‑to‑End Consultancy</a>
-                                </h5>
-                                <p>From discovery and architecture to deployment and maintenance – we’re with you at
+                                <h5><a href="about.html">End‑to‑End Consultancy</a></h5>
+                                <p>From discovery and architecture to deployment and maintenance — we're with you at
                                     every stage of your journey.</p>
                             </div>
                         </div>
                         <div class="about-btn-box wow fadeInLeft" data-wow-delay="1s">
-                            <a class="primary-btn-1 btn-hover" wire:navigate.hover href="{{ route('about') }}">
-                                Learn More &nbsp; | <i class="icon-right-arrow"></i>
+                            <a class="primary-btn-1 btn-hover" wire:navigate.hover href="{{ route('contact') }}">
+                                Get in Touch &nbsp; | <i class="icon-right-arrow"></i>
                                 <span style="top: 147.172px; left: 108.5px;"></span>
                             </a>
                         </div>
                     </div>
+                    <!-- .content end -->
                 </div>
             </div>
         </div>
