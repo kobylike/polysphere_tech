@@ -3,13 +3,13 @@
     <section class="banner-section p-relative fix">
         <div class="swiper banner-active">
             <div class="swiper-wrapper">
-                <!-- Slide 1 -->
+                <!-- Slide 1 (the LCP slide: no reveal delay) -->
                 <div class="swiper-slide">
                     <div wire:ignore class="banner-main"
                         style="background-image: url('{{ asset('assets/main/imgs/banner/banner-1.jpg') }}');">
                         <div class="large-container">
                             <div class="banner-area p-relative z-3 wow img-custom-anim-left animated"
-                                data-wow-delay="1500ms">
+                                data-wow-delay="0ms">
                                 <span class="p-relative banner-sub-title">SAAS & SOFTWARE SOLUTIONS</span>
                                 <h1 class="banner-title">Build Smarter, Scale Faster</h1>
                                 <p class="banner-text">We craft custom software, cloud‑native platforms, and digital
@@ -49,7 +49,7 @@
                         style="background-image: url('{{ asset('assets/main/imgs/banner/banner-2.jpg') }}');">
                         <div class="large-container">
                             <div class="banner-area p-relative z-3 wow img-custom-anim-left animated"
-                                data-wow-delay="2500ms">
+                                data-wow-delay="500ms">
                                 <span class="p-relative banner-sub-title">DIGITAL TRANSFORMATION</span>
                                 <h1 class="banner-title">Modernise Your Business with Confidence</h1>
                                 <p class="banner-text">From legacy migration to AI‑driven automation – we guide you
@@ -89,7 +89,7 @@
                         style="background-image: url('{{ asset('assets/main/imgs/banner/banner-3.jpg') }}');">
                         <div class="large-container">
                             <div class="banner-area p-relative z-3 wow img-custom-anim-left animated"
-                                data-wow-delay="3000ms">
+                                data-wow-delay="500ms">
                                 <span class="p-relative banner-sub-title">FUTURE‑READY INFRASTRUCTURE</span>
                                 <h1 class="banner-title">Cloud & Cyber – When You’re Ready</h1>
                                 <p class="banner-text">We’re building the foundation for tomorrow’s security and
@@ -152,17 +152,15 @@
                             style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-6.png') }}');">
                         </div>
                         <figure class="image-1">
-                            <img src="{{ asset('assets/main/imgs/about/about-1.jpg') }}"
-                                alt="Polysphere Tech team collaborating">
+                            <x-img path="assets/main/imgs/about/about-1.jpg" alt="Polysphere Tech team collaborating" />
                         </figure>
                         <div class="image-2-area">
                             <div class="image-2 p-relative">
-                                <img src="{{ asset('assets/main/imgs/about/about-2.jpg') }}"
-                                    alt="Polysphere Tech workspace">
+                                <x-img path="assets/main/imgs/about/about-2.jpg" alt="Polysphere Tech workspace" />
                                 <div class="play-btn">
                                     <div class="video_player_btn">
-                                        <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="popup-video"><i
-                                                class="icon-play"></i></a>
+                                        <a href="https://www.youtube.com/watch?v=eEzD-Y97ges" class="popup-video"
+                                            aria-label="Watch company video"><i class="icon-play"></i></a>
                                     </div>
                                 </div>
                             </div>
@@ -193,22 +191,22 @@
                         </p>
                         <div class="icon-box mb-20 wow fadeInLeft" data-wow-delay=".8s">
                             <div class="icon">
-                                <img src="{{ asset('assets/main/imgs/about/about-three-icon1.png') }}"
-                                    alt="Growth icon">
+                                <x-img path="assets/main/imgs/about/about-three-icon1.png" alt="Growth icon" />
                             </div>
                             <div class="content">
-                                <h5><a href="about.html">Business‑Driven Development</a></h5>
+                                {{-- was href="about.html" (404). Adjust if your route differs. --}}
+                                <h5><a wire:navigate.hover href="{{ url('/about-us') }}">Business‑Driven Development</a>
+                                </h5>
                                 <p>We align every line of code with your strategic objectives, ensuring measurable ROI
                                     and faster time‑to‑market.</p>
                             </div>
                         </div>
                         <div class="icon-box mb-20 wow fadeInLeft" data-wow-delay=".9s">
                             <div class="icon">
-                                <img src="{{ asset('assets/main/imgs/about/about-three-icon2.png') }}"
-                                    alt="Consultancy icon">
+                                <x-img path="assets/main/imgs/about/about-three-icon2.png" alt="Consultancy icon" />
                             </div>
                             <div class="content">
-                                <h5><a href="about.html">End‑to‑End Consultancy</a></h5>
+                                <h5><a wire:navigate.hover href="{{ url('/about-us') }}">End‑to‑End Consultancy</a></h5>
                                 <p>From discovery and architecture to deployment and maintenance — we're with you at
                                     every stage of your journey.</p>
                             </div>
@@ -227,9 +225,7 @@
     </section>
     <!-- About us area end -->
 
-    <!-- ════════════════════════════════════════════════════════════════════════
-         Service Slider – DYNAMIC from DB
-         ════════════════════════════════════════════════════════════════════════ -->
+    <!-- Service Slider – DYNAMIC from DB -->
     <section class="service-slider-section section-space bg-color-1 p-relative">
         <div class="shape-1 float-bob-y"
             style="background-image: url('{{ asset('assets/main/imgs/shapes/shape-10.png') }}');"></div>
@@ -248,32 +244,36 @@
                 <div class="col-xxl-6">
                     <div class="service_1_navigation__wrapprer position-relative z-1 text-end mt-30">
                         <div class="common-slider-navigation">
-                            <button class="service-1-button-prev"><i class="icon-arrow-left-angle"></i></button>
-                            <button class="service-1-button-next"><i class="icon-arrow-right-angle"></i></button>
+                            <button class="service-1-button-prev" aria-label="Previous service"><i
+                                    class="icon-arrow-left-angle"></i></button>
+                            <button class="service-1-button-next" aria-label="Next service"><i
+                                    class="icon-arrow-right-angle"></i></button>
                         </div>
                     </div>
                 </div>
             </div>
             <div wire:ignore class="swiper service-active-1" data-count="{{ $services->count() }}">
                 <div class="swiper-wrapper">
+                    @php
+                        // icon-1.png does not exist; the old `% 3 + 1` mapping produced a 404
+                        // followed by an onerror fallback on every third card.
+                        $serviceIcons = ['icon.png', 'icon-2.png', 'icon-3.png'];
+                    @endphp
                     @forelse($services as $service)
                         <div class="swiper-slide">
                             <div class="service-slider-area p-relative">
                                 <figure class="image w-img">
                                     @if($service->featured_image)
-                                        <img src="{{ asset('storage/' . $service->featured_image) }}"
-                                            alt="{{ $service->name }}">
+                                        <x-img :path="'storage/' . $service->featured_image" :alt="$service->name" />
                                     @else
-                                        <img src="{{ asset('assets/main/imgs/service/service-' . ($loop->iteration % 3 + 1) . '.jpg') }}"
-                                            alt="{{ $service->name }}">
+                                        <x-img :path="'assets/main/imgs/service/service-' . ($loop->iteration % 3 + 1) . '.jpg'"
+                                            :alt="$service->name" />
                                     @endif
                                 </figure>
                                 <div class="content">
                                     <div class="icon-box">
-                                        {{-- You can add an 'icon' field to Service model and use $service->icon --}}
-                                        <img src="{{ asset('assets/main/imgs/icon/icon-' . ($loop->iteration % 3 + 1) . '.png') }}"
-                                            alt="{{ $service->name }}"
-                                            onerror="this.onerror=null; this.src='{{ asset('assets/main/imgs/icon/icon.png') }}';">
+                                        <x-img :path="'assets/main/imgs/icon/' . $serviceIcons[$loop->index % 3]"
+                                            :alt="$service->name" />
                                     </div>
                                     <h4 class="mb-15">
                                         <a wire:navigate.hover href="{{ route('service.details', $service->slug) }}">
@@ -293,11 +293,11 @@
                         <div class="swiper-slide">
                             <div class="service-slider-area p-relative">
                                 <figure class="image w-img">
-                                    <img src="{{ asset('assets/main/imgs/service/service-1.jpg') }}" alt="Service">
+                                    <x-img path="assets/main/imgs/service/service-1.jpg" alt="Service" />
                                 </figure>
                                 <div class="content">
                                     <div class="icon-box">
-                                        <img src="{{ asset('assets/main/imgs/icon/icon.png') }}" alt="Service">
+                                        <x-img path="assets/main/imgs/icon/icon.png" alt="Service" />
                                     </div>
                                     <h4 class="mb-15"><span>Service Coming Soon</span></h4>
                                     <p class="mb-25">We are constantly adding new services. Check back later.</p>
@@ -317,7 +317,7 @@
             <div class="row g-0 box-shadow-1 fix">
                 <div class="col-xxl-6 col-lg-6 bg-white">
                     <figure class="image w-img">
-                        <img src="{{ asset('assets/main/imgs/resources/cta-1.jpg') }}" alt="Get in touch">
+                        <x-img path="assets/main/imgs/resources/cta-1.jpg" alt="Get in touch" />
                     </figure>
                 </div>
                 <div class="col-xxl-6 col-lg-6">
@@ -340,9 +340,7 @@
     </section>
     <!-- Cta-1 area end -->
 
-    <!-- ════════════════════════════════════════════════════════════════════════
-         Project Slider – DYNAMIC from DB
-         ════════════════════════════════════════════════════════════════════════ -->
+    <!-- Project Slider – DYNAMIC from DB -->
     <section class="project-slider-section section-space fix">
         <div class="small-container">
             <div class="row">
@@ -355,8 +353,10 @@
                 <div class="col-xxl-6">
                     <div class="project_1_navigation__wrapprer position-relative z-1 text-end mt-30">
                         <div class="common-slider-navigation">
-                            <button class="project-1-button-prev"><i class="icon-arrow-left-angle"></i></button>
-                            <button class="project-1-button-next"><i class="icon-arrow-right-angle"></i></button>
+                            <button class="project-1-button-prev" aria-label="Previous project"><i
+                                    class="icon-arrow-left-angle"></i></button>
+                            <button class="project-1-button-next" aria-label="Next project"><i
+                                    class="icon-arrow-right-angle"></i></button>
                         </div>
                     </div>
                 </div>
@@ -371,10 +371,10 @@
                         <div class="project-slider-area p-relative">
                             <figure class="image m-img">
                                 @if($project->featured_image)
-                                    <img src="{{ asset('storage/' . $project->featured_image) }}" alt="{{ $project->title }}">
+                                    <x-img :path="'storage/' . $project->featured_image" :alt="$project->title" />
                                 @else
-                                    <img src="{{ asset('assets/main/imgs/project/project-' . ($loop->iteration % 4 + 1) . '.jpg') }}"
-                                        alt="{{ $project->title }}">
+                                    <x-img :path="'assets/main/imgs/project/project-' . ($loop->iteration % 4 + 1) . '.jpg'"
+                                        :alt="$project->title" />
                                 @endif
                             </figure>
                             <div class="content-area">
@@ -399,11 +399,11 @@
                     <div class="swiper-slide">
                         <div class="project-slider-area p-relative">
                             <figure class="image m-img">
-                                <img src="{{ asset('assets/main/imgs/project/project-1.jpg') }}" alt="Project">
+                                <x-img path="assets/main/imgs/project/project-1.jpg" alt="Project" />
                             </figure>
                             <div class="content-area">
                                 <div class="title-area">
-                                    <h6 class="mb-5">Coming Soon</h6>
+                                    <h4 class="mb-5 project-category-label">Coming Soon</h4>
                                     <h5><span>New Projects</span></h5>
                                 </div>
                             </div>
@@ -466,7 +466,7 @@
                 </div>
                 <div class="col-xxl-6 col-xl-6 col-lg-6 wow fadeInLeft" data-wow-delay="1.2s">
                     <figure class="image m-img">
-                        <img src="{{ asset('assets/main/imgs/resources/choose-1.jpg') }}" alt="Why choose us">
+                        <x-img path="assets/main/imgs/resources/choose-1.jpg" alt="Why choose us" />
                     </figure>
                 </div>
             </div>
@@ -491,7 +491,8 @@
                         <div class="team-area-box p-relative mb-60 wow fadeInLeft" data-wow-delay=".7s">
                             <figure class="image w-img p-relative">
                                 <div class="team-image-wrapper">
-                                    <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}" class="team-member-img">
+                                    <img src="{{ $member->avatar_url }}" alt="{{ $member->name }}" class="team-member-img"
+                                        loading="lazy" decoding="async">
                                 </div>
                             </figure>
                             <div class="content">
@@ -507,19 +508,23 @@
                                     <span><i class="icon-share"></i></span>
                                     <ul>
                                         @if($member->social_links['linkedin'] ?? false)
-                                            <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"><i
+                                            <li><a href="{{ $member->social_links['linkedin'] }}" target="_blank"
+                                                    rel="noopener noreferrer" aria-label="LinkedIn"><i
                                                         class="fab fa-linkedin-in"></i></a></li>
                                         @endif
                                         @if($member->social_links['github'] ?? false)
-                                            <li><a href="{{ $member->social_links['github'] }}" target="_blank"><i
+                                            <li><a href="{{ $member->social_links['github'] }}" target="_blank"
+                                                    rel="noopener noreferrer" aria-label="GitHub"><i
                                                         class="fab fa-github"></i></a></li>
                                         @endif
                                         @if($member->social_links['twitter'] ?? false)
-                                            <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"><i
+                                            <li><a href="{{ $member->social_links['twitter'] }}" target="_blank"
+                                                    rel="noopener noreferrer" aria-label="Twitter"><i
                                                         class="fab fa-twitter"></i></a></li>
                                         @endif
                                         @if($member->social_links['youtube'] ?? false)
-                                            <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"><i
+                                            <li><a href="{{ $member->social_links['youtube'] }}" target="_blank"
+                                                    rel="noopener noreferrer" aria-label="YouTube"><i
                                                         class="fab fa-youtube"></i></a></li>
                                         @endif
                                     </ul>
@@ -544,7 +549,7 @@
                 <div class="col-xxl-4 col-xl-4 col-lg-12">
                     <div class="testimonials-video-area p-relative">
                         <figure class="image w-img">
-                            <img src="{{ asset('assets/main/imgs/resources/video-1.jpg') }}" alt="Client stories">
+                            <x-img path="assets/main/imgs/resources/video-1.jpg" alt="Client stories" />
                         </figure>
                         <div class="play-btn">
                             <div class="video_player_btn">
@@ -569,8 +574,7 @@
                                 <div class="swiper-slide">
                                     <div class="testimonials-two-box">
                                         <div class="author-image">
-                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-1.png') }}"
-                                                alt="Client">
+                                            <x-img path="assets/main/imgs/resources/testimonials-1.png" alt="Client" />
                                         </div>
                                         <div class="icon-1">
                                             <i class="icon-comma-double"></i>
@@ -593,8 +597,7 @@
                                 <div class="swiper-slide">
                                     <div class="testimonials-two-box">
                                         <div class="author-image">
-                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-2.png') }}"
-                                                alt="Client">
+                                            <x-img path="assets/main/imgs/resources/testimonials-2.png" alt="Client" />
                                         </div>
                                         <div class="icon-1">
                                             <i class="icon-comma-double"></i>
@@ -616,8 +619,7 @@
                                 <div class="swiper-slide">
                                     <div class="testimonials-two-box">
                                         <div class="author-image">
-                                            <img src="{{ asset('assets/main/imgs/resources/testimonials-3.png') }}"
-                                                alt="Client">
+                                            <x-img path="assets/main/imgs/resources/testimonials-3.png" alt="Client" />
                                         </div>
                                         <div class="icon-1">
                                             <i class="icon-comma-double"></i>
@@ -660,16 +662,15 @@
                         <div class="blog-style-one">
                             <a class="blog-image w-img" wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
                                 @if($post->featured_image)
-                                    <img src="{{ asset('storage/' . $post->featured_image) }}" alt="{{ $post->title }}">
+                                    <x-img :path="'storage/' . $post->featured_image" :alt="$post->title" />
                                 @else
-                                    <img src="{{ asset('assets/main/imgs/blog/blog-1.jpg') }}" alt="{{ $post->title }}">
+                                    <x-img path="assets/main/imgs/blog/blog-1.jpg" :alt="$post->title" />
                                 @endif
                             </a>
                             <div class="blog-content">
                                 <div class="post-meta">
                                     <span class="p-relative">
                                         <a wire:navigate.hover href="{{ route('blog.details', $post->slug) }}">
-                                            {{-- <i class="fal fa-user"></i> By {{ $post->author?->name ?? 'Admin' }} --}}
                                             <i class="fal fa-user"></i> By Admin
                                         </a>
                                     </span>
@@ -709,24 +710,34 @@
         <div class="small-container">
             <div class="swiper brand-active">
                 <div class="swiper-wrapper">
-                    <div class="swiper-slide">
-                        <span><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
-                    </div>
-                    <div class="swiper-slide">
-                        <span><img src="{{ asset('assets/main/imgs/resources/brand-2.png') }}" alt="Brand"></span>
-                    </div>
-                    <div class="swiper-slide">
-                        <span><img src="{{ asset('assets/main/imgs/resources/brand-3.png') }}" alt="Brand"></span>
-                    </div>
-                    <div class="swiper-slide">
-                        <span><img src="{{ asset('assets/main/imgs/resources/brand-4.png') }}" alt="Brand"></span>
-                    </div>
-                    <div class="swiper-slide">
-                        <span><img src="{{ asset('assets/main/imgs/resources/brand-1.png') }}" alt="Brand"></span>
-                    </div>
+                    @foreach([1, 2, 3, 4, 1] as $brand)
+                        <div class="swiper-slide">
+                            <span><x-img :path="'assets/main/imgs/resources/brand-' . $brand . '.png'" alt="Brand" /></span>
+                        </div>
+                    @endforeach
                 </div>
             </div>
         </div>
     </div>
     <!-- Brand area end -->
 </div>
+
+{{-- LCP: the hero image is a CSS background inside a swiper, so the browser
+cannot discover it early. Preload it, and let slide 1 paint without
+waiting for Swiper's JS (the global rule hides every un-initialised
+.swiper, which was delaying LCP until all scripts had run). --}}
+@push('preload')
+    <link rel="preload" as="image" href="{{ asset('assets/main/imgs/banner/banner-1.jpg') }}" fetchpriority="high">
+@endpush
+
+@push('styles')
+    <style>
+        .swiper.banner-active:not(.swiper-initialized) {
+            opacity: 1;
+        }
+
+        .swiper.banner-active:not(.swiper-initialized) .swiper-slide:not(:first-child) {
+            display: none;
+        }
+    </style>
+@endpush
