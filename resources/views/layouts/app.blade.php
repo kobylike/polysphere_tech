@@ -353,7 +353,7 @@
             transition: opacity 0.25s ease;
         }
 
-        /* CLS: images carrying width/height attributes (via <x-img>) keep
+        /* CLS: images carrying width/height attributes (via the x-img component) keep
            their aspect ratio when CSS sets only a width. :where() has zero
            specificity, so every existing template rule still wins. */
         :where(img[width][height]) {
