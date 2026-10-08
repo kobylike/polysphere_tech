@@ -718,26 +718,27 @@
                 </div>
             </div>
         </div>
+
     </div>
-    <!-- Brand area end -->
+
+    {{-- LCP: the hero image is a CSS background inside a swiper, so the browser
+    cannot discover it early. Preload it, and let slide 1 paint without
+    waiting for Swiper's JS (the global rule hides every un-initialised
+    .swiper, which was delaying LCP until all scripts had run). --}}
+    @push('preload')
+        <link rel="preload" as="image" href="{{ asset('assets/main/imgs/banner/banner-1.jpg') }}" fetchpriority="high">
+    @endpush
+
+    @push('styles')
+        <style>
+            .swiper.banner-active:not(.swiper-initialized) {
+                opacity: 1;
+            }
+
+            .swiper.banner-active:not(.swiper-initialized) .swiper-slide:not(:first-child) {
+                display: none;
+            }
+        </style>
+    @endpush
 </div>
-
-{{-- LCP: the hero image is a CSS background inside a swiper, so the browser
-cannot discover it early. Preload it, and let slide 1 paint without
-waiting for Swiper's JS (the global rule hides every un-initialised
-.swiper, which was delaying LCP until all scripts had run). --}}
-@push('preload')
-    <link rel="preload" as="image" href="{{ asset('assets/main/imgs/banner/banner-1.jpg') }}" fetchpriority="high">
-@endpush
-
-@push('styles')
-    <style>
-        .swiper.banner-active:not(.swiper-initialized) {
-            opacity: 1;
-        }
-
-        .swiper.banner-active:not(.swiper-initialized) .swiper-slide:not(:first-child) {
-            display: none;
-        }
-    </style>
-@endpush
+<!-- Brand area end -->
