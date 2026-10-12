@@ -337,8 +337,8 @@
 
         /* Active nav link: the header has a solid white background, so the
            active link must be a dark/blue color (NOT white). The old
-           @if(request()->routeIs('index')) white-text override was removed
-           because it made the active link invisible on white. */
+           homepage-only white-text override was removed because it made
+           the active link invisible on white. */
         .main-menu nav#mobile-menu li.active>a,
         .main-menu nav:not(#mobile-menu) li.active>a {
             color: #386AEA !important;
