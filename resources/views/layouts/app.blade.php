@@ -335,22 +335,14 @@
             background-color: #386AEA !important;
         }
 
-        @if(request()->routeIs('index'))
-            /* Accessibility fix: the active nav link's blue text
-                               (rgb(60,114,252)) had very weak contrast against the dark
-                               hero banner behind it — but ONLY on the homepage, where the
-                               header sits transparently over that banner. Scoped to
-                               routeIs('index') only, since every other page has a solid
-                               white header background, where this same white-on-white
-                               override would make the active link invisible (confirmed
-                               bug: "About" link vanished on /about-us after this was
-                               applied sitewide). */
-            .main-menu nav#mobile-menu li.active>a,
-            .main-menu nav:not(#mobile-menu) li.active>a {
-                color: #ffffff !important;
-            }
-
-        @endif
+        /* Active nav link: the header has a solid white background, so the
+           active link must be a dark/blue color (NOT white). The old
+           @if(request()->routeIs('index')) white-text override was removed
+           because it made the active link invisible on white. */
+        .main-menu nav#mobile-menu li.active>a,
+        .main-menu nav:not(#mobile-menu) li.active>a {
+            color: #386AEA !important;
+        }
 
         /* Accessibility fix: the project card's category label (e.g.
            "SaaS Development") was an <h6>, causing a heading-order skip
@@ -480,8 +472,8 @@
                                     rel="noopener noreferrer" aria-label="Instagram"><i
                                         class="fab fa-instagram"></i></a></li>
 
-                            <li><a href=" https://www.tiktok.com/@polyspheretech" target="_blank"
-                                    rel="noopener noreferrer" aria-label="tiktok"><i class="fab fa-tiktok"></i></a></li>
+                            <li><a href="https://www.tiktok.com/@polyspheretech" target="_blank"
+                                    rel="noopener noreferrer" aria-label="TikTok"><i class="fab fa-tiktok"></i></a></li>
 
                         </ul>
                     </div>
